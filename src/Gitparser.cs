@@ -17,12 +17,6 @@ namespace Gitic
 
     public class GitParser : IGitParser
     {
-        private static readonly Regex DiffGitRegex = new(@" b/(.*)$", RegexOptions.Compiled);
-        private static readonly Regex HunkHeaderRegex = new(@"^@@\s+-\d+(?:,\d+)?\s+\+\d+(?:,\d+)?\s+@@\s*(.*)$", RegexOptions.Compiled);
-        private static readonly Regex ImportExcludeRegex = new(@"^(import|require|using|export\s+\*\s+from)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex SemicolonSuffixRegex = new(@";\s*$", RegexOptions.Compiled);
-        private static readonly Regex BracketsSuffixRegex = new(@"\s*[\{\(\[]\s*$", RegexOptions.Compiled);
-        private static readonly Regex CoAuthoredByRegex = new(@"^Co-authored-by:\s*(.*?)\s*<([^>]+)>", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
         private const int MaxSymbolLength = 60;
 
         public string CommitMarker => "__GITIZER_COMMIT__";
@@ -178,7 +172,7 @@ namespace Gitic
             {
                 if (line.StartsWith("diff --git "))
                 {
-                    var match = DiffGitRegex.Match(line);
+                    var match = GitRegexConstants.DiffGitRegex.Match(line);
                     if (match.Success)
                     {
                         currentPath = PathUtils.NormalizeGitPath(match.Groups[1].Value);
@@ -190,7 +184,7 @@ namespace Gitic
                 }
                 else if (line.StartsWith("@@ ") && currentPath != null)
                 {
-                    var match = HunkHeaderRegex.Match(line);
+                    var match = GitRegexConstants.HunkHeaderRegex.Match(line);
                     if (match.Success && match.Groups.Count >= 2)
                     {
                         string symbol = CleanSymbol(match.Groups[1].Value);
@@ -217,17 +211,17 @@ namespace Gitic
             {
                 return "";
             }
-            if (ImportExcludeRegex.IsMatch(cleaned))
+            if (GitRegexConstants.ImportExcludeRegex.IsMatch(cleaned))
             {
                 return "";
             }
 
-            cleaned = SemicolonSuffixRegex.Replace(cleaned, "");
+            cleaned = GitRegexConstants.SemicolonSuffixRegex.Replace(cleaned, "");
 
             while (true)
             {
                 string prev = cleaned;
-                cleaned = BracketsSuffixRegex.Replace(cleaned, "");
+                cleaned = GitRegexConstants.BracketsSuffixRegex.Replace(cleaned, "");
                 if (cleaned == prev)
                 {
                     break;
@@ -246,7 +240,7 @@ namespace Gitic
         {
             var identities = new List<GitIdentity>();
             var seen = new HashSet<string>();
-            var matches = CoAuthoredByRegex.Matches(message);
+            var matches = GitRegexConstants.CoAuthoredByRegex.Matches(message);
             foreach (Match match in matches)
             {
                 if (match.Groups.Count >= 3)
