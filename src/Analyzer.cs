@@ -14,7 +14,7 @@ namespace Gitic
         public string? ContributorName { get; set; }
         public IFileStatsProvider? FileStatsProvider { get; set; } = null;
         public IGitClient? GitClient { get; set; } = null;
-        public IAnalysisSettingsNormalizer? SettingsNormalizer { get; set; } = null;
+        public IConfigurationResolver? ConfigurationResolver { get; set; } = null;
     }
 
     public interface IRepositoryAnalyzer
@@ -24,7 +24,7 @@ namespace Gitic
 
     public class RepositoryAnalyzer : IRepositoryAnalyzer
     {
-        [Obsolete("Use IAnalysisSettingsNormalizer instead.")]
+        [Obsolete("Use IConfigurationResolver instead.")]
         public static AnalysisSettings NormalizeSettings(AnalysisSettings settings)
         {
             return new AnalysisSettingsNormalizer().Normalize(settings);
@@ -38,9 +38,10 @@ namespace Gitic
 
         public async Task<AnalysisResult> AnalyzeAsync(AnalyzeInput input)
         {
-            var normalizer = input.SettingsNormalizer ?? new AnalysisSettingsNormalizer();
-            var settings = normalizer.Normalize(input.Settings);
-            var config = input.Config ?? GitizerConfig.Default;
+            var resolver = input.ConfigurationResolver ?? new ConfigurationResolver();
+            var resolvedConfig = resolver.Resolve(input);
+            var settings = resolvedConfig.Settings;
+            var config = resolvedConfig.Config;
             var gitClient = input.GitClient ?? new GitClient(input.RepoRoot);
 
             var commitsTask = gitClient.ExtractHistoryAsync(new GitHistoryExtractorOptions

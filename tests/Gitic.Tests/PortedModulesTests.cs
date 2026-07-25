@@ -1243,23 +1243,27 @@ __GITIZER_NUMSTAT__
                 Assert.Equal("/fake/root", result.Analysis.RepoRoot);
             }
 
-            private class FakeSettingsNormalizer : IAnalysisSettingsNormalizer
+            private class FakeConfigurationResolver : IConfigurationResolver
             {
-                public bool NormalizeCalled { get; set; }
-                public AnalysisSettings Normalize(AnalysisSettings settings)
+                public bool ResolveCalled { get; set; }
+                public ResolvedConfiguration Resolve(AnalyzeInput input)
                 {
-                    NormalizeCalled = true;
-                    return new AnalysisSettings
+                    ResolveCalled = true;
+                    return new ResolvedConfiguration
                     {
-                        Depth = 99,
-                        Json = settings.Json,
-                        AllTime = settings.AllTime,
-                        Since = settings.Since,
-                        IncludeMerges = settings.IncludeMerges,
-                        IncludeDeleted = settings.IncludeDeleted,
-                        MergeByEmail = settings.MergeByEmail,
-                        Path = settings.Path,
-                        Anonymize = settings.Anonymize
+                        Settings = new AnalysisSettings
+                        {
+                            Depth = 99,
+                            Json = input.Settings.Json,
+                            AllTime = input.Settings.AllTime,
+                            Since = input.Settings.Since,
+                            IncludeMerges = input.Settings.IncludeMerges,
+                            IncludeDeleted = input.Settings.IncludeDeleted,
+                            MergeByEmail = input.Settings.MergeByEmail,
+                            Path = input.Settings.Path,
+                            Anonymize = input.Settings.Anonymize
+                        },
+                        Config = input.Config ?? GitizerConfig.Default
                     };
                 }
             }
@@ -1338,10 +1342,10 @@ __GITIZER_NUMSTAT__
             }
 
             [Fact]
-            public async Task TestRepositoryAnalyzer_UsesInjectedNormalizer()
+            public async Task TestRepositoryAnalyzer_UsesInjectedResolver()
             {
                 var fakeProvider = new FakeFileStatsProvider();
-                var normalizer = new FakeSettingsNormalizer();
+                var resolver = new FakeConfigurationResolver();
                 var input = new AnalyzeInput
                 {
                     RepoRoot = "/fake/root",
@@ -1349,13 +1353,13 @@ __GITIZER_NUMSTAT__
                     Settings = new AnalysisSettings { Depth = 1 },
                     FileStatsProvider = fakeProvider,
                     GitClient = new FakeGitClient(),
-                    SettingsNormalizer = normalizer
+                    ConfigurationResolver = resolver
                 };
 
                 var result = await RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
 
                 Assert.NotNull(result);
-                Assert.True(normalizer.NormalizeCalled);
+                Assert.True(resolver.ResolveCalled);
                 Assert.Equal(99, result.Settings.Depth);
             }
 
