@@ -71,6 +71,36 @@ namespace Gitic
         }
     }
 
+    public class MockGitExecutor : IGitExecutor
+    {
+        private readonly Dictionary<string, string> _outputs = new(StringComparer.Ordinal);
+        private readonly List<string[]> _calls = new();
+
+        public IReadOnlyList<string[]> Calls => _calls;
+
+        public void Setup(string[] args, string output)
+        {
+            var key = GetKey(args);
+            _outputs[key] = output;
+        }
+
+        public Task<string> RunAsync(string[] args, string cwd)
+        {
+            _calls.Add(args);
+            var key = GetKey(args);
+            if (_outputs.TryGetValue(key, out string? value))
+            {
+                return Task.FromResult(value);
+            }
+            throw new Exception($"Unexpected Git command in MockGitExecutor: git {key}");
+        }
+
+        private static string GetKey(string[] args)
+        {
+            return string.Join(" | ", args);
+        }
+    }
+
     public static class GitUtils
     {
         public static string DefaultSinceDate(DateTime? now = null)
@@ -81,7 +111,14 @@ namespace Gitic
         }
     }
 
-    public class GitClient
+    public interface IGitClient
+    {
+        Task<string?> GetRepositoryRootAsync();
+        Task<HashSet<string>> ListHeadFilesAsync();
+        Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null);
+    }
+
+    public class GitClient : IGitClient
     {
         private readonly string _repoRoot;
         private readonly IGitExecutor _executor;

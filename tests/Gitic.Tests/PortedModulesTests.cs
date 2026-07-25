@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Gitic.Tests
@@ -736,6 +737,82 @@ __GITIZER_NUMSTAT__
             {
                 return new List<string> { "Beta warning", "Alpha warning" };
             }
+        }
+
+        [Fact]
+        public async Task TestGitClient_WithMockExecutor_GetRepositoryRoot()
+        {
+            var mockExecutor = new MockGitExecutor();
+            mockExecutor.Setup(new[] { "rev-parse", "--show-toplevel" }, "/path/to/repo\n");
+
+            var client = new GitClient("/path/to/repo", mockExecutor);
+            var root = await client.GetRepositoryRootAsync();
+
+            Assert.Equal("/path/to/repo", root);
+            Assert.Single(mockExecutor.Calls);
+            Assert.Equal("rev-parse", mockExecutor.Calls[0][0]);
+            Assert.Equal("--show-toplevel", mockExecutor.Calls[0][1]);
+        }
+
+        [Fact]
+        public async Task TestGitClient_WithMockExecutor_ListHeadFiles()
+        {
+            var mockExecutor = new MockGitExecutor();
+            mockExecutor.Setup(new[] { "ls-tree", "-r", "--name-only", "HEAD" }, "src/main.cs\npackage.json\n");
+
+            var client = new GitClient("/path/to/repo", mockExecutor);
+            var files = await client.ListHeadFilesAsync();
+
+            Assert.Equal(2, files.Count);
+            Assert.Contains("src/main.cs", files);
+            Assert.Contains("package.json", files);
+        }
+
+        [Fact]
+        public async Task TestGitClient_WithMockExecutor_ExtractHistory()
+        {
+            var mockExecutor = new MockGitExecutor();
+            
+            var options = new GitHistoryExtractorOptions
+            {
+                IncludeMerges = false,
+                AllTime = false,
+                Since = "2026-06-01T12:00:00Z"
+            };
+
+            string logOutput = $@"__GITIZER_COMMIT__
+hash1
+2026-06-01T12:00:00Z
+Author Name
+author@email.com
+parent_hash
+
+This is a commit message.
+__GITIZER_NUMSTAT__
+10	5	src/main.cs
+";
+
+            mockExecutor.Setup(new[]
+            {
+                "log",
+                "--numstat",
+                "-p",
+                $"--format=format:{GitParser.CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{GitParser.NumstatMarker}",
+                "--no-merges",
+                "--since=2026-06-01T12:00:00Z"
+            }, logOutput);
+
+            var client = new GitClient("/path/to/repo", mockExecutor);
+            var records = await client.ExtractHistoryAsync(options);
+
+            Assert.Single(records);
+            var record = records[0];
+            Assert.Equal("hash1", record.Hash);
+            Assert.Equal("Author Name", record.Author.Name);
+            Assert.Equal("author@email.com", record.Author.Email);
+            Assert.Equal("This is a commit message.", record.Message);
+            Assert.Single(record.Files);
+            Assert.Equal("src/main.cs", record.Files[0].Path);
         }
     }
 }
