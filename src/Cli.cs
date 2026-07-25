@@ -7,9 +7,9 @@ namespace Gitic
 {
     public class CliResult
     {
-        public int ExitCode { get; set; }
-        public string Stdout { get; set; } = string.Empty;
-        public string Stderr { get; set; } = string.Empty;
+        public int ExitCode { get; init; }
+        public string Stdout { get; init; } = string.Empty;
+        public string Stderr { get; init; } = string.Empty;
     }
 
     public static class Cli
