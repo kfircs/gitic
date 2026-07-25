@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 namespace Gitic
 {
     public static class PathUtils
     {
+        private static readonly ConcurrentDictionary<string, Regex> _regexCache = new ConcurrentDictionary<string, Regex>();
+
         public static string NormalizeGitPath(string path)
         {
             string normalized = path.Replace("\\", "/");
@@ -45,30 +48,33 @@ namespace Gitic
 
         public static Regex GlobToRegExp(string pattern)
         {
-            string source = "^";
-            for (int index = 0; index < pattern.Length; index += 1)
+            return _regexCache.GetOrAdd(pattern, p =>
             {
-                char c = pattern[index];
-                if (c == '*' && index + 1 < pattern.Length && pattern[index + 1] == '*')
+                string source = "^";
+                for (int index = 0; index < p.Length; index += 1)
                 {
-                    source += ".*";
-                    index += 1;
-                    continue;
+                    char c = p[index];
+                    if (c == '*' && index + 1 < p.Length && p[index + 1] == '*')
+                    {
+                        source += ".*";
+                        index += 1;
+                        continue;
+                    }
+                    if (c == '*')
+                    {
+                        source += "[^/]*";
+                        continue;
+                    }
+                    if (c == '?')
+                    {
+                        source += "[^/]";
+                        continue;
+                    }
+                    source += Regex.Escape(c.ToString());
                 }
-                if (c == '*')
-                {
-                    source += "[^/]*";
-                    continue;
-                }
-                if (c == '?')
-                {
-                    source += "[^/]";
-                    continue;
-                }
-                source += Regex.Escape(c.ToString());
-            }
-            source += "$";
-            return new Regex(source, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                source += "$";
+                return new Regex(source, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            });
         }
     }
 }

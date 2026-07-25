@@ -119,6 +119,17 @@ namespace Gitic.Tests
         }
 
         [Fact]
+        public void TestPathUtils_GlobToRegExp_Caching()
+        {
+            var rx1 = PathUtils.GlobToRegExp("some-pattern*");
+            var rx2 = PathUtils.GlobToRegExp("some-pattern*");
+            Assert.Same(rx1, rx2);
+
+            var rx3 = PathUtils.GlobToRegExp("different-pattern*");
+            Assert.NotSame(rx1, rx3);
+        }
+
+        [Fact]
         public void TestIdentity_IdentityKey()
         {
             var identity = new GitIdentity { Name = "Alice Smith", Email = "Alice@Example.com" };
