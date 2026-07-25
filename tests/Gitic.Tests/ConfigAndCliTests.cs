@@ -214,7 +214,7 @@ excludes:
                 LowFamiliarityConcentration = 0.1 // Sums to 1.1
             };
 
-            Assert.Throws<ConfigValidationError>(() => ConfigValidator.ValidateAttentionWeights(weights, "test"));
+            Assert.Throws<ConfigValidationError>(() => new ConfigValidator().ValidateAttentionWeights(weights, "test"));
         }
 
         [Fact]

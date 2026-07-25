@@ -47,7 +47,7 @@ namespace Gitic
             "low_familiarity_concentration"
         };
 
-        public static void ValidateAttentionWeights(
+        public void ValidateAttentionWeights(
             AttentionWeights attention,
             string source,
             List<string>? errors = null)
@@ -71,7 +71,7 @@ namespace Gitic
             }
         }
 
-        public static GitizerConfigOverrides NormalizeOverride(object? input, string source)
+        public GitizerConfigOverrides NormalizeOverride(object? input, string source)
         {
             var errors = new List<string>();
             if (!IsRecord(input, out var record))
@@ -118,21 +118,6 @@ namespace Gitic
             }
 
             return @override;
-        }
-
-        void IConfigValidator.ValidateAttentionWeights(AttentionWeights attention, string source, List<string>? errors)
-        {
-            ConfigValidator.ValidateAttentionWeights(attention, source, errors);
-        }
-
-        GitizerConfigOverrides IConfigValidator.NormalizeOverride(object? input, string source)
-        {
-            return ConfigValidator.NormalizeOverride(input, source);
-        }
-
-        public void ValidateAttentionWeightsInstance(AttentionWeights attention, string source, List<string>? errors = null)
-        {
-            ValidateAttentionWeights(attention, source, errors);
         }
 
         private static bool RequireRecord(
@@ -530,7 +515,7 @@ namespace Gitic
             return result;
         }
 
-        private static ScoringConfigOverrides NormalizeScoring(
+        private ScoringConfigOverrides NormalizeScoring(
             object? value,
             string source,
             List<string> errors)
