@@ -20,7 +20,13 @@ namespace Gitic
         };
     }
 
-    public class ConfigValidator
+    public interface IConfigValidator
+    {
+        void ValidateAttentionWeights(AttentionWeights attention, string source, List<string>? errors = null);
+        GitizerConfigOverrides NormalizeOverride(object? input, string source);
+    }
+
+    public class ConfigValidator : IConfigValidator
     {
         public static readonly List<string> TopLevelKeys = new()
         {
@@ -112,6 +118,16 @@ namespace Gitic
             }
 
             return @override;
+        }
+
+        void IConfigValidator.ValidateAttentionWeights(AttentionWeights attention, string source, List<string>? errors)
+        {
+            ConfigValidator.ValidateAttentionWeights(attention, source, errors);
+        }
+
+        GitizerConfigOverrides IConfigValidator.NormalizeOverride(object? input, string source)
+        {
+            return ConfigValidator.NormalizeOverride(input, source);
         }
 
         public void ValidateAttentionWeightsInstance(AttentionWeights attention, string source, List<string>? errors = null)

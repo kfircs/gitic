@@ -145,6 +145,41 @@ namespace Gitic.Tests
             Assert.True(mockIdentityRegistry.ResolveCalled);
         }
 
+        public class MockConfigValidator : IConfigValidator
+        {
+            public bool ValidateCalled { get; set; }
+            public bool NormalizeCalled { get; set; }
+
+            public void ValidateAttentionWeights(AttentionWeights attention, string source, List<string>? errors = null)
+            {
+                ValidateCalled = true;
+            }
+
+            public GitizerConfigOverrides NormalizeOverride(object? input, string source)
+            {
+                NormalizeCalled = true;
+                return new GitizerConfigOverrides();
+            }
+        }
+
+        [Fact]
+        public void TestConfigValidator_Decoupled()
+        {
+            IConfigValidator validator = new ConfigValidator();
+            var weights = new AttentionWeights
+            {
+                Churn = 0.35,
+                Recency = 0.30,
+                ContributorSpread = 0.20,
+                LowFamiliarityConcentration = 0.15
+            };
+            validator.ValidateAttentionWeights(weights, "test"); // should not throw
+            
+            var mock = new MockConfigValidator();
+            mock.ValidateAttentionWeights(weights, "test");
+            Assert.True(mock.ValidateCalled);
+        }
+
         [Fact]
         public void TestGitGraph()
         {

@@ -185,6 +185,8 @@ namespace Gitic
 
     public static class ConfigLoader
     {
+        private static readonly IConfigValidator _validator = new ConfigValidator();
+
         public static string RenderStarterConfig()
         {
             var attention = GitizerConfig.Default.Scoring.Attention;
@@ -233,7 +235,7 @@ namespace Gitic
                 repoOverride
             );
 
-            ConfigValidator.ValidateAttentionWeights(merged.Scoring.Attention, "effective config");
+            _validator.ValidateAttentionWeights(merged.Scoring.Attention, "effective config");
 
             return new LoadedGitizerConfig
             {
@@ -251,7 +253,7 @@ namespace Gitic
             GitizerConfigOverrides overrides)
         {
             var merged = MergeConfig(baseConfig, overrides);
-            ConfigValidator.ValidateAttentionWeights(merged.Scoring.Attention, "effective config");
+            _validator.ValidateAttentionWeights(merged.Scoring.Attention, "effective config");
             return merged;
         }
 
@@ -366,7 +368,7 @@ namespace Gitic
         private static GitizerConfigOverrides ParseAndValidateOverride(string content, string source)
         {
             var parsed = YamlSubsetParserHelper.ParseYamlSubset(content, source);
-            return ConfigValidator.NormalizeOverride(parsed, source);
+            return _validator.NormalizeOverride(parsed, source);
         }
     }
 }
