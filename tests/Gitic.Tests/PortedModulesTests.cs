@@ -1512,7 +1512,7 @@ __GITIZER_NUMSTAT__
             public void TestCustomCommitClassifierStrategies()
             {
                 // Test 1: Verify ClassificationRule with custom patterns
-                var customBugfixRule = new CommitClassifier.ClassificationRule(
+                var customBugfixRule = new ClassificationRule(
                     "bugfix",
                     @"(?:defect|patch|hotfix)",
                     @"^hotfix(?:\(.+\))?:"
@@ -1527,7 +1527,7 @@ __GITIZER_NUMSTAT__
                 Assert.False(customBugfixRule.Matches("fix: resolve crash")); // default bugfix prefix has "fix", custom does not
 
                 // Test 2: Verify ClassificationRule with custom patterns
-                var customFeatureRule = new CommitClassifier.ClassificationRule(
+                var customFeatureRule = new ClassificationRule(
                     "feature",
                     @"(?:new-feature|impl|create)",
                     @"^new(?:\(.+\))?:"
@@ -1541,7 +1541,7 @@ __GITIZER_NUMSTAT__
                 Assert.False(customFeatureRule.Matches("feat: refactor login")); // default feature prefix has "feat", custom does not
 
                 // Test 3: Verify they work via CommitClassifier when injected
-                var customRules = new List<CommitClassifier.ClassificationRule> { customBugfixRule, customFeatureRule };
+                var customRules = new List<ClassificationRule> { customBugfixRule, customFeatureRule };
                 ICommitClassifier classifier = new CommitClassifier(customRules);
 
                 Assert.Equal("bugfix", classifier.Classify("defect: fixed issue in login"));

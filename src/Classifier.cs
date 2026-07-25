@@ -9,35 +9,35 @@ namespace Gitic
         string Classify(string message);
     }
 
-    public class CommitClassifier : ICommitClassifier
+    public class ClassificationRule
     {
-        public class ClassificationRule
+        public string Category { get; }
+        public Regex MainRegex { get; }
+        public Regex PrefixRegex { get; }
+
+        public ClassificationRule(string category, string mainPattern, string prefixPattern)
         {
-            public string Category { get; }
-            public Regex MainRegex { get; }
-            public Regex PrefixRegex { get; }
-
-            public ClassificationRule(string category, string mainPattern, string prefixPattern)
-            {
-                Category = category ?? throw new ArgumentNullException(nameof(category));
-                MainRegex = new Regex(mainPattern ?? throw new ArgumentNullException(nameof(mainPattern)), RegexOptions.IgnoreCase | RegexOptions.Compiled);
-                PrefixRegex = new Regex(prefixPattern ?? throw new ArgumentNullException(nameof(prefixPattern)), RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            }
-
-            public ClassificationRule(string category, Regex mainRegex, Regex prefixRegex)
-            {
-                Category = category ?? throw new ArgumentNullException(nameof(category));
-                MainRegex = mainRegex ?? throw new ArgumentNullException(nameof(mainRegex));
-                PrefixRegex = prefixRegex ?? throw new ArgumentNullException(nameof(prefixRegex));
-            }
-
-            public bool Matches(string message)
-            {
-                if (message == null) return false;
-                return MainRegex.IsMatch(message) || PrefixRegex.IsMatch(message);
-            }
+            Category = category ?? throw new ArgumentNullException(nameof(category));
+            MainRegex = new Regex(mainPattern ?? throw new ArgumentNullException(nameof(mainPattern)), RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            PrefixRegex = new Regex(prefixPattern ?? throw new ArgumentNullException(nameof(prefixPattern)), RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
 
+        public ClassificationRule(string category, Regex mainRegex, Regex prefixRegex)
+        {
+            Category = category ?? throw new ArgumentNullException(nameof(category));
+            MainRegex = mainRegex ?? throw new ArgumentNullException(nameof(mainRegex));
+            PrefixRegex = prefixRegex ?? throw new ArgumentNullException(nameof(prefixRegex));
+        }
+
+        public bool Matches(string message)
+        {
+            if (message == null) return false;
+            return MainRegex.IsMatch(message) || PrefixRegex.IsMatch(message);
+        }
+    }
+
+    public class CommitClassifier : ICommitClassifier
+    {
         private static readonly List<ClassificationRule> DefaultRules = new List<ClassificationRule>
         {
             new ClassificationRule(
