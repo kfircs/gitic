@@ -11,6 +11,11 @@ namespace Gitic
 
     public class ResultAnonymizer : IResultAnonymizer
     {
+        private const string ContributorNamePrefix = "Contributor";
+        private const string ContributorEmailPrefix = "contributor";
+        private const string AutomationNamePrefix = "Automation";
+        private const string AutomationEmailPrefix = "automation";
+
         private readonly Dictionary<string, GitIdentity> _humanIdentities = new();
         private readonly Dictionary<string, GitIdentity> _automationIdentities = new();
 
@@ -37,12 +42,12 @@ namespace Gitic
 
         private GitIdentity AnonymizeHuman(string name, string email)
         {
-            return GetOrAnonymize(name, email, _humanIdentities, "Contributor", "contributor");
+            return GetOrAnonymize(name, email, _humanIdentities, ContributorNamePrefix, ContributorEmailPrefix);
         }
 
         private GitIdentity AnonymizeAutomation(string name, string email)
         {
-            return GetOrAnonymize(name, email, _automationIdentities, "Automation", "automation");
+            return GetOrAnonymize(name, email, _automationIdentities, AutomationNamePrefix, AutomationEmailPrefix);
         }
 
         private ContributorShare AnonymizeHumanContributorShare(ContributorShare contributor)
