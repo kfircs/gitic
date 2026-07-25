@@ -486,5 +486,29 @@ bin/
                 }
             }
         }
+
+        [Fact]
+        public void TestParseGitignoreLines()
+        {
+            var lines = new[]
+            {
+                "# Comment line",
+                "",
+                "*.class",
+                "bin/",
+                "/obj/",
+                "custom-pattern"
+            };
+
+            var rules = PathClassifier.ParseGitignoreLines(lines, "custom-category");
+
+            Assert.Contains(rules, r => r.Pattern == "**/*.class" && r.Category == "custom-category");
+            Assert.Contains(rules, r => r.Pattern == "*.class" && r.Category == "custom-category");
+            Assert.Contains(rules, r => r.Pattern == "**/bin/**" && r.Category == "custom-category");
+            Assert.Contains(rules, r => r.Pattern == "bin/**" && r.Category == "custom-category");
+            Assert.Contains(rules, r => r.Pattern == "obj/**" && r.Category == "custom-category");
+            Assert.Contains(rules, r => r.Pattern == "**/custom-pattern" && r.Category == "custom-category");
+            Assert.Contains(rules, r => r.Pattern == "custom-pattern" && r.Category == "custom-category");
+        }
     }
 }

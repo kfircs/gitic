@@ -86,55 +86,59 @@ namespace Gitic
 
     public class PathClassifier : IPathClassifier
     {
-        public static List<ExcludeRule> LoadGitignoreRules(string repoRoot)
+        public static List<ExcludeRule> ParseGitignoreLines(IEnumerable<string> lines, string category = "gitignore")
         {
             var rules = new List<ExcludeRule>();
-            string gitignorePath = Path.Combine(repoRoot, ".gitignore");
-            if (!File.Exists(gitignorePath))
+            foreach (var line in lines)
             {
-                return rules;
-            }
+                string trimmed = line.Trim();
+                if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#"))
+                {
+                    continue;
+                }
 
+                string pattern = trimmed;
+                if (pattern.EndsWith("/"))
+                {
+                    pattern += "**";
+                }
+
+                if (pattern.StartsWith("/"))
+                {
+                    pattern = pattern.Substring(1);
+                }
+                else if (!pattern.StartsWith("**/"))
+                {
+                    pattern = "**/" + pattern;
+                }
+
+                rules.Add(new ExcludeRule { Pattern = pattern, Category = category });
+
+                if (pattern.StartsWith("**/"))
+                {
+                    rules.Add(new ExcludeRule { Pattern = pattern.Substring(3), Category = category });
+                }
+            }
+            return rules;
+        }
+
+        public static List<ExcludeRule> LoadGitignoreRules(string repoRoot)
+        {
             try
             {
-                var lines = File.ReadAllLines(gitignorePath);
-                foreach (var line in lines)
+                string gitignorePath = Path.Combine(repoRoot, ".gitignore");
+                if (!File.Exists(gitignorePath))
                 {
-                    string trimmed = line.Trim();
-                    if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#"))
-                    {
-                        continue;
-                    }
-
-                    string pattern = trimmed;
-                    if (pattern.EndsWith("/"))
-                    {
-                        pattern += "**";
-                    }
-
-                    if (pattern.StartsWith("/"))
-                    {
-                        pattern = pattern.Substring(1);
-                    }
-                    else if (!pattern.StartsWith("**/"))
-                    {
-                        pattern = "**/" + pattern;
-                    }
-
-                    rules.Add(new ExcludeRule { Pattern = pattern, Category = "gitignore" });
-
-                    if (pattern.StartsWith("**/"))
-                    {
-                        rules.Add(new ExcludeRule { Pattern = pattern.Substring(3), Category = "gitignore" });
-                    }
+                    return new List<ExcludeRule>();
                 }
+
+                var lines = File.ReadAllLines(gitignorePath);
+                return ParseGitignoreLines(lines);
             }
             catch
             {
-                // Ignore gracefully
+                return new List<ExcludeRule>();
             }
-
-            return rules;
         }
 
         private readonly HashSet<string> _headFiles;
