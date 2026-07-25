@@ -164,6 +164,26 @@ excludes:
         }
 
         [Fact]
+        public void TestCommandLineValidator_IsCommand()
+        {
+            var validator = new CommandLineValidator();
+            
+            // Valid commands (case-insensitive)
+            validator.ValidateCommand("hotspots");
+            validator.ValidateCommand("Hotspots");
+            validator.ValidateCommand("areas");
+            validator.ValidateCommand("contributors");
+            validator.ValidateCommand("contributor");
+            validator.ValidateCommand("report");
+            validator.ValidateCommand("config");
+
+            // Invalid commands
+            Assert.Throws<CommandLineParseError>(() => validator.ValidateCommand("unknown_command"));
+            Assert.Throws<CommandLineParseError>(() => validator.ValidateCommand(""));
+            Assert.Throws<CommandLineParseError>(() => validator.ValidateCommand(null));
+        }
+
+        [Fact]
         public void TestConfigValidator_ValidateAttentionWeightsSum()
         {
             var weights = new AttentionWeights

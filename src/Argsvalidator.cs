@@ -12,6 +12,16 @@ namespace Gitic
 
     public class CommandLineValidator
     {
+        private static readonly HashSet<string> ValidCommands = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "hotspots",
+            "areas",
+            "contributors",
+            "contributor",
+            "report",
+            "config"
+        };
+
         public void ValidateCommand(string? commandName)
         {
             if (string.IsNullOrEmpty(commandName))
@@ -61,12 +71,7 @@ namespace Gitic
 
         private bool IsCommand(string command)
         {
-            return command == "hotspots" ||
-                   command == "areas" ||
-                   command == "contributors" ||
-                   command == "contributor" ||
-                   command == "report" ||
-                   command == "config";
+            return ValidCommands.Contains(command);
         }
     }
 }
