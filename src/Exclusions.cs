@@ -7,7 +7,7 @@ namespace Gitic
 {
     public static class Exclusions
     {
-        private static readonly HashSet<string> LockFiles = new(StringComparer.OrdinalIgnoreCase)
+        public static readonly HashSet<string> LockFiles = new(StringComparer.OrdinalIgnoreCase)
         {
             "package-lock.json",
             "npm-shrinkwrap.json",
@@ -18,7 +18,7 @@ namespace Gitic
             "composer.lock"
         };
 
-        private static readonly HashSet<string> BinaryImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        public static readonly HashSet<string> BinaryImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             "jpeg",
             "jpg",
@@ -29,7 +29,7 @@ namespace Gitic
             "bmp"
         };
 
-        private static readonly Dictionary<string, string> DirectoryExcludes = new(StringComparer.OrdinalIgnoreCase)
+        public static readonly Dictionary<string, string> DirectoryExcludes = new(StringComparer.OrdinalIgnoreCase)
         {
             { ".git", ".git/**" },
             { "node_modules", "node_modules/**" },
@@ -203,42 +203,13 @@ namespace Gitic
             return null;
         }
 
-        private static readonly HashSet<string> LockFiles = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "package-lock.json",
-            "npm-shrinkwrap.json",
-            "pnpm-lock.yaml",
-            "yarn.lock",
-            "Cargo.lock",
-            "Gemfile.lock",
-            "composer.lock"
-        };
-
-        private static readonly HashSet<string> BinaryImageExtensions = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "jpeg", "jpg", "png", "gif", "webp", "ico", "bmp"
-        };
-
-        private static readonly Dictionary<string, string> DirectoryExcludes = new(StringComparer.OrdinalIgnoreCase)
-        {
-            { ".git", ".git/**" },
-            { "node_modules", "node_modules/**" },
-            { "vendor", "vendor/**" },
-            { "dist", "dist/**" },
-            { "build", "build/**" },
-            { "coverage", "coverage/**" },
-            { ".next", ".next/**" },
-            { "out", "out/**" },
-            { "target", "target/**" }
-        };
-
         private ExclusionCategory? ClassifyDefaultExclusion(string path)
         {
             var segments = path.Split('/');
             for (int i = 0; i < segments.Length - 1; i++)
             {
                 var segment = segments[i];
-                if (DirectoryExcludes.TryGetValue(segment, out var pattern))
+                if (Exclusions.DirectoryExcludes.TryGetValue(segment, out var pattern))
                 {
                     return new ExclusionCategory { Category = "generated_or_vendor", Pattern = pattern };
                 }
@@ -284,7 +255,7 @@ namespace Gitic
                 return false;
             }
             string ext = fileName.Substring(idx + 1).ToLower();
-            return BinaryImageExtensions.Contains(ext);
+            return Exclusions.BinaryImageExtensions.Contains(ext);
         }
 
         private ExclusionCategory? ClassifyConfiguredExclusion(string path)
@@ -305,7 +276,7 @@ namespace Gitic
 
         private bool IsLockfile(string fileName)
         {
-            return fileName.EndsWith(".lock", StringComparison.OrdinalIgnoreCase) || LockFiles.Contains(fileName);
+            return fileName.EndsWith(".lock", StringComparison.OrdinalIgnoreCase) || Exclusions.LockFiles.Contains(fileName);
         }
 
         private void AddExclusion(string category, string pattern)
