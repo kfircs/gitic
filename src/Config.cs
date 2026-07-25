@@ -49,16 +49,16 @@ namespace Gitic
     public class AttentionWeights
     {
         [JsonPropertyName("churn")]
-        public double Churn { get; set; } = 0.35;
+        public double Churn { get; set; } = DefaultAttentionWeights.Churn;
 
         [JsonPropertyName("recency")]
-        public double Recency { get; set; } = 0.30;
+        public double Recency { get; set; } = DefaultAttentionWeights.Recency;
 
         [JsonPropertyName("contributor_spread")]
-        public double ContributorSpread { get; set; } = 0.20;
+        public double ContributorSpread { get; set; } = DefaultAttentionWeights.ContributorSpread;
 
         [JsonPropertyName("low_familiarity_concentration")]
-        public double LowFamiliarityConcentration { get; set; } = 0.15;
+        public double LowFamiliarityConcentration { get; set; } = DefaultAttentionWeights.LowFamiliarityConcentration;
     }
 
     public class IdentityConfig
@@ -112,10 +112,10 @@ namespace Gitic
             {
                 Attention = new()
                 {
-                    Churn = 0.35,
-                    Recency = 0.30,
-                    ContributorSpread = 0.20,
-                    LowFamiliarityConcentration = 0.15
+                    Churn = DefaultAttentionWeights.Churn,
+                    Recency = DefaultAttentionWeights.Recency,
+                    ContributorSpread = DefaultAttentionWeights.ContributorSpread,
+                    LowFamiliarityConcentration = DefaultAttentionWeights.LowFamiliarityConcentration
                 }
             },
             Identity = new()
