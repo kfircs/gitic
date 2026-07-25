@@ -3,9 +3,23 @@ using System.Collections.Generic;
 
 namespace Gitic
 {
-    public static class GitGraph
+    public interface IGitGraph
     {
-        public static HashSet<string> GetAncestors(
+        HashSet<string> GetAncestors(
+            string startCommitHash,
+            Dictionary<string, GitCommitRecord> commitMap,
+            int maxCount);
+
+        List<GitCommitRecord> GetBranchCommits(
+            string startCommitHash,
+            HashSet<string> mainAncestors,
+            Dictionary<string, GitCommitRecord> commitMap,
+            int maxCount);
+    }
+
+    public class GitGraphCalculator : IGitGraph
+    {
+        public HashSet<string> GetAncestors(
             string startCommitHash,
             Dictionary<string, GitCommitRecord> commitMap,
             int maxCount)
@@ -33,7 +47,7 @@ namespace Gitic
             return ancestors;
         }
 
-        public static List<GitCommitRecord> GetBranchCommits(
+        public List<GitCommitRecord> GetBranchCommits(
             string startCommitHash,
             HashSet<string> mainAncestors,
             Dictionary<string, GitCommitRecord> commitMap,

@@ -258,13 +258,14 @@ namespace Gitic.Tests
                 { "C4", commit4 }
             };
 
-            var ancestors = GitGraph.GetAncestors("C4", commitMap, 10);
+            IGitGraph gitGraph = new GitGraphCalculator();
+            var ancestors = gitGraph.GetAncestors("C4", commitMap, 10);
             Assert.Contains("C4", ancestors);
             Assert.Contains("C2", ancestors);
             Assert.Contains("C3", ancestors);
             Assert.Contains("C1", ancestors);
 
-            var branchCommits = GitGraph.GetBranchCommits("C3", new HashSet<string> { "C2", "C1" }, commitMap, 10);
+            var branchCommits = gitGraph.GetBranchCommits("C3", new HashSet<string> { "C2", "C1" }, commitMap, 10);
             Assert.Single(branchCommits);
             Assert.Equal("C3", branchCommits[0].Hash);
         }

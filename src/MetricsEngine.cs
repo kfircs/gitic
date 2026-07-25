@@ -131,6 +131,13 @@ namespace Gitic
         private const int LeadTimeBranchCommitsMaxDepth = 100;
         private const double LeadTimeMinHours = 0.1;
 
+        private readonly IGitGraph _gitGraph;
+
+        public LeadTimeEngine(IGitGraph? gitGraph = null)
+        {
+            _gitGraph = gitGraph ?? new GitGraphCalculator();
+        }
+
         public LeadTimesInfo CalculateLeadTimes(List<GitCommitRecord> commits)
         {
             var commitMap = commits.ToDictionary(c => c.Hash, c => c);
@@ -143,8 +150,8 @@ namespace Gitic
                     string p1 = m.Parents[0];
                     string p2 = m.Parents[1];
 
-                    var mainAncestors = GitGraph.GetAncestors(p1, commitMap, LeadTimeMainAncestorsMaxDepth);
-                    var branchCommits = GitGraph.GetBranchCommits(p2, mainAncestors, commitMap, LeadTimeBranchCommitsMaxDepth);
+                    var mainAncestors = _gitGraph.GetAncestors(p1, commitMap, LeadTimeMainAncestorsMaxDepth);
+                    var branchCommits = _gitGraph.GetBranchCommits(p2, mainAncestors, commitMap, LeadTimeBranchCommitsMaxDepth);
 
                     if (branchCommits.Count > 0)
                     {
