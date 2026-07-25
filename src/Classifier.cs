@@ -10,7 +10,12 @@ namespace Gitic
         bool Matches(string message);
     }
 
-    public class CommitClassifier
+    public interface ICommitClassifier
+    {
+        string Classify(string message);
+    }
+
+    public class CommitClassifier : ICommitClassifier
     {
         private readonly List<IClassifierStrategy> _strategies;
 
@@ -40,17 +45,23 @@ namespace Gitic
     {
         public string Category => "bugfix";
 
-        private static readonly Regex BugFixPattern = new(
-            @"(?:bug|fix|revert|issue|crash|error|prevent|problem|fail|correct|leak)",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private readonly Regex _bugFixPattern;
+        private readonly Regex _bugFixPrefixPattern;
 
-        private static readonly Regex BugFixPrefixPattern = new(
-            @"^(?:fix|revert)(?:\(.+\))?:",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        public BugfixStrategy(string? bugFixPattern = null, string? bugFixPrefixPattern = null)
+        {
+            _bugFixPattern = new Regex(
+                bugFixPattern ?? @"(?:bug|fix|revert|issue|crash|error|prevent|problem|fail|correct|leak)",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+            _bugFixPrefixPattern = new Regex(
+                bugFixPrefixPattern ?? @"^(?:fix|revert)(?:\(.+\))?:",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        }
 
         public bool Matches(string message)
         {
-            return BugFixPattern.IsMatch(message) || BugFixPrefixPattern.IsMatch(message);
+            return _bugFixPattern.IsMatch(message) || _bugFixPrefixPattern.IsMatch(message);
         }
     }
 
@@ -58,17 +69,23 @@ namespace Gitic
     {
         public string Category => "feature";
 
-        private static readonly Regex FeaturePattern = new(
-            @"(?:feat|feature|add|implement|introduce)",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private readonly Regex _featurePattern;
+        private readonly Regex _featurePrefixPattern;
 
-        private static readonly Regex FeaturePrefixPattern = new(
-            @"^feat(?:\(.+\))?:",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        public FeatureStrategy(string? featurePattern = null, string? featurePrefixPattern = null)
+        {
+            _featurePattern = new Regex(
+                featurePattern ?? @"(?:feat|feature|add|implement|introduce)",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+            _featurePrefixPattern = new Regex(
+                featurePrefixPattern ?? @"^feat(?:\(.+\))?:",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        }
 
         public bool Matches(string message)
         {
-            return FeaturePattern.IsMatch(message) || FeaturePrefixPattern.IsMatch(message);
+            return _featurePattern.IsMatch(message) || _featurePrefixPattern.IsMatch(message);
         }
     }
 }
