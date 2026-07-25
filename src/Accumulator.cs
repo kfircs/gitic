@@ -14,7 +14,7 @@ namespace Gitic
         private readonly Dictionary<string, ContributorAccumulator> _automation = new();
         private readonly HashSet<string> _warnings = new();
         private int _includedFileChangeCount = 0;
-        private readonly IdentityRegistry _identityRegistry;
+        private readonly IIdentityRegistry _identityRegistry;
 
         private readonly GitizerConfig _config;
         private readonly AnalysisSettings _settings;
@@ -22,18 +22,13 @@ namespace Gitic
         public ChangeAccumulator(
             GitizerConfig config,
             AnalysisSettings settings,
-            IPathClassifier filter)
+            IPathClassifier filter,
+            IIdentityRegistry identityRegistry)
         {
             _config = config;
             _settings = settings;
             _filter = filter;
-
-            bool mergeByEmail = (_config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
-            _identityRegistry = new IdentityRegistry(
-                config.Aliases,
-                config.Bots,
-                mergeByEmail
-            );
+            _identityRegistry = identityRegistry;
         }
 
         public void PrepareIdentityMerging(List<GitCommitRecord> commits)

@@ -104,7 +104,15 @@ namespace Gitic
         }
     }
 
-    public class IdentityRegistry
+    public interface IIdentityRegistry
+    {
+        void RegisterRealIdentity(GitIdentity identity);
+        GitIdentity Resolve(GitIdentity identity);
+        List<EmailCollision> GetEmailCollisions();
+        bool IsBot(GitIdentity identity);
+    }
+
+    public class IdentityRegistry : IIdentityRegistry
     {
         private readonly List<AliasRule> _aliases;
         private readonly List<BotRule> _bots;

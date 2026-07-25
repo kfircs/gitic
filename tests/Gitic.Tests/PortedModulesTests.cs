@@ -79,11 +79,70 @@ namespace Gitic.Tests
             var config = GitizerConfig.Default;
             var settings = new AnalysisSettings();
             var mockFilter = new MockPathClassifier();
-            var accumulator = new ChangeAccumulator(config, settings, mockFilter);
+            var identityRegistry = new IdentityRegistry();
+            var accumulator = new ChangeAccumulator(config, settings, mockFilter, identityRegistry);
 
             var list = accumulator.GetExclusions();
             Assert.Single(list);
             Assert.Equal("test", list[0].Category);
+        }
+
+        public class MockIdentityRegistry : IIdentityRegistry
+        {
+            public bool IsBotCalled { get; set; }
+            public bool ResolveCalled { get; set; }
+            public bool RegisterRealIdentityCalled { get; set; }
+            public bool GetEmailCollisionsCalled { get; set; }
+
+            public void RegisterRealIdentity(GitIdentity identity)
+            {
+                RegisterRealIdentityCalled = true;
+            }
+
+            public GitIdentity Resolve(GitIdentity identity)
+            {
+                ResolveCalled = true;
+                return identity;
+            }
+
+            public List<EmailCollision> GetEmailCollisions()
+            {
+                GetEmailCollisionsCalled = true;
+                return new List<EmailCollision>();
+            }
+
+            public bool IsBot(GitIdentity identity)
+            {
+                IsBotCalled = true;
+                return false;
+            }
+        }
+
+        [Fact]
+        public void TestChangeAccumulator_WithDecoupledIdentityRegistry()
+        {
+            var config = GitizerConfig.Default;
+            var settings = new AnalysisSettings();
+            var mockFilter = new MockPathClassifier();
+            var mockIdentityRegistry = new MockIdentityRegistry();
+            var accumulator = new ChangeAccumulator(config, settings, mockFilter, mockIdentityRegistry);
+
+            var commit = new GitCommitRecord
+            {
+                Author = new GitIdentity { Name = "John Doe", Email = "john@example.com" },
+                CoAuthors = new List<GitIdentity> { new GitIdentity { Name = "Co Author", Email = "co@example.com" } },
+                Files = new List<GitFileChange> { new GitFileChange { Path = "src/main.cs", Added = 10, Deleted = 5 } }
+            };
+            accumulator.PrepareIdentityMerging(new List<GitCommitRecord> { commit });
+            Assert.True(mockIdentityRegistry.RegisterRealIdentityCalled);
+
+            accumulator.GetEmailCollisions();
+            Assert.True(mockIdentityRegistry.GetEmailCollisionsCalled);
+
+            var filesInCommit = new List<string>();
+            accumulator.AddCommit(commit, filesInCommit);
+            Assert.True(mockIdentityRegistry.IsBotCalled);
+            Assert.True(mockIdentityRegistry.ResolveCalled);
         }
 
         [Fact]

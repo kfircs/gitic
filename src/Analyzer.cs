@@ -58,7 +58,9 @@ namespace Gitic
             config.Excludes.AddRange(gitignoreRules);
 
             var pathClassifier = new PathClassifier(headFiles, config.Excludes, settings.IncludeDeleted, settings.Path);
-            var accumulator = new ChangeAccumulator(config, settings, pathClassifier);
+            bool mergeByEmail = (config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
+            var identityRegistry = new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
+            var accumulator = new ChangeAccumulator(config, settings, pathClassifier, identityRegistry);
             accumulator.PrepareIdentityMerging(commits);
 
             int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
