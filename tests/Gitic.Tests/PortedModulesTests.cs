@@ -211,65 +211,6 @@ namespace Gitic.Tests
             Assert.Contains("mock_warning", mockWarnings);
         }
 
-        public class MockMetricProcessor : IMetricProcessor
-        {
-            public bool GetActiveContributorKeysCalled { get; set; }
-            public bool RenderContributorsCalled { get; set; }
-            public bool RenderAutomationCalled { get; set; }
-            public bool SortAreasCalled { get; set; }
-            public bool SortFilesCalled { get; set; }
-            public bool SortContributorsCalled { get; set; }
-
-            public HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits)
-            {
-                GetActiveContributorKeysCalled = true;
-                return new HashSet<string>();
-            }
-
-            public List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items)
-            {
-                RenderContributorsCalled = true;
-                return new List<ContributorMetric>();
-            }
-
-            public List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items)
-            {
-                RenderAutomationCalled = true;
-                return new List<AutomationMetric>();
-            }
-
-            public List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command)
-            {
-                SortAreasCalled = true;
-                return areas;
-            }
-
-            public List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command)
-            {
-                SortFilesCalled = true;
-                return files;
-            }
-
-            public List<ContributorMetric> SortContributorsForCommand(List<ContributorMetric> contributors, AnalysisCommand command)
-            {
-                SortContributorsCalled = true;
-                return contributors;
-            }
-        }
-
-        [Fact]
-        public void TestMetricProcessor_Decoupled()
-        {
-            IMetricProcessor processor = new MetricProcessorImpl();
-            var commits = new List<GitCommitRecord>();
-            var keys = processor.GetActiveContributorKeys(commits);
-            Assert.Empty(keys);
-
-            var mock = new MockMetricProcessor();
-            mock.GetActiveContributorKeys(commits);
-            Assert.True(mock.GetActiveContributorKeysCalled);
-        }
-
         [Fact]
         public void TestGitGraph()
         {
@@ -1121,10 +1062,8 @@ __GITIZER_NUMSTAT__
             }
 
             [Fact]
-            public async Task TestIRepositoryAnalyzer_DecouplingAndImpl()
+            public async Task TestRepositoryAnalyzer()
             {
-                IRepositoryAnalyzer analyzer = new RepositoryAnalyzerImpl();
-
                 var fakeProvider = new FakeFileStatsProvider();
                 fakeProvider.DummyResults["src/main.cs"] = new FileStatResult { Size = 1234, Width = 88, Lines = 99 };
 
@@ -1137,44 +1076,10 @@ __GITIZER_NUMSTAT__
                     GitClient = new FakeGitClient()
                 };
 
-                var result = await analyzer.AnalyzeRepositoryAsync(input);
+                var result = await RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
 
                 Assert.NotNull(result);
                 Assert.Equal("/fake/root", result.Analysis.RepoRoot);
-            }
-
-            private class MockRepositoryAnalyzer : IRepositoryAnalyzer
-            {
-                public bool AnalyzeRepositoryAsyncCalled { get; private set; }
-                public AnalyzeInput? LastInput { get; private set; }
-
-                public Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
-                {
-                    AnalyzeRepositoryAsyncCalled = true;
-                    LastInput = input;
-                    return Task.FromResult(new AnalysisResult
-                    {
-                        SchemaVersion = "mock-1.0",
-                        Analysis = new AnalysisMetadata
-                        {
-                            RepoRoot = input.RepoRoot
-                        }
-                    });
-                }
-            }
-
-            [Fact]
-            public async Task TestIRepositoryAnalyzer_WithMockAnalyzer()
-            {
-                var mockAnalyzer = new MockRepositoryAnalyzer();
-                var input = new AnalyzeInput { RepoRoot = "/mock/root" };
-
-                var result = await mockAnalyzer.AnalyzeRepositoryAsync(input);
-
-                Assert.True(mockAnalyzer.AnalyzeRepositoryAsyncCalled);
-                Assert.NotNull(mockAnalyzer.LastInput);
-                Assert.Equal("/mock/root", mockAnalyzer.LastInput.RepoRoot);
-                Assert.Equal("mock-1.0", result.SchemaVersion);
             }
 
             [Fact]
@@ -1360,23 +1265,5 @@ __GITIZER_NUMSTAT__
                 Assert.Empty(areas);
             }
 
-            [Fact]
-            public void TestIMetricsEngineCoordinator_InterfaceAndImplementation()
-            {
-                IMetricsEngineCoordinator coordinator = new MetricsEngineCoordinator(maxCommitFileCount: 10);
-                
-                var temporalEngine = coordinator.GetTemporalCouplingEngine();
-                var leadTimeEngine = coordinator.GetLeadTimeEngine();
-                Assert.NotNull(temporalEngine);
-                Assert.NotNull(leadTimeEngine);
-
-                var files = new List<string> { "file1.cs", "file2.cs" };
-                coordinator.TrackCommit(files);
-
-                var commits = new List<GitCommitRecord>();
-                var (topCouplings, leadTimes) = coordinator.Calculate(commits);
-                Assert.NotNull(topCouplings);
-                Assert.NotNull(leadTimes);
-            }
         }
     }

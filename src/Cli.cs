@@ -88,8 +88,7 @@ namespace Gitic
                     ContributorName = parsed.ContributorName
                 };
 
-                IRepositoryAnalyzer analyzer = new RepositoryAnalyzerImpl();
-                AnalysisResult result = await analyzer.AnalyzeRepositoryAsync(input);
+                AnalysisResult result = await RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
 
                 if (parsed.Command == "contributor")
                 {

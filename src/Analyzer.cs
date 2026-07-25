@@ -37,7 +37,6 @@ namespace Gitic
 
         public static async Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
         {
-            IMetricProcessor metricProcessor = new MetricProcessorImpl();
             var settings = NormalizeSettings(input.Settings);
             var config = input.Config ?? GitizerConfig.Default;
             var gitClient = input.GitClient ?? new GitClient(input.RepoRoot);
@@ -55,34 +54,14 @@ namespace Gitic
             var commits = await commitsTask;
             var headFiles = await headFilesTask;
 
-            var gitignoreRules = PathClassifier.LoadGitignoreRules(input.RepoRoot);
-            config.Excludes.AddRange(gitignoreRules);
+            var pipeline = new AnalysisPipeline();
+            var pipelineResult = pipeline.Run(commits, headFiles, config, settings, input.Command, input.RepoRoot);
 
-            var pathClassifier = new PathClassifier(headFiles, config.Excludes, settings.IncludeDeleted, settings.Path);
-            bool mergeByEmail = (config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
-            var identityRegistry = new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
-            var accumulator = new ChangeAccumulator(config, settings, pathClassifier, identityRegistry);
-            accumulator.PrepareIdentityMerging(commits);
-
-            int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
-            IMetricsEngineCoordinator metricsEngine = new MetricsEngineCoordinator(temporalCouplingLimit);
-
-            foreach (var commit in commits)
-            {
-                var includedFilesInCommit = new List<string>();
-                accumulator.AddCommit(commit, includedFilesInCommit);
-                metricsEngine.TrackCommit(includedFilesInCommit);
-            }
-
-            var activeContributorKeys = metricProcessor.GetActiveContributorKeys(commits);
-            IFamiliarityScoringEngine scoringEngine = new FamiliarityScoringEngine(config, activeContributorKeys, settings.Depth);
-
-            var rawFileMetrics = scoringEngine.ScoreFiles(accumulator.GetFiles().Values.ToList(), settings.Depth);
-            var filePaths = rawFileMetrics.Select(f => f.Path).ToList();
+            var filePaths = pipelineResult.Files.Select(f => f.Path).ToList();
 
             var provider = input.FileStatsProvider ?? new DiskFileStatsProvider();
             var fileStats = await provider.ComputeFileStatsAsync(input.RepoRoot, filePaths);
-            var fileMetrics = rawFileMetrics.Select(f =>
+            var fileMetrics = pipelineResult.Files.Select(f =>
             {
                 if (fileStats.TryGetValue(f.Path, out var stats))
                 {
@@ -99,15 +78,6 @@ namespace Gitic
                 return f;
             }).ToList();
 
-            var areaMetrics = scoringEngine.ScoreAreas(accumulator.GetAreas().Values.ToList());
-
-            var contributorMetrics = metricProcessor.RenderContributors(accumulator.GetContributors().Values.ToList());
-            var automationMetrics = metricProcessor.RenderAutomation(accumulator.GetAutomation().Values.ToList());
-
-            var (topCouplings, leadTimes) = metricsEngine.Calculate(commits);
-
-            IWarningCollector warningCollector = new WarningCollector();
-
             var result = new AnalysisResult
             {
                 SchemaVersion = "1.0",
@@ -118,16 +88,16 @@ namespace Gitic
                     Command = input.Command,
                     GeneratedAt = DateTime.UtcNow.ToString("o"),
                     CommitCount = commits.Count,
-                    IncludedFileChangeCount = accumulator.GetIncludedFileChangeCount()
+                    IncludedFileChangeCount = pipelineResult.IncludedFileChangeCount
                 },
                 Settings = settings,
-                Exclusions = accumulator.GetExclusions(),
-                Areas = metricProcessor.SortAreasForCommand(areaMetrics, input.Command),
-                Files = metricProcessor.SortFilesForCommand(fileMetrics, input.Command),
-                Contributors = metricProcessor.SortContributorsForCommand(contributorMetrics, input.Command),
-                Automation = automationMetrics,
-                TemporalCoupling = topCouplings,
-                LeadTimes = leadTimes,
+                Exclusions = pipelineResult.Exclusions,
+                Areas = MetricProcessors.SortAreasForCommand(pipelineResult.Areas, input.Command),
+                Files = MetricProcessors.SortFilesForCommand(fileMetrics, input.Command),
+                Contributors = MetricProcessors.SortContributorsForCommand(pipelineResult.Contributors, input.Command),
+                Automation = pipelineResult.Automation,
+                TemporalCoupling = pipelineResult.TemporalCouplings,
+                LeadTimes = pipelineResult.LeadTimes,
                 Configuration = new AnalysisConfiguration
                 {
                     Scoring = new ScoringConfiguration
@@ -149,35 +119,10 @@ namespace Gitic
                         MergeOnEmail = config.Identity.MergeOnEmail
                     }
                 },
-                Warnings = warningCollector.Collect(
-                    new WarningContext
-                    {
-                        EmailCollisions = accumulator.GetEmailCollisions(),
-                        AliasCount = config.Aliases.Count,
-                        ConfiguredBotCount = config.Bots.Count,
-                        AutomationMetrics = automationMetrics,
-                        LeadTimes = leadTimes,
-                        TemporalCouplingEngine = metricsEngine.GetTemporalCouplingEngine(),
-                        Files = fileMetrics
-                    },
-                    accumulator.GetWarnings().ToList()
-                )
+                Warnings = pipelineResult.Warnings
             };
 
             return result;
-        }
-    }
-
-    public interface IRepositoryAnalyzer
-    {
-        Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input);
-    }
-
-    public class RepositoryAnalyzerImpl : IRepositoryAnalyzer
-    {
-        public Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
-        {
-            return RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
         }
     }
 }

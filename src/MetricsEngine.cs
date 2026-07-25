@@ -4,14 +4,6 @@ using System.Linq;
 
 namespace Gitic
 {
-    public interface IMetricsEngineCoordinator
-    {
-        TemporalCouplingEngine GetTemporalCouplingEngine();
-        LeadTimeEngine GetLeadTimeEngine();
-        void TrackCommit(List<string> filesInCommit);
-        (List<TemporalCoupling> topCouplings, LeadTimesInfo leadTimes) Calculate(List<GitCommitRecord> commits);
-    }
-
     public class TemporalCouplingEngine
     {
         private const int TemporalCouplingMinSharedCommits = 3;
@@ -181,41 +173,6 @@ namespace Gitic
                 AverageLeadTimeHours = averageLeadTimeHours,
                 Merges = merges
             };
-        }
-    }
-
-    public class MetricsEngineCoordinator : IMetricsEngineCoordinator
-    {
-        private readonly TemporalCouplingEngine _temporalCouplingEngine;
-        private readonly LeadTimeEngine _leadTimeEngine;
-
-        public MetricsEngineCoordinator(int maxCommitFileCount = 20)
-        {
-            _temporalCouplingEngine = new TemporalCouplingEngine(maxCommitFileCount);
-            _leadTimeEngine = new LeadTimeEngine();
-        }
-
-        public TemporalCouplingEngine GetTemporalCouplingEngine()
-        {
-            return _temporalCouplingEngine;
-        }
-
-        public LeadTimeEngine GetLeadTimeEngine()
-        {
-            return _leadTimeEngine;
-        }
-
-        public void TrackCommit(List<string> filesInCommit)
-        {
-            _temporalCouplingEngine.TrackCommitFiles(filesInCommit);
-        }
-
-        public (List<TemporalCoupling> topCouplings, LeadTimesInfo leadTimes) Calculate(List<GitCommitRecord> commits)
-        {
-            return (
-                _temporalCouplingEngine.CalculateTemporalCoupling(),
-                _leadTimeEngine.CalculateLeadTimes(commits)
-            );
         }
     }
 }
