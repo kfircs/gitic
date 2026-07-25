@@ -30,7 +30,7 @@ namespace Gitic
 
         public string Render()
         {
-            Func<List<string>, string> formatRow = (cells) =>
+            string FormatRow(List<string> cells)
             {
                 var formattedCells = new List<string>();
                 for (int i = 0; i < cells.Count; i++)
@@ -61,10 +61,10 @@ namespace Gitic
                     }
                 }
                 return string.Join(" ", formattedCells);
-            };
+            }
 
-            var headerRow = formatRow(_columns.Select(c => c.Name).ToList());
-            var dataRows = _rows.Select(row => formatRow(row)).ToList();
+            var headerRow = FormatRow(_columns.Select(c => c.Name).ToList());
+            var dataRows = _rows.Select(row => FormatRow(row)).ToList();
 
             var allRows = new List<string> { headerRow };
             allRows.AddRange(dataRows);
