@@ -109,6 +109,11 @@ namespace Gitic
 
     public class GeneratedFileWarningRule : IWarningRule
     {
+        private const int SingleTouchCount = 1;
+        private const int HighChurnThreshold = 200;
+        private const int SingleContributorCount = 1;
+        private const double HighActivityShareThreshold = 0.99;
+
         public List<string> Collect(WarningContext context)
         {
             if (context.Files == null)
@@ -118,10 +123,10 @@ namespace Gitic
             int suspiciousCount = 0;
             foreach (var file in context.Files)
             {
-                if (file.Touches == 1 &&
-                    file.Churn > 200 &&
-                    file.Contributors.Count == 1 &&
-                    file.Contributors[0].ActivityShare >= 0.99)
+                if (file.Touches == SingleTouchCount &&
+                    file.Churn > HighChurnThreshold &&
+                    file.Contributors.Count == SingleContributorCount &&
+                    file.Contributors[0].ActivityShare >= HighActivityShareThreshold)
                 {
                     suspiciousCount++;
                 }
@@ -130,7 +135,7 @@ namespace Gitic
             {
                 return new List<string>
                 {
-                    $"{suspiciousCount} file(s) have single-touch high churn (>200 lines) with a single author. These may be generated files or scaffolding. Consider adding them to your .gitizer.yml excludes."
+                    $"{suspiciousCount} file(s) have single-touch high churn (>{HighChurnThreshold} lines) with a single author. These may be generated files or scaffolding. Consider adding them to your .gitizer.yml excludes."
                 };
             }
             return new List<string>();
