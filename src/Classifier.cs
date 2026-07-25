@@ -38,23 +38,25 @@ namespace Gitic
             }
         }
 
+        private static readonly List<ClassificationRule> DefaultRules = new List<ClassificationRule>
+        {
+            new ClassificationRule(
+                "bugfix",
+                @"(?:bug|fix|revert|issue|crash|error|prevent|problem|fail|correct|leak)",
+                @"^(?:fix|revert)(?:\(.+\))?:"
+            ),
+            new ClassificationRule(
+                "feature",
+                @"(?:feat|feature|add|implement|introduce)",
+                @"^feat(?:\(.+\))?:"
+            )
+        };
+
         private readonly List<ClassificationRule> _rules;
 
         public CommitClassifier()
         {
-            _rules = new List<ClassificationRule>
-            {
-                new ClassificationRule(
-                    "bugfix",
-                    @"(?:bug|fix|revert|issue|crash|error|prevent|problem|fail|correct|leak)",
-                    @"^(?:fix|revert)(?:\(.+\))?:"
-                ),
-                new ClassificationRule(
-                    "feature",
-                    @"(?:feat|feature|add|implement|introduce)",
-                    @"^feat(?:\(.+\))?:"
-                )
-            };
+            _rules = DefaultRules;
         }
 
         public CommitClassifier(IEnumerable<ClassificationRule> rules)
