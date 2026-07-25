@@ -81,7 +81,7 @@ namespace Gitic
         }
     }
 
-    public interface IGitClient
+    public interface IGitClient : ICommitStream
     {
         Task<string?> GetRepositoryRootAsync();
         Task<HashSet<string>> ListHeadFilesAsync();
