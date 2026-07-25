@@ -180,6 +180,37 @@ namespace Gitic.Tests
             Assert.True(mock.ValidateCalled);
         }
 
+        public class MockWarningCollector : IWarningCollector
+        {
+            public bool CollectCalled { get; set; }
+
+            public List<string> Collect(WarningContext context)
+            {
+                CollectCalled = true;
+                return new List<string> { "mock_warning" };
+            }
+
+            public List<string> Collect(WarningContext context, List<string>? existingWarnings)
+            {
+                CollectCalled = true;
+                return new List<string> { "mock_warning" };
+            }
+        }
+
+        [Fact]
+        public void TestWarningCollector_Decoupled()
+        {
+            IWarningCollector collector = new WarningCollector();
+            var context = new WarningContext();
+            var warnings = collector.Collect(context);
+            Assert.NotNull(warnings);
+
+            var mock = new MockWarningCollector();
+            var mockWarnings = mock.Collect(context);
+            Assert.True(mock.CollectCalled);
+            Assert.Contains("mock_warning", mockWarnings);
+        }
+
         [Fact]
         public void TestGitGraph()
         {

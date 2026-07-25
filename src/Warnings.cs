@@ -142,7 +142,13 @@ namespace Gitic
         }
     }
 
-    public class WarningCollector
+    public interface IWarningCollector
+    {
+        List<string> Collect(WarningContext context);
+        List<string> Collect(WarningContext context, List<string>? existingWarnings);
+    }
+
+    public class WarningCollector : IWarningCollector
     {
         private readonly List<IWarningRule> _rules;
 
@@ -159,7 +165,12 @@ namespace Gitic
             };
         }
 
-        public List<string> Collect(WarningContext context, List<string>? existingWarnings = null)
+        public List<string> Collect(WarningContext context)
+        {
+            return Collect(context, null);
+        }
+
+        public List<string> Collect(WarningContext context, List<string>? existingWarnings)
         {
             var warnings = existingWarnings != null ? new List<string>(existingWarnings) : new List<string>();
             foreach (var rule in _rules)

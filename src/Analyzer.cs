@@ -105,6 +105,8 @@ namespace Gitic
 
             var (topCouplings, leadTimes) = metricsEngine.Calculate(commits);
 
+            IWarningCollector warningCollector = new WarningCollector();
+
             var result = new AnalysisResult
             {
                 SchemaVersion = "1.0",
@@ -146,7 +148,7 @@ namespace Gitic
                         MergeOnEmail = config.Identity.MergeOnEmail
                     }
                 },
-                Warnings = new WarningCollector().Collect(
+                Warnings = warningCollector.Collect(
                     new WarningContext
                     {
                         EmailCollisions = accumulator.GetEmailCollisions(),
