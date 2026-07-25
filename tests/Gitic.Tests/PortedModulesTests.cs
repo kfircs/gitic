@@ -1564,5 +1564,82 @@ __GITIZER_NUMSTAT__
                 Assert.Empty(areas);
             }
 
+            public class MockFileSystem : IFileSystem
+            {
+                public Dictionary<string, byte[]> Files { get; } = new();
+
+                public bool FileExists(string path)
+                {
+                    return Files.ContainsKey(path);
+                }
+
+                public long GetFileSize(string path)
+                {
+                    if (Files.TryGetValue(path, out var data))
+                    {
+                        return data.Length;
+                    }
+                    throw new FileNotFoundException();
+                }
+
+                public Stream OpenRead(string path)
+                {
+                    if (Files.TryGetValue(path, out var data))
+                    {
+                        return new MemoryStream(data);
+                    }
+                    throw new FileNotFoundException();
+                }
+            }
+
+            [Fact]
+            public async Task TestDiskFileStatsProvider_WithMockFileSystem()
+            {
+                var mockFs = new MockFileSystem();
+                string repoRoot = "/mock/root";
+                string relativePath = "testfile.txt";
+                string fullPath = Path.Combine(repoRoot, relativePath);
+
+                string content = "line 1\nline 2\nlongest line here";
+                mockFs.Files[fullPath] = Encoding.UTF8.GetBytes(content);
+
+                var provider = new DiskFileStatsProvider(mockFs);
+                var stats = await provider.ComputeFileStatsAsync(repoRoot, new List<string> { relativePath });
+
+                Assert.NotNull(stats);
+                Assert.True(stats.ContainsKey(relativePath));
+                var fileStat = stats[relativePath];
+                Assert.Equal(content.Length, fileStat.Size);
+                Assert.Equal(3, fileStat.Lines);
+                Assert.Equal("longest line here".Length, fileStat.Width);
+            }
+
+            [Fact]
+            public async Task TestDiskFileStatsProvider_WithMockFileSystem_BinaryAndNonexistent()
+            {
+                var mockFs = new MockFileSystem();
+                string repoRoot = "/mock/root";
+                string binaryRelPath = "binary.bin";
+                string nonexistentRelPath = "missing.txt";
+
+                string fullBinaryPath = Path.Combine(repoRoot, binaryRelPath);
+                mockFs.Files[fullBinaryPath] = new byte[] { 1, 2, 0, 4, 5 };
+
+                var provider = new DiskFileStatsProvider(mockFs);
+                var stats = await provider.ComputeFileStatsAsync(repoRoot, new List<string> { binaryRelPath, nonexistentRelPath });
+
+                Assert.NotNull(stats);
+
+                Assert.True(stats.ContainsKey(binaryRelPath));
+                Assert.Equal(5, stats[binaryRelPath].Size);
+                Assert.Equal(0, stats[binaryRelPath].Lines);
+                Assert.Equal(0, stats[binaryRelPath].Width);
+
+                Assert.True(stats.ContainsKey(nonexistentRelPath));
+                Assert.Equal(0, stats[nonexistentRelPath].Size);
+                Assert.Equal(0, stats[nonexistentRelPath].Lines);
+                Assert.Equal(0, stats[nonexistentRelPath].Width);
+            }
+
         }
     }

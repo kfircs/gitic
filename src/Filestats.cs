@@ -16,8 +16,29 @@ namespace Gitic
             int concurrency = 20);
     }
 
+    public interface IFileSystem
+    {
+        bool FileExists(string path);
+        long GetFileSize(string path);
+        Stream OpenRead(string path);
+    }
+
+    public class PhysicalFileSystem : IFileSystem
+    {
+        public bool FileExists(string path) => File.Exists(path);
+        public long GetFileSize(string path) => new FileInfo(path).Length;
+        public Stream OpenRead(string path) => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true);
+    }
+
     public class DiskFileStatsProvider : IFileStatsProvider
     {
+        private readonly IFileSystem _fileSystem;
+
+        public DiskFileStatsProvider(IFileSystem? fileSystem = null)
+        {
+            _fileSystem = fileSystem ?? new PhysicalFileSystem();
+        }
+
         public async Task<Dictionary<string, FileStatResult>> ComputeFileStatsAsync(
             string repoRoot,
             List<string> files,
@@ -36,16 +57,15 @@ namespace Gitic
                     try
                     {
                         string fullPath = Path.Combine(repoRoot, currentFile);
-                        var fileInfo = new FileInfo(fullPath);
-                        if (fileInfo.Exists)
+                        if (_fileSystem.FileExists(fullPath))
                         {
-                            long size = fileInfo.Length;
+                            long size = _fileSystem.GetFileSize(fullPath);
                             int width = 0;
                             int linesCount = 0;
 
                             if (size > 0)
                             {
-                                using (var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
+                                using (var stream = _fileSystem.OpenRead(fullPath))
                                 {
                                     byte[] headerBuffer = new byte[Math.Min(8000, (int)Math.Min(size, int.MaxValue))];
                                     int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length);
