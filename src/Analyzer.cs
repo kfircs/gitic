@@ -167,4 +167,17 @@ namespace Gitic
             return result;
         }
     }
+
+    public interface IRepositoryAnalyzer
+    {
+        Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input);
+    }
+
+    public class RepositoryAnalyzerImpl : IRepositoryAnalyzer
+    {
+        public Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
+        {
+            return RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
+        }
+    }
 }

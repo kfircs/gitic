@@ -1121,6 +1121,63 @@ __GITIZER_NUMSTAT__
             }
 
             [Fact]
+            public async Task TestIRepositoryAnalyzer_DecouplingAndImpl()
+            {
+                IRepositoryAnalyzer analyzer = new RepositoryAnalyzerImpl();
+
+                var fakeProvider = new FakeFileStatsProvider();
+                fakeProvider.DummyResults["src/main.cs"] = new FileStatResult { Size = 1234, Width = 88, Lines = 99 };
+
+                var input = new AnalyzeInput
+                {
+                    RepoRoot = "/fake/root",
+                    Command = AnalysisCommand.Hotspots,
+                    Settings = new AnalysisSettings { Depth = 1 },
+                    FileStatsProvider = fakeProvider,
+                    GitClient = new FakeGitClient()
+                };
+
+                var result = await analyzer.AnalyzeRepositoryAsync(input);
+
+                Assert.NotNull(result);
+                Assert.Equal("/fake/root", result.Analysis.RepoRoot);
+            }
+
+            private class MockRepositoryAnalyzer : IRepositoryAnalyzer
+            {
+                public bool AnalyzeRepositoryAsyncCalled { get; private set; }
+                public AnalyzeInput? LastInput { get; private set; }
+
+                public Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
+                {
+                    AnalyzeRepositoryAsyncCalled = true;
+                    LastInput = input;
+                    return Task.FromResult(new AnalysisResult
+                    {
+                        SchemaVersion = "mock-1.0",
+                        Analysis = new AnalysisMetadata
+                        {
+                            RepoRoot = input.RepoRoot
+                        }
+                    });
+                }
+            }
+
+            [Fact]
+            public async Task TestIRepositoryAnalyzer_WithMockAnalyzer()
+            {
+                var mockAnalyzer = new MockRepositoryAnalyzer();
+                var input = new AnalyzeInput { RepoRoot = "/mock/root" };
+
+                var result = await mockAnalyzer.AnalyzeRepositoryAsync(input);
+
+                Assert.True(mockAnalyzer.AnalyzeRepositoryAsyncCalled);
+                Assert.NotNull(mockAnalyzer.LastInput);
+                Assert.Equal("/mock/root", mockAnalyzer.LastInput.RepoRoot);
+                Assert.Equal("mock-1.0", result.SchemaVersion);
+            }
+
+            [Fact]
             public async Task TestDiskFileStatsProvider_ComputesStats()
             {
                 var provider = new DiskFileStatsProvider();
