@@ -6,9 +6,9 @@ namespace Gitic
 {
     public static class MetricProcessors
     {
-        private const double MsPerDay = 86400000.0;
-        private const double ActiveContributorDays = 90.0;
-        private const double ActiveContributorLookbackMs = ActiveContributorDays * MsPerDay;
+        private const long MsPerDay = 86400000L;
+        private const long ActiveContributorDays = 90L;
+        private const long ActiveContributorLookbackMs = ActiveContributorDays * MsPerDay;
         private const double TopQuarterFraction = 0.25;
 
         public static List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items)
@@ -99,7 +99,7 @@ namespace Gitic
             }
 
             long maxTimestamp = commits.Max(c => c.Timestamp);
-            double ninetyDaysAgo = maxTimestamp - ActiveContributorLookbackMs;
+            long ninetyDaysAgo = maxTimestamp - ActiveContributorLookbackMs;
 
             var sortedCommits = commits.OrderByDescending(c => c.Timestamp).ToList();
             int topQuarterCount = Math.Max(1, (int)Math.Floor(commits.Count * TopQuarterFraction));
