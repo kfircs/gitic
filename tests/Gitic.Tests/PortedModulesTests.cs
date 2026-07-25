@@ -1223,6 +1223,47 @@ __GITIZER_NUMSTAT__
             }
 
             [Fact]
+            public void TestResultAnonymizerConsolidatedBehavior()
+            {
+                var original = new AnalysisResult
+                {
+                    Contributors = new List<ContributorMetric>
+                    {
+                        new ContributorMetric { Name = "Alice Smith", Email = "alice@example.com", TotalActivity = 10, Areas = new List<ContributorAreaMetric>() },
+                        new ContributorMetric { Name = "Bob Jones", Email = "bob@example.com", TotalActivity = 5, Areas = new List<ContributorAreaMetric>() },
+                        new ContributorMetric { Name = "Alice Smith", Email = "alice@example.com", TotalActivity = 12, Areas = new List<ContributorAreaMetric>() }
+                    },
+                    Automation = new List<AutomationMetric>
+                    {
+                        new AutomationMetric { Name = "BuildBot", Email = "bot@example.com", TotalActivity = 100, Areas = new List<ContributorAreaMetric>() }
+                    }
+                };
+
+                var anonymizer = new ResultAnonymizer();
+                var result = anonymizer.Anonymize(original);
+
+                Assert.NotNull(result);
+                Assert.Equal(3, result.Contributors.Count);
+                Assert.Single(result.Automation);
+
+                // Alice Smith (first unique human) -> Contributor 1
+                Assert.Equal("Contributor 1", result.Contributors[0].Name);
+                Assert.Equal("contributor-1@anonymous.local", result.Contributors[0].Email);
+
+                // Bob Jones (second unique human) -> Contributor 2
+                Assert.Equal("Contributor 2", result.Contributors[1].Name);
+                Assert.Equal("contributor-2@anonymous.local", result.Contributors[1].Email);
+
+                // Same Alice Smith (repeats key) -> Contributor 1
+                Assert.Equal("Contributor 1", result.Contributors[2].Name);
+                Assert.Equal("contributor-1@anonymous.local", result.Contributors[2].Email);
+
+                // BuildBot -> Automation 1
+                Assert.Equal("Automation 1", result.Automation[0].Name);
+                Assert.Equal("automation-1@anonymous.local", result.Automation[0].Email);
+            }
+
+            [Fact]
             public void TestICommandLineParser_InterfaceAndImplementation()
             {
                 string[] args = new[] { "hotspots", "--json", "--since", "2026-01-01" };

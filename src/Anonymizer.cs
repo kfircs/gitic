@@ -4,35 +4,6 @@ using System.Linq;
 
 namespace Gitic
 {
-    public interface IIdentityAnonymizationStrategy
-    {
-        GitIdentity Anonymize(int index);
-    }
-
-    public class HumanAnonymizationStrategy : IIdentityAnonymizationStrategy
-    {
-        public GitIdentity Anonymize(int index)
-        {
-            return new GitIdentity
-            {
-                Name = $"Contributor {index}",
-                Email = $"contributor-{index}@anonymous.local"
-            };
-        }
-    }
-
-    public class AutomationAnonymizationStrategy : IIdentityAnonymizationStrategy
-    {
-        public GitIdentity Anonymize(int index)
-        {
-            return new GitIdentity
-            {
-                Name = $"Automation {index}",
-                Email = $"automation-{index}@anonymous.local"
-            };
-        }
-    }
-
     public interface IResultAnonymizer
     {
         AnalysisResult Anonymize(AnalysisResult result);
@@ -42,15 +13,9 @@ namespace Gitic
     {
         private readonly Dictionary<string, GitIdentity> _humanIdentities = new();
         private readonly Dictionary<string, GitIdentity> _automationIdentities = new();
-        private readonly IIdentityAnonymizationStrategy _humanStrategy;
-        private readonly IIdentityAnonymizationStrategy _automationStrategy;
 
-        public ResultAnonymizer(
-            IIdentityAnonymizationStrategy? humanStrategy = null,
-            IIdentityAnonymizationStrategy? automationStrategy = null)
+        public ResultAnonymizer()
         {
-            _humanStrategy = humanStrategy ?? new HumanAnonymizationStrategy();
-            _automationStrategy = automationStrategy ?? new AutomationAnonymizationStrategy();
         }
 
         private GitIdentity AnonymizeHuman(string name, string email)
@@ -61,7 +26,11 @@ namespace Gitic
                 return existing;
             }
             int index = _humanIdentities.Count + 1;
-            var identity = _humanStrategy.Anonymize(index);
+            var identity = new GitIdentity
+            {
+                Name = $"Contributor {index}",
+                Email = $"contributor-{index}@anonymous.local"
+            };
             _humanIdentities[key] = identity;
             return identity;
         }
@@ -74,7 +43,11 @@ namespace Gitic
                 return existing;
             }
             int index = _automationIdentities.Count + 1;
-            var identity = _automationStrategy.Anonymize(index);
+            var identity = new GitIdentity
+            {
+                Name = $"Automation {index}",
+                Email = $"automation-{index}@anonymous.local"
+            };
             _automationIdentities[key] = identity;
             return identity;
         }
