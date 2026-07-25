@@ -316,7 +316,7 @@ namespace Gitic
 
         private string RenderHotspotTable(AnalysisResult result)
         {
-            var table = new ConsoleTableBuilder()
+            IConsoleTableBuilder table = new ConsoleTableBuilder()
                 .AddColumn("file", 28, "left")
                 .AddColumn("attention", 9, "right")
                 .AddColumn("heat", 5, "right")
@@ -345,7 +345,7 @@ namespace Gitic
 
         private string RenderAreaTable(AnalysisResult result)
         {
-            var table = new ConsoleTableBuilder()
+            IConsoleTableBuilder table = new ConsoleTableBuilder()
                 .AddColumn("area", 28, "left")
                 .AddColumn("heat", 5, "right")
                 .AddColumn("attention", 9, "right")
@@ -373,7 +373,7 @@ namespace Gitic
 
         private string RenderContributorTable(AnalysisResult result)
         {
-            var table = new ConsoleTableBuilder()
+            IConsoleTableBuilder table = new ConsoleTableBuilder()
                 .AddColumn("contributor", 24, "left")
                 .AddColumn("activity", 8, "right")
                 .AddColumn("top area");
@@ -400,7 +400,7 @@ namespace Gitic
             }
 
             var contributor = result.Contributors[0];
-            var table = new ConsoleTableBuilder()
+            IConsoleTableBuilder table = new ConsoleTableBuilder()
                 .AddColumn("area", 28, "left")
                 .AddColumn("familiarity", 11, "right")
                 .AddColumn("activity", 8, "right")

@@ -4,6 +4,13 @@ using System.Linq;
 
 namespace Gitic
 {
+    public interface IConsoleTableBuilder
+    {
+        IConsoleTableBuilder AddColumn(string name, int? width = null, string align = "left");
+        IConsoleTableBuilder AddRow(List<string> values);
+        string Render();
+    }
+
     public class ColumnDef
     {
         public string Name { get; set; } = string.Empty;
@@ -11,18 +18,18 @@ namespace Gitic
         public string Align { get; set; } = "left"; // "left" or "right"
     }
 
-    public class ConsoleTableBuilder
+    public class ConsoleTableBuilder : IConsoleTableBuilder
     {
         private readonly List<ColumnDef> _columns = new();
         private readonly List<List<string>> _rows = new();
 
-        public ConsoleTableBuilder AddColumn(string name, int? width = null, string align = "left")
+        public IConsoleTableBuilder AddColumn(string name, int? width = null, string align = "left")
         {
             _columns.Add(new ColumnDef { Name = name, Width = width, Align = align });
             return this;
         }
 
-        public ConsoleTableBuilder AddRow(List<string> values)
+        public IConsoleTableBuilder AddRow(List<string> values)
         {
             _rows.Add(values);
             return this;

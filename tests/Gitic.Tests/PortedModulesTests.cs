@@ -512,6 +512,18 @@ __GITIZER_NUMSTAT__
         }
 
         [Fact]
+        public void TestIConsoleTableBuilderInterface()
+        {
+            IConsoleTableBuilder builder = new ConsoleTableBuilder()
+                .AddColumn("Col1", 8)
+                .AddColumn("Col2", 8, "right")
+                .AddRow(new List<string> { "val1", "val2" });
+
+            var expected = "Col1         Col2\nval1         val2";
+            Assert.Equal(expected, builder.Render());
+        }
+
+        [Fact]
         public void TestScoring_ConcentrationTier()
         {
             Assert.Equal("healthy", ScoringUtils.ConcentrationTier(0.49));
