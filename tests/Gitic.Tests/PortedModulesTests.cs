@@ -212,6 +212,37 @@ namespace Gitic.Tests
         }
 
         [Fact]
+        public void TestWarningRuleProviderSeam()
+        {
+            var defaultProvider = new DefaultWarningRuleProvider();
+            var rules = defaultProvider.GetRules();
+            Assert.NotNull(rules);
+            Assert.Equal(6, rules.Count);
+            Assert.Contains(rules, r => r is EmailCollisionWarningRule);
+            Assert.Contains(rules, r => r is BotConfigWarningRule);
+            Assert.Contains(rules, r => r is LeadTimeWarningRule);
+            Assert.Contains(rules, r => r is NoBotsWarningRule);
+            Assert.Contains(rules, r => r is TemporalCouplingWarningRule);
+            Assert.Contains(rules, r => r is GeneratedFileWarningRule);
+
+            // WarningCollector uses DefaultWarningRuleProvider by default when null is passed
+            var collectorDefault = new WarningCollector();
+            var context = new WarningContext();
+            var warnings = collectorDefault.Collect(context);
+            // Verify default rules are evaluated: e.g. LeadTimeWarningRule should generate a warning
+            Assert.Contains(warnings, w => w.Contains("No merge commits in the analysis window"));
+
+            // Custom provider implementation
+            var customRule = new MockWarningRule();
+            var customProvider = new MockWarningRuleProvider(new List<IWarningRule> { customRule });
+            var collectorCustom = new WarningCollector(customProvider);
+            var customWarnings = collectorCustom.Collect(context);
+            Assert.Equal(2, customWarnings.Count);
+            Assert.Equal("Alpha warning", customWarnings[0]);
+            Assert.Equal("Beta warning", customWarnings[1]);
+        }
+
+        [Fact]
         public void TestGitGraph()
         {
             var commit1 = new GitCommitRecord { Hash = "C1", Parents = new List<string>() };
@@ -958,7 +989,7 @@ __GITIZER_NUMSTAT__
         public void TestWarningCollector_DeduplicationAndSorting()
         {
             var rule = new MockWarningRule();
-            var collector = new WarningCollector(new List<IWarningRule> { rule });
+            var collector = new WarningCollector(new MockWarningRuleProvider(new List<IWarningRule> { rule }));
 
             var existing = new List<string>
             {
@@ -973,6 +1004,13 @@ __GITIZER_NUMSTAT__
             Assert.Equal("Beta warning", result[1]);
             Assert.Equal("Charlie warning", result[2]);
             Assert.Equal("Delta warning", result[3]);
+        }
+
+        private class MockWarningRuleProvider : IWarningRuleProvider
+        {
+            private readonly List<IWarningRule> _rules;
+            public MockWarningRuleProvider(List<IWarningRule> rules) => _rules = rules;
+            public List<IWarningRule> GetRules() => _rules;
         }
 
         private class MockWarningRule : IWarningRule

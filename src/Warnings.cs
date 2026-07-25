@@ -147,6 +147,27 @@ namespace Gitic
         }
     }
 
+    public interface IWarningRuleProvider
+    {
+        List<IWarningRule> GetRules();
+    }
+
+    public class DefaultWarningRuleProvider : IWarningRuleProvider
+    {
+        public List<IWarningRule> GetRules()
+        {
+            return new List<IWarningRule>
+            {
+                new EmailCollisionWarningRule(),
+                new BotConfigWarningRule(),
+                new LeadTimeWarningRule(),
+                new NoBotsWarningRule(),
+                new TemporalCouplingWarningRule(),
+                new GeneratedFileWarningRule()
+            };
+        }
+    }
+
     public interface IWarningCollector
     {
         List<string> Collect(WarningContext context);
@@ -157,17 +178,10 @@ namespace Gitic
     {
         private readonly List<IWarningRule> _rules;
 
-        public WarningCollector(List<IWarningRule>? rules = null)
+        public WarningCollector(IWarningRuleProvider? ruleProvider = null)
         {
-            _rules = rules ?? new List<IWarningRule>
-            {
-                new EmailCollisionWarningRule(),
-                new BotConfigWarningRule(),
-                new LeadTimeWarningRule(),
-                new NoBotsWarningRule(),
-                new TemporalCouplingWarningRule(),
-                new GeneratedFileWarningRule()
-            };
+            var provider = ruleProvider ?? new DefaultWarningRuleProvider();
+            _rules = provider.GetRules();
         }
 
         public List<string> Collect(WarningContext context)
