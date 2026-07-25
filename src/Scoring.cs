@@ -230,29 +230,29 @@ namespace Gitic
             public double MaxChurn { get; set; }
             public double MaxRecency { get; set; }
             public double MaxNetLines { get; set; }
-        }
 
-        private ScoringContext CalculateScoringContext(List<ItemAccumulator> items)
-        {
-            double maxTouches = items.Count > 0 ? items.Max(item => item.Touches) : 1.0;
-            if (maxTouches < 1.0) maxTouches = 1.0;
-
-            double maxChurn = items.Count > 0 ? items.Max(item => item.Churn) : 1.0;
-            if (maxChurn < 1.0) maxChurn = 1.0;
-
-            double maxRecency = items.Count > 0 ? items.Max(item => ScoringUtils.CalculateRecencyScore(item.LastTouched)) : 0.001;
-            if (maxRecency < 0.001) maxRecency = 0.001;
-
-            double maxNetLines = items.Count > 0 ? items.Max(item => Math.Max(0.0, item.Added - item.Deleted)) : 1.0;
-            if (maxNetLines < 1.0) maxNetLines = 1.0;
-
-            return new ScoringContext
+            public static ScoringContext Create(List<ItemAccumulator> items)
             {
-                MaxTouches = maxTouches,
-                MaxChurn = maxChurn,
-                MaxRecency = maxRecency,
-                MaxNetLines = maxNetLines
-            };
+                double maxTouches = items.Count > 0 ? items.Max(item => item.Touches) : 1.0;
+                if (maxTouches < 1.0) maxTouches = 1.0;
+
+                double maxChurn = items.Count > 0 ? items.Max(item => item.Churn) : 1.0;
+                if (maxChurn < 1.0) maxChurn = 1.0;
+
+                double maxRecency = items.Count > 0 ? items.Max(item => ScoringUtils.CalculateRecencyScore(item.LastTouched)) : 0.001;
+                if (maxRecency < 0.001) maxRecency = 0.001;
+
+                double maxNetLines = items.Count > 0 ? items.Max(item => Math.Max(0.0, item.Added - item.Deleted)) : 1.0;
+                if (maxNetLines < 1.0) maxNetLines = 1.0;
+
+                return new ScoringContext
+                {
+                    MaxTouches = maxTouches,
+                    MaxChurn = maxChurn,
+                    MaxRecency = maxRecency,
+                    MaxNetLines = maxNetLines
+                };
+            }
         }
 
         private ScoreBreakdown CalculateScoreBreakdown(
@@ -293,7 +293,7 @@ namespace Gitic
         public List<FileMetric> ScoreFiles(List<ItemAccumulator> items, int depth)
         {
             int targetDepth = depth;
-            var context = CalculateScoringContext(items);
+            var context = ScoringContext.Create(items);
 
             return items.Select(item =>
             {
@@ -352,7 +352,7 @@ namespace Gitic
 
         public List<AreaMetric> ScoreAreas(List<ItemAccumulator> items)
         {
-            var context = CalculateScoringContext(items);
+            var context = ScoringContext.Create(items);
 
             return items.Select(item =>
             {
