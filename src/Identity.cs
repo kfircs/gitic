@@ -30,6 +30,8 @@ namespace Gitic
             return identity;
         }
 
+        private const string GithubNoreplySuffix = "@users.noreply.github.com";
+
         private static readonly string[] DefaultBotKeywords = new[]
         {
             "[bot]",
@@ -86,7 +88,7 @@ namespace Gitic
 
         public static bool IsGithubNoreply(string email)
         {
-            return email.EndsWith("@users.noreply.github.com", StringComparison.OrdinalIgnoreCase);
+            return email.EndsWith(GithubNoreplySuffix, StringComparison.OrdinalIgnoreCase);
         }
 
         public static string ParseNoreplyUsername(string email)
