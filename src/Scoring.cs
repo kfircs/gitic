@@ -39,7 +39,7 @@ namespace Gitic
 
         public static double RoundActivity(double value)
         {
-            return Math.Round(value * 100.0) / 100.0;
+            return RoundRatio(value);
         }
 
         public static double CalculateRecencyScore(long timestamp)
