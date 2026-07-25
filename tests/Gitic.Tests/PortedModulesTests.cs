@@ -1684,6 +1684,77 @@ __GITIZER_NUMSTAT__
                 Assert.True(files[0].KnowledgeSilo!.Abandoned);
             }
 
+            private class MockScoreCalculator : IScoreCalculator
+            {
+                private readonly double _value;
+                public MockScoreCalculator(double value) => _value = value;
+                public double Calculate(ScoreBreakdown breakdown) => _value;
+            }
+
+            private class MockScoreCalculatorProvider : IScoreCalculatorProvider
+            {
+                public bool GetHeatCalled { get; private set; }
+                public bool GetAttentionCalled { get; private set; }
+
+                public IScoreCalculator GetHeatScoreCalculator()
+                {
+                    GetHeatCalled = true;
+                    return new MockScoreCalculator(42.0);
+                }
+
+                public IScoreCalculator GetAttentionScoreCalculator(AttentionWeights weights)
+                {
+                    GetAttentionCalled = true;
+                    return new MockScoreCalculator(84.0);
+                }
+            }
+
+            [Fact]
+            public void TestFamiliarityScoringEngine_UsesInjectedScoreCalculatorProvider()
+            {
+                var config = new GitizerConfig();
+                var mockProvider = new MockScoreCalculatorProvider();
+                IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(
+                    config,
+                    scoreCalculatorProvider: mockProvider);
+
+                var items = new List<ItemAccumulator>
+                {
+                    new ItemAccumulator
+                    {
+                        Key = "test.txt",
+                        Touches = 1,
+                        Added = 10,
+                        Deleted = 5,
+                        Churn = 15,
+                        LastTouched = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        ContributorCredits = new Dictionary<string, ContributorCredit>
+                        {
+                            { "contributor1", new ContributorCredit { Identity = new GitIdentity { Name = "User1", Email = "user1@example.com" }, Activity = 10.0 } }
+                        }
+                    }
+                };
+
+                var files = engine.ScoreFiles(items, 2);
+
+                Assert.True(mockProvider.GetHeatCalled);
+                Assert.True(mockProvider.GetAttentionCalled);
+                Assert.Single(files);
+                Assert.Equal(42.0, files[0].HeatScore);
+                Assert.Equal(84.0, files[0].AttentionScore);
+
+                // Reset provider call tracking
+                var mockProviderAreas = new MockScoreCalculatorProvider();
+                engine = new FamiliarityScoringEngine(config, scoreCalculatorProvider: mockProviderAreas);
+                var areas = engine.ScoreAreas(items);
+
+                Assert.True(mockProviderAreas.GetHeatCalled);
+                Assert.True(mockProviderAreas.GetAttentionCalled);
+                Assert.Single(areas);
+                Assert.Equal(42.0, areas[0].HeatScore);
+                Assert.Equal(84.0, areas[0].AttentionScore);
+            }
+
             public class MockFileSystem : IFileSystem
             {
                 public Dictionary<string, byte[]> Files { get; } = new();

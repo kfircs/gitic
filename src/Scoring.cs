@@ -220,6 +220,25 @@ namespace Gitic
         }
     }
 
+    public interface IScoreCalculatorProvider
+    {
+        IScoreCalculator GetHeatScoreCalculator();
+        IScoreCalculator GetAttentionScoreCalculator(AttentionWeights weights);
+    }
+
+    public class DefaultScoreCalculatorProvider : IScoreCalculatorProvider
+    {
+        public IScoreCalculator GetHeatScoreCalculator()
+        {
+            return new HeatScoreCalculator();
+        }
+
+        public IScoreCalculator GetAttentionScoreCalculator(AttentionWeights weights)
+        {
+            return new AttentionScoreCalculator(weights);
+        }
+    }
+
     public interface IFamiliarityScoringEngine
     {
         List<FileMetric> ScoreFiles(List<ItemAccumulator> items, int depth);
@@ -232,17 +251,20 @@ namespace Gitic
         private readonly HashSet<string> _activeContributorKeys;
         private readonly int _depth;
         private readonly IKnowledgeSiloCalculator _siloCalculator;
+        private readonly IScoreCalculatorProvider _scoreCalculatorProvider;
 
         public FamiliarityScoringEngine(
             GitizerConfig config,
             HashSet<string>? activeContributorKeys = null,
             int depth = 2,
-            IKnowledgeSiloCalculator? siloCalculator = null)
+            IKnowledgeSiloCalculator? siloCalculator = null,
+            IScoreCalculatorProvider? scoreCalculatorProvider = null)
         {
             _config = config;
             _activeContributorKeys = activeContributorKeys ?? new HashSet<string>();
             _depth = depth;
             _siloCalculator = siloCalculator ?? new KnowledgeSiloCalculator();
+            _scoreCalculatorProvider = scoreCalculatorProvider ?? new DefaultScoreCalculatorProvider();
         }
 
         private class ScoringContext
@@ -336,8 +358,8 @@ namespace Gitic
                     LowFamiliarityConcentration = knowledgeSilo.IsSilo ? knowledgeSilo.TopOwnerShare : 0.0
                 };
 
-                double heatScore = new HeatScoreCalculator().Calculate(breakdown);
-                double attentionScore = new AttentionScoreCalculator(_config.Scoring.Attention).Calculate(breakdown);
+                double heatScore = _scoreCalculatorProvider.GetHeatScoreCalculator().Calculate(breakdown);
+                double attentionScore = _scoreCalculatorProvider.GetAttentionScoreCalculator(_config.Scoring.Attention).Calculate(breakdown);
 
                 string lastTouchedStr = DateTimeOffset.FromUnixTimeMilliseconds(item.LastTouched).UtcDateTime.ToString("yyyy-MM-dd");
 
@@ -391,8 +413,8 @@ namespace Gitic
                     LowFamiliarityConcentration = 0.0
                 };
 
-                double heatScore = new HeatScoreCalculator().Calculate(breakdown);
-                double attentionScore = new AttentionScoreCalculator(_config.Scoring.Attention).Calculate(breakdown);
+                double heatScore = _scoreCalculatorProvider.GetHeatScoreCalculator().Calculate(breakdown);
+                double attentionScore = _scoreCalculatorProvider.GetAttentionScoreCalculator(_config.Scoring.Attention).Calculate(breakdown);
 
                 string lastTouchedStr = DateTimeOffset.FromUnixTimeMilliseconds(item.LastTouched).UtcDateTime.ToString("yyyy-MM-dd");
 
