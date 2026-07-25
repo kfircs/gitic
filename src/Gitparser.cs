@@ -23,6 +23,7 @@ namespace Gitic
         private static readonly Regex SemicolonSuffixRegex = new(@";\s*$", RegexOptions.Compiled);
         private static readonly Regex BracketsSuffixRegex = new(@"\s*[\{\(\[]\s*$", RegexOptions.Compiled);
         private static readonly Regex CoAuthoredByRegex = new(@"^Co-authored-by:\s*(.*?)\s*<([^>]+)>", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+        private const int MaxSymbolLength = 60;
 
         public string CommitMarker => "__GITIZER_COMMIT__";
         public string NumstatMarker => "__GITIZER_NUMSTAT__";
@@ -212,7 +213,7 @@ namespace Gitic
         public string CleanSymbol(string symbol)
         {
             string cleaned = symbol.Trim();
-            if (cleaned.StartsWith("@"))
+            if (cleaned.StartsWith('@'))
             {
                 return "";
             }
@@ -233,9 +234,9 @@ namespace Gitic
                 }
             }
 
-            if (cleaned.Length > 60)
+            if (cleaned.Length > MaxSymbolLength)
             {
-                cleaned = cleaned.Substring(0, 60) + "...";
+                cleaned = cleaned.Substring(0, MaxSymbolLength) + "...";
             }
 
             return cleaned;
