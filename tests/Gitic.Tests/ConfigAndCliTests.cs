@@ -191,16 +191,16 @@ excludes:
 
             // Invalid depth values
             var ex1 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "0" }).Parse());
-            Assert.Equal("--depth must be a positive integer.", ex1.Message);
+            Assert.Equal("--depth must be an integer between 1 and 10.", ex1.Message);
 
             var ex2 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "-3" }).Parse());
-            Assert.Equal("--depth must be a positive integer.", ex2.Message);
+            Assert.Equal("--depth must be an integer between 1 and 10.", ex2.Message);
 
             var ex3 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "notaninteger" }).Parse());
-            Assert.Equal("--depth must be a positive integer.", ex3.Message);
+            Assert.Equal("--depth must be an integer between 1 and 10.", ex3.Message);
 
             var ex4 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "11" }).Parse());
-            Assert.Equal("--depth must be between 1 and 10.", ex4.Message);
+            Assert.Equal("--depth must be an integer between 1 and 10.", ex4.Message);
         }
 
         [Fact]

@@ -245,13 +245,9 @@ namespace Gitic
 
         private int ValidateDepth(string value)
         {
-            if (!int.TryParse(value, out int depth) || depth < MinDepth)
+            if (!int.TryParse(value, out int depth) || depth < MinDepth || depth > MaxDepth)
             {
-                throw new CommandLineParseError("--depth must be a positive integer.");
-            }
-            if (depth > MaxDepth)
-            {
-                throw new CommandLineParseError($"--depth must be between {MinDepth} and {MaxDepth}.");
+                throw new CommandLineParseError($"--depth must be an integer between {MinDepth} and {MaxDepth}.");
             }
             return depth;
         }
