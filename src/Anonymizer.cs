@@ -18,38 +18,31 @@ namespace Gitic
         {
         }
 
-        private GitIdentity AnonymizeHuman(string name, string email)
+        private GitIdentity GetOrAnonymize(string name, string email, Dictionary<string, GitIdentity> cache, string namePrefix, string emailPrefix)
         {
             string key = IdentityUtils.IdentityKey(new GitIdentity { Name = name, Email = email });
-            if (_humanIdentities.TryGetValue(key, out var existing))
+            if (cache.TryGetValue(key, out var existing))
             {
                 return existing;
             }
-            int index = _humanIdentities.Count + 1;
+            int index = cache.Count + 1;
             var identity = new GitIdentity
             {
-                Name = $"Contributor {index}",
-                Email = $"contributor-{index}@anonymous.local"
+                Name = $"{namePrefix} {index}",
+                Email = $"{emailPrefix}-{index}@anonymous.local"
             };
-            _humanIdentities[key] = identity;
+            cache[key] = identity;
             return identity;
+        }
+
+        private GitIdentity AnonymizeHuman(string name, string email)
+        {
+            return GetOrAnonymize(name, email, _humanIdentities, "Contributor", "contributor");
         }
 
         private GitIdentity AnonymizeAutomation(string name, string email)
         {
-            string key = IdentityUtils.IdentityKey(new GitIdentity { Name = name, Email = email });
-            if (_automationIdentities.TryGetValue(key, out var existing))
-            {
-                return existing;
-            }
-            int index = _automationIdentities.Count + 1;
-            var identity = new GitIdentity
-            {
-                Name = $"Automation {index}",
-                Email = $"automation-{index}@anonymous.local"
-            };
-            _automationIdentities[key] = identity;
-            return identity;
+            return GetOrAnonymize(name, email, _automationIdentities, "Automation", "automation");
         }
 
         private ContributorShare AnonymizeHumanContributorShare(ContributorShare contributor)
