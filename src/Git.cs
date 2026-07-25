@@ -10,9 +10,9 @@ namespace Gitic
 {
     public class GitHistoryExtractorOptions
     {
-        public bool IncludeMerges { get; set; }
-        public bool AllTime { get; set; }
-        public string? Since { get; set; }
+        public bool IncludeMerges { get; init; }
+        public bool AllTime { get; init; }
+        public string? Since { get; init; }
     }
 
     public interface IGitExecutor
