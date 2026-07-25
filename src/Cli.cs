@@ -69,10 +69,11 @@ namespace Gitic
                     );
                 }
 
+                IConfigManager configManager = new ConfigManager();
                 LoadedGitizerConfig loadedConfig;
                 try
                 {
-                    loadedConfig = await ConfigLoader.LoadGitizerConfigAsync(new LoadGitizerConfigOptions { RepoRoot = repoRoot });
+                    loadedConfig = await configManager.LoadGitizerConfigAsync(new LoadGitizerConfigOptions { RepoRoot = repoRoot });
                 }
                 catch (ConfigValidationError error)
                 {
