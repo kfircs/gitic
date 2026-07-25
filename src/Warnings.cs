@@ -177,12 +177,9 @@ namespace Gitic
 
         public List<string> Collect(WarningContext context, List<string>? existingWarnings)
         {
-            var warnings = existingWarnings != null ? new List<string>(existingWarnings) : new List<string>();
-            foreach (var rule in _rules)
-            {
-                warnings.AddRange(rule.Collect(context));
-            }
-            return warnings.Distinct().OrderBy(w => w, StringComparer.Ordinal).ToList();
+            var baseWarnings = existingWarnings ?? Enumerable.Empty<string>();
+            var ruleWarnings = _rules.SelectMany(rule => rule.Collect(context));
+            return baseWarnings.Concat(ruleWarnings).Distinct().OrderBy(w => w, StringComparer.Ordinal).ToList();
         }
     }
 }
