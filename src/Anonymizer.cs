@@ -20,7 +20,7 @@ namespace Gitic
 
         private GitIdentity AnonymizeHuman(string name, string email)
         {
-            string key = $"{name} <{email}>";
+            string key = IdentityUtils.IdentityKey(new GitIdentity { Name = name, Email = email });
             if (_humanIdentities.TryGetValue(key, out var existing))
             {
                 return existing;
@@ -37,7 +37,7 @@ namespace Gitic
 
         private GitIdentity AnonymizeAutomation(string name, string email)
         {
-            string key = $"{name} <{email}>";
+            string key = IdentityUtils.IdentityKey(new GitIdentity { Name = name, Email = email });
             if (_automationIdentities.TryGetValue(key, out var existing))
             {
                 return existing;
