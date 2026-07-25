@@ -336,9 +336,9 @@ namespace Gitic
                 }
             }
 
-            if (overrideConfig.Identity != null && overrideConfig.Identity.MergeOnEmail.HasValue && overrideConfig.Identity.MergeOnEmail.Value)
+            if (overrideConfig.Identity?.MergeOnEmail.HasValue == true)
             {
-                cloned.Identity.MergeOnEmail = true;
+                cloned.Identity.MergeOnEmail = overrideConfig.Identity.MergeOnEmail.Value;
             }
 
             if (overrideConfig.Metrics?.TemporalCouplingMaxCommitFileCount != null)
