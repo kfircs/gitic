@@ -119,4 +119,47 @@ namespace Gitic
             return activeKeys;
         }
     }
+
+    public interface IMetricProcessor
+    {
+        HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits);
+        List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items);
+        List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items);
+        List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command);
+        List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command);
+        List<ContributorMetric> SortContributorsForCommand(List<ContributorMetric> contributors, AnalysisCommand command);
+    }
+
+    public class MetricProcessorImpl : IMetricProcessor
+    {
+        public HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits)
+        {
+            return MetricProcessors.GetActiveContributorKeys(commits);
+        }
+
+        public List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items)
+        {
+            return MetricProcessors.RenderContributors(items);
+        }
+
+        public List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items)
+        {
+            return MetricProcessors.RenderAutomation(items);
+        }
+
+        public List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command)
+        {
+            return MetricProcessors.SortAreasForCommand(areas, command);
+        }
+
+        public List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command)
+        {
+            return MetricProcessors.SortFilesForCommand(files, command);
+        }
+
+        public List<ContributorMetric> SortContributorsForCommand(List<ContributorMetric> contributors, AnalysisCommand command)
+        {
+            return MetricProcessors.SortContributorsForCommand(contributors, command);
+        }
+    }
 }

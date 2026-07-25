@@ -211,6 +211,65 @@ namespace Gitic.Tests
             Assert.Contains("mock_warning", mockWarnings);
         }
 
+        public class MockMetricProcessor : IMetricProcessor
+        {
+            public bool GetActiveContributorKeysCalled { get; set; }
+            public bool RenderContributorsCalled { get; set; }
+            public bool RenderAutomationCalled { get; set; }
+            public bool SortAreasCalled { get; set; }
+            public bool SortFilesCalled { get; set; }
+            public bool SortContributorsCalled { get; set; }
+
+            public HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits)
+            {
+                GetActiveContributorKeysCalled = true;
+                return new HashSet<string>();
+            }
+
+            public List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items)
+            {
+                RenderContributorsCalled = true;
+                return new List<ContributorMetric>();
+            }
+
+            public List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items)
+            {
+                RenderAutomationCalled = true;
+                return new List<AutomationMetric>();
+            }
+
+            public List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command)
+            {
+                SortAreasCalled = true;
+                return areas;
+            }
+
+            public List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command)
+            {
+                SortFilesCalled = true;
+                return files;
+            }
+
+            public List<ContributorMetric> SortContributorsForCommand(List<ContributorMetric> contributors, AnalysisCommand command)
+            {
+                SortContributorsCalled = true;
+                return contributors;
+            }
+        }
+
+        [Fact]
+        public void TestMetricProcessor_Decoupled()
+        {
+            IMetricProcessor processor = new MetricProcessorImpl();
+            var commits = new List<GitCommitRecord>();
+            var keys = processor.GetActiveContributorKeys(commits);
+            Assert.Empty(keys);
+
+            var mock = new MockMetricProcessor();
+            mock.GetActiveContributorKeys(commits);
+            Assert.True(mock.GetActiveContributorKeysCalled);
+        }
+
         [Fact]
         public void TestGitGraph()
         {

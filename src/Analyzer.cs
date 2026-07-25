@@ -37,6 +37,7 @@ namespace Gitic
 
         public static async Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
         {
+            IMetricProcessor metricProcessor = new MetricProcessorImpl();
             var settings = NormalizeSettings(input.Settings);
             var config = input.Config ?? GitizerConfig.Default;
             var gitClient = input.GitClient ?? new GitClient(input.RepoRoot);
@@ -73,7 +74,7 @@ namespace Gitic
                 metricsEngine.TrackCommit(includedFilesInCommit);
             }
 
-            var activeContributorKeys = MetricProcessors.GetActiveContributorKeys(commits);
+            var activeContributorKeys = metricProcessor.GetActiveContributorKeys(commits);
             IFamiliarityScoringEngine scoringEngine = new FamiliarityScoringEngine(config, activeContributorKeys, settings.Depth);
 
             var rawFileMetrics = scoringEngine.ScoreFiles(accumulator.GetFiles().Values.ToList(), settings.Depth);
@@ -100,8 +101,8 @@ namespace Gitic
 
             var areaMetrics = scoringEngine.ScoreAreas(accumulator.GetAreas().Values.ToList());
 
-            var contributorMetrics = MetricProcessors.RenderContributors(accumulator.GetContributors().Values.ToList());
-            var automationMetrics = MetricProcessors.RenderAutomation(accumulator.GetAutomation().Values.ToList());
+            var contributorMetrics = metricProcessor.RenderContributors(accumulator.GetContributors().Values.ToList());
+            var automationMetrics = metricProcessor.RenderAutomation(accumulator.GetAutomation().Values.ToList());
 
             var (topCouplings, leadTimes) = metricsEngine.Calculate(commits);
 
@@ -121,9 +122,9 @@ namespace Gitic
                 },
                 Settings = settings,
                 Exclusions = accumulator.GetExclusions(),
-                Areas = MetricProcessors.SortAreasForCommand(areaMetrics, input.Command),
-                Files = MetricProcessors.SortFilesForCommand(fileMetrics, input.Command),
-                Contributors = MetricProcessors.SortContributorsForCommand(contributorMetrics, input.Command),
+                Areas = metricProcessor.SortAreasForCommand(areaMetrics, input.Command),
+                Files = metricProcessor.SortFilesForCommand(fileMetrics, input.Command),
+                Contributors = metricProcessor.SortContributorsForCommand(contributorMetrics, input.Command),
                 Automation = automationMetrics,
                 TemporalCoupling = topCouplings,
                 LeadTimes = leadTimes,
