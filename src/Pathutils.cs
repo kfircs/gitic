@@ -10,8 +10,8 @@ namespace Gitic
 
         public static string NormalizeGitPath(string path)
         {
-            string normalized = path.Replace("\\", "/");
-            if (normalized.StartsWith("./"))
+            string normalized = path.Replace('\\', '/');
+            if (normalized.StartsWith("./", StringComparison.Ordinal))
             {
                 normalized = normalized.Substring(2);
             }
