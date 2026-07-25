@@ -229,6 +229,14 @@ namespace Gitic
             {
                 return Regex.Replace(normalized, @"\{.*? => (.*?)\}", match.Groups[1].Value);
             }
+            if (normalized.Contains(" => ") && !normalized.Contains("{") && !normalized.Contains("}"))
+            {
+                var parts = normalized.Split(new[] { " => " }, StringSplitOptions.None);
+                if (parts.Length > 1)
+                {
+                    return parts[1];
+                }
+            }
             return normalized;
         }
     }

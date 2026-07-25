@@ -263,6 +263,7 @@ namespace Gitic.Tests
         {
             Assert.Equal("src/main.cs", GitParser.NormalizeNumstatPath("src/{utils => main}.cs"));
             Assert.Equal("src/main.cs", GitParser.NormalizeNumstatPath("src/main.cs"));
+            Assert.Equal("new_main.cs", GitParser.NormalizeNumstatPath("old_main.cs => new_main.cs"));
         }
 
         [Fact]
