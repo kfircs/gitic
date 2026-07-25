@@ -34,7 +34,7 @@ namespace Gitic
             };
         }
 
-        public static async Task<CliResult> RunCliAsync(string[] args)
+        public static async Task<CliResult> RunCliAsync(string[] args, IConsoleReporter? reporter = null)
         {
             ICommandLineParser parser = new CommandLineParser(args);
             ParsedArgs parsed;
@@ -44,6 +44,7 @@ namespace Gitic
             }
             catch (CommandLineParseError error)
             {
+                reporter?.WriteError($"{error.Message}\n");
                 return CliFailure($"{error.Message}\n");
             }
 
@@ -51,22 +52,33 @@ namespace Gitic
             {
                 if (parsed.Command == "help")
                 {
-                    return RunHelpCommand();
+                    var helpResult = RunHelpCommand();
+                    reporter?.Write(helpResult.Stdout);
+                    return helpResult;
                 }
 
                 if (parsed.Command == "config")
                 {
-                    return RunConfigCommand(parsed);
+                    var configResult = RunConfigCommand(parsed);
+                    if (configResult.ExitCode == 0)
+                    {
+                        reporter?.Write(configResult.Stdout);
+                    }
+                    else
+                    {
+                        reporter?.WriteError(configResult.Stderr);
+                    }
+                    return configResult;
                 }
 
                 var gitClient = new GitClient(parsed.RepoPath);
                 string? repoRoot = await gitClient.GetRepositoryRootAsync();
                 if (repoRoot == null)
                 {
-                    return CliFailure(
-                        $"Path {parsed.RepoPath} is not inside a Git repository.\n" +
-                        "Run gitizer from a Git worktree or pass the path to one.\n"
-                    );
+                    string errMsg = $"Path {parsed.RepoPath} is not inside a Git repository.\n" +
+                                    "Run gitizer from a Git worktree or pass the path to one.\n";
+                    reporter?.WriteError(errMsg);
+                    return CliFailure(errMsg);
                 }
 
                 IConfigManager configManager = new ConfigManager();
@@ -77,7 +89,9 @@ namespace Gitic
                 }
                 catch (ConfigValidationError error)
                 {
-                    return CliFailure($"Invalid Gitizer config:\n{string.Join("\n", error.Details)}\n");
+                    string errMsg = $"Invalid Gitizer config:\n{string.Join("\n", error.Details)}\n";
+                    reporter?.WriteError(errMsg);
+                    return CliFailure(errMsg);
                 }
 
                 var input = new AnalyzeInput
@@ -102,6 +116,7 @@ namespace Gitic
                     }
                     catch (Exception ex) when (ex is ContributorNotFoundError || ex is AmbiguousContributorError)
                     {
+                        reporter?.WriteError($"{ex.Message}\n");
                         return CliFailure($"{ex.Message}\n");
                     }
                 }
@@ -116,7 +131,9 @@ namespace Gitic
                 {
                     if (parsed.HtmlPath == null && parsed.MdPath == null && parsed.SvgPath == null)
                     {
-                        return CliFailure("report requires --html <path>, --md <path>, or --svg <path>.\n");
+                        string errMsg = "report requires --html <path>, --md <path>, or --svg <path>.\n";
+                        reporter?.WriteError(errMsg);
+                        return CliFailure(errMsg);
                     }
 
                     var outputSb = new System.Text.StringBuilder();
@@ -139,7 +156,9 @@ namespace Gitic
                         outputSb.Append(svgResult);
                     }
 
-                    return CliSuccess(outputSb.ToString());
+                    string reportOutput = outputSb.ToString();
+                    reporter?.Write(reportOutput);
+                    return CliSuccess(reportOutput);
                 }
 
                 IReportRenderer renderer;
@@ -153,11 +172,14 @@ namespace Gitic
                 }
 
                 string output = await renderer.RenderAsync(result);
+                reporter?.Write(output);
                 return CliSuccess(output);
             }
             catch (Exception ex)
             {
-                return CliFailure($"Error: {ex.Message}\n");
+                string errMsg = $"Error: {ex.Message}\n";
+                reporter?.WriteError(errMsg);
+                return CliFailure(errMsg);
             }
         }
 

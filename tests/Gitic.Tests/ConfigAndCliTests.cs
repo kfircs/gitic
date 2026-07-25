@@ -510,5 +510,52 @@ bin/
             Assert.Contains(rules, r => r.Pattern == "**/custom-pattern" && r.Category == "custom-category");
             Assert.Contains(rules, r => r.Pattern == "custom-pattern" && r.Category == "custom-category");
         }
+
+        public class MockConsoleReporter : IConsoleReporter
+        {
+            public List<string> Messages { get; } = new();
+            public List<string> ErrorMessages { get; } = new();
+
+            public void Write(string message) => Messages.Add(message);
+            public void WriteLine(string message) => Messages.Add(message + "\n");
+            public void WriteError(string message) => ErrorMessages.Add(message);
+            public void WriteErrorLine(string message) => ErrorMessages.Add(message + "\n");
+        }
+
+        [Fact]
+        public async Task TestCli_RunWithIConsoleReporter()
+        {
+            var reporter = new MockConsoleReporter();
+            var runResult = await Cli.RunCliAsync(new[] { "--help" }, reporter);
+            Assert.Equal(0, runResult.ExitCode);
+            Assert.Contains(reporter.Messages, m => m.Contains("Usage:"));
+        }
+
+        [Fact]
+        public void TestConsoleReporter_WritesToConsole()
+        {
+            var reporter = new ConsoleReporter();
+            var oldOut = Console.Out;
+            var oldError = Console.Error;
+            using var swOut = new System.IO.StringWriter();
+            using var swErr = new System.IO.StringWriter();
+            try
+            {
+                Console.SetOut(swOut);
+                Console.SetError(swErr);
+                reporter.Write("hello");
+                reporter.WriteLine(" world");
+                reporter.WriteError("error");
+                reporter.WriteErrorLine(" log");
+
+                Assert.Equal("hello world" + Environment.NewLine, swOut.ToString());
+                Assert.Equal("error log" + Environment.NewLine, swErr.ToString());
+            }
+            finally
+            {
+                Console.SetOut(oldOut);
+                Console.SetError(oldError);
+            }
+        }
     }
 }
