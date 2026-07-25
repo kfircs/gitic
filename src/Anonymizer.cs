@@ -20,7 +20,7 @@ namespace Gitic
 
         private GitIdentity GetOrAnonymize(string name, string email, Dictionary<string, GitIdentity> cache, string namePrefix, string emailPrefix)
         {
-            string key = IdentityUtils.IdentityKey(new GitIdentity { Name = name, Email = email });
+            string key = IdentityUtils.IdentityKey(name, email);
             if (cache.TryGetValue(key, out var existing))
             {
                 return existing;

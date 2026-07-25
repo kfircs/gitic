@@ -29,6 +29,11 @@ namespace Gitic
             return IdentityKeyGenerator.Default.IdentityKey(identity);
         }
 
+        public static string IdentityKey(string name, string email)
+        {
+            return IdentityKeyGenerator.Default.IdentityKey(new GitIdentity { Name = name, Email = email });
+        }
+
         public static bool SameIdentity(GitIdentity left, GitIdentity right)
         {
             return left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase) &&
