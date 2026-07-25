@@ -4,7 +4,19 @@ using System.Linq;
 
 namespace Gitic
 {
-    public class TemporalCouplingEngine
+    public interface ITemporalCouplingEngine
+    {
+        void TrackCommitFiles(List<string> filePaths);
+        List<TemporalCoupling> CalculateTemporalCoupling();
+        (int count, int maxObserved, int limit) GetOversizedCommitInfo();
+    }
+
+    public interface ILeadTimeEngine
+    {
+        LeadTimesInfo CalculateLeadTimes(List<GitCommitRecord> commits);
+    }
+
+    public class TemporalCouplingEngine : ITemporalCouplingEngine
     {
         private const int TemporalCouplingMinSharedCommits = 3;
         private const double TemporalCouplingMinCouplingDegree = 0.25;
@@ -21,36 +33,36 @@ namespace Gitic
             _maxCommitFileCount = maxCommitFileCount;
         }
 
-        public void TrackCommitFiles(List<string> filesInCommit)
+        public void TrackCommitFiles(List<string> filePaths)
         {
-            if (filesInCommit.Count == 0)
+            if (filePaths.Count == 0)
             {
                 return;
             }
 
-            if (filesInCommit.Count > _maxObservedFiles)
+            if (filePaths.Count > _maxObservedFiles)
             {
-                _maxObservedFiles = filesInCommit.Count;
+                _maxObservedFiles = filePaths.Count;
             }
 
-            if (filesInCommit.Count > _maxCommitFileCount)
+            if (filePaths.Count > _maxCommitFileCount)
             {
                 _oversizedCommitCount++;
                 return;
             }
 
-            foreach (var file in filesInCommit)
+            foreach (var file in filePaths)
             {
                 _fileCommitCount.TryGetValue(file, out int count);
                 _fileCommitCount[file] = count + 1;
             }
 
-            for (int i = 0; i < filesInCommit.Count; i++)
+            for (int i = 0; i < filePaths.Count; i++)
             {
-                for (int j = i + 1; j < filesInCommit.Count; j++)
+                for (int j = i + 1; j < filePaths.Count; j++)
                 {
-                    string file1 = filesInCommit[i];
-                    string file2 = filesInCommit[j];
+                    string file1 = filePaths[i];
+                    string file2 = filePaths[j];
                     string fileA = string.CompareOrdinal(file1, file2) < 0 ? file1 : file2;
                     string fileB = string.CompareOrdinal(file1, file2) < 0 ? file2 : file1;
                     string pairKey = $"{fileA}|{fileB}";
@@ -112,7 +124,7 @@ namespace Gitic
         }
     }
 
-    public class LeadTimeEngine
+    public class LeadTimeEngine : ILeadTimeEngine
     {
         private const double MsPerHour = 3600000.0;
         private const int LeadTimeMainAncestorsMaxDepth = 150;

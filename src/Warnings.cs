@@ -11,7 +11,7 @@ namespace Gitic
         public int? ConfiguredBotCount { get; set; }
         public List<AutomationMetric>? AutomationMetrics { get; set; }
         public LeadTimesInfo? LeadTimes { get; set; }
-        public TemporalCouplingEngine? TemporalCouplingEngine { get; set; }
+        public ITemporalCouplingEngine? TemporalCouplingEngine { get; set; }
         public List<FileMetric>? Files { get; set; }
     }
 

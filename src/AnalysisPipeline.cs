@@ -25,7 +25,9 @@ namespace Gitic
             GitizerConfig config,
             AnalysisSettings settings,
             AnalysisCommand command,
-            string repoRoot)
+            string repoRoot,
+            ITemporalCouplingEngine? temporalCouplingEngine = null,
+            ILeadTimeEngine? leadTimeEngine = null)
         {
             var gitignoreRules = PathClassifier.LoadGitignoreRules(repoRoot);
             config.Excludes.AddRange(gitignoreRules);
@@ -37,14 +39,14 @@ namespace Gitic
             accumulator.PrepareIdentityMerging(commits);
 
             int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
-            var temporalCouplingEngine = new TemporalCouplingEngine(temporalCouplingLimit);
-            var leadTimeEngine = new LeadTimeEngine();
+            ITemporalCouplingEngine actualTemporalCouplingEngine = temporalCouplingEngine ?? new TemporalCouplingEngine(temporalCouplingLimit);
+            ILeadTimeEngine actualLeadTimeEngine = leadTimeEngine ?? new LeadTimeEngine();
 
             foreach (var commit in commits)
             {
                 var includedFilesInCommit = new List<string>();
                 accumulator.AddCommit(commit, includedFilesInCommit);
-                temporalCouplingEngine.TrackCommitFiles(includedFilesInCommit);
+                actualTemporalCouplingEngine.TrackCommitFiles(includedFilesInCommit);
             }
 
             var activeContributorKeys = MetricProcessors.GetActiveContributorKeys(commits);
@@ -56,8 +58,8 @@ namespace Gitic
             var contributorMetrics = MetricProcessors.RenderContributors(accumulator.GetContributors().Values.ToList());
             var automationMetrics = MetricProcessors.RenderAutomation(accumulator.GetAutomation().Values.ToList());
 
-            var topCouplings = temporalCouplingEngine.CalculateTemporalCoupling();
-            var leadTimes = leadTimeEngine.CalculateLeadTimes(commits);
+            var topCouplings = actualTemporalCouplingEngine.CalculateTemporalCoupling();
+            var leadTimes = actualLeadTimeEngine.CalculateLeadTimes(commits);
 
             IWarningCollector warningCollector = new WarningCollector();
             var warnings = warningCollector.Collect(
@@ -68,7 +70,7 @@ namespace Gitic
                     ConfiguredBotCount = config.Bots.Count,
                     AutomationMetrics = automationMetrics,
                     LeadTimes = leadTimes,
-                    TemporalCouplingEngine = temporalCouplingEngine,
+                    TemporalCouplingEngine = actualTemporalCouplingEngine,
                     Files = rawFileMetrics
                 },
                 accumulator.GetWarnings().ToList()
