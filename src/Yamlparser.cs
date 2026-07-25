@@ -90,7 +90,12 @@ namespace Gitic
         }
     }
 
-    public class YamlTokenizer
+    public interface IYamlTokenizer
+    {
+        List<YamlLine> Tokenize(string content);
+    }
+
+    public class YamlTokenizer : IYamlTokenizer
     {
         private readonly string _source;
 
@@ -177,11 +182,11 @@ namespace Gitic
         private readonly YamlTokenStream _stream;
         public string Source { get; }
 
-        public YamlSubsetParser(string content, string source)
+        public YamlSubsetParser(string content, string source, IYamlTokenizer? tokenizer = null)
         {
             Source = source;
-            var tokenizer = new YamlTokenizer(source);
-            var lines = tokenizer.Tokenize(content);
+            var activeTokenizer = tokenizer ?? new YamlTokenizer(source);
+            var lines = activeTokenizer.Tokenize(content);
             _stream = new YamlTokenStream(lines, source);
         }
 

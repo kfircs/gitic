@@ -1541,6 +1541,27 @@ __GITIZER_NUMSTAT__
                 Assert.Equal(true, parsed["bool"]);
             }
 
+            private class MockYamlTokenizer : IYamlTokenizer
+            {
+                public List<YamlLine> Tokenize(string content)
+                {
+                    return new List<YamlLine>
+                    {
+                        new YamlLine { Indent = 0, Text = "mockKey: mockValue", LineNumber = 1 }
+                    };
+                }
+            }
+
+            [Fact]
+            public void TestYamlSubsetParser_WithMockTokenizer()
+            {
+                var mockTokenizer = new MockYamlTokenizer();
+                var parser = new YamlSubsetParser("ignored content", "test_source", mockTokenizer);
+                var parsed = parser.Parse() as Dictionary<string, object?>;
+                Assert.NotNull(parsed);
+                Assert.Equal("mockValue", parsed["mockKey"]);
+            }
+
             private class NoOpResultAnonymizer : IResultAnonymizer
             {
                 public AnalysisResult Anonymize(AnalysisResult result)
