@@ -4,11 +4,29 @@ using System.Linq;
 
 namespace Gitic
 {
+    public interface IIdentityKeyGenerator
+    {
+        string IdentityKey(GitIdentity identity);
+    }
+
+    public class DefaultIdentityKeyGenerator : IIdentityKeyGenerator
+    {
+        public string IdentityKey(GitIdentity identity)
+        {
+            return $"{identity.Name.ToLowerInvariant()} <{identity.Email.ToLowerInvariant()}>";
+        }
+    }
+
+    public static class IdentityKeyGenerator
+    {
+        public static IIdentityKeyGenerator Default { get; set; } = new DefaultIdentityKeyGenerator();
+    }
+
     public static class IdentityUtils
     {
         public static string IdentityKey(GitIdentity identity)
         {
-            return $"{identity.Name.ToLowerInvariant()} <{identity.Email.ToLowerInvariant()}>";
+            return IdentityKeyGenerator.Default.IdentityKey(identity);
         }
 
         public static bool SameIdentity(GitIdentity left, GitIdentity right)
@@ -117,15 +135,17 @@ namespace Gitic
         private readonly List<AliasRule> _aliases;
         private readonly List<BotRule> _bots;
         private readonly bool _mergeOnEmail;
+        private readonly IIdentityKeyGenerator _keyGenerator;
         private readonly Dictionary<string, GitIdentity> _emailCanonical = new();
         private readonly Dictionary<string, Dictionary<string, string>> _rawEmailNames = new();
         private readonly Dictionary<string, GitIdentity> _nameToRealCanonical = new();
 
-        public IdentityRegistry(List<AliasRule>? aliases = null, List<BotRule>? bots = null, bool mergeOnEmail = false)
+        public IdentityRegistry(List<AliasRule>? aliases = null, List<BotRule>? bots = null, bool mergeOnEmail = false, IIdentityKeyGenerator? keyGenerator = null)
         {
             _aliases = aliases ?? new List<AliasRule>();
             _bots = bots ?? new List<BotRule>();
             _mergeOnEmail = mergeOnEmail;
+            _keyGenerator = keyGenerator ?? IdentityKeyGenerator.Default;
         }
 
         public void RegisterRealIdentity(GitIdentity identity)

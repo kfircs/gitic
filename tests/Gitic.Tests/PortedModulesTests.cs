@@ -317,6 +317,37 @@ namespace Gitic.Tests
             Assert.Equal("alice smith <alice@example.com>", IdentityUtils.IdentityKey(identity));
         }
 
+        private class CustomKeyGenerator : IIdentityKeyGenerator
+        {
+            public string IdentityKey(GitIdentity identity)
+            {
+                return identity.Name.ToLowerInvariant();
+            }
+        }
+
+        [Fact]
+        public void TestCustomIdentityKeyGenerator()
+        {
+            var identity = new GitIdentity { Name = "Alice Smith", Email = "Alice@Example.com" };
+            var originalDefault = IdentityKeyGenerator.Default;
+            try
+            {
+                var customGenerator = new CustomKeyGenerator();
+                IdentityKeyGenerator.Default = customGenerator;
+
+                // Verify that IdentityUtils.IdentityKey uses the custom generator
+                Assert.Equal("alice smith", IdentityUtils.IdentityKey(identity));
+
+                // Verify that we can instantiate IdentityRegistry with custom key generator
+                var registry = new IdentityRegistry(keyGenerator: customGenerator);
+                Assert.NotNull(registry);
+            }
+            finally
+            {
+                IdentityKeyGenerator.Default = originalDefault;
+            }
+        }
+
         [Fact]
         public void TestIdentity_SameIdentity()
         {
