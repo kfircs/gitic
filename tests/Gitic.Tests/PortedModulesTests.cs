@@ -56,10 +56,15 @@ namespace Gitic.Tests
             // Excluded because missing from HEAD (includeDeleted is false)
             Assert.False(classifier.Check("src/deleted.cs"));
 
+            // Excluded because it's a binary image
+            Assert.False(classifier.Check("images/logo.png"));
+            Assert.False(classifier.Check("photo.jpg"));
+
             var exclusions = classifier.GetExclusions();
             Assert.Contains(exclusions, e => e.Category == "lockfile" && e.Pattern == "lockfiles");
             Assert.Contains(exclusions, e => e.Category == "test" && e.Pattern == "tests/**");
             Assert.Contains(exclusions, e => e.Category == "deleted" && e.Pattern == "missing from HEAD");
+            Assert.Contains(exclusions, e => e.Category == "binary" && e.Pattern == "image files");
         }
 
         [Fact]

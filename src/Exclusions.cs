@@ -249,12 +249,11 @@ namespace Gitic
 
         private bool IsBinaryImage(string fileName)
         {
-            int idx = fileName.LastIndexOf('.');
-            if (idx <= 0)
+            string ext = Path.GetExtension(fileName);
+            if (ext.StartsWith('.'))
             {
-                return false;
+                ext = ext.TrimStart('.');
             }
-            string ext = fileName.Substring(idx + 1);
             return Exclusions.BinaryImageExtensions.Contains(ext);
         }
 
