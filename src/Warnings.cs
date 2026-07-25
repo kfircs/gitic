@@ -120,14 +120,7 @@ namespace Gitic
             {
                 return new List<string>();
             }
-            int suspiciousCount = 0;
-            foreach (var file in context.Files)
-            {
-                if (IsSuspiciousFile(file))
-                {
-                    suspiciousCount++;
-                }
-            }
+            int suspiciousCount = context.Files.Count(IsSuspiciousFile);
             if (suspiciousCount > 0)
             {
                 return new List<string>
