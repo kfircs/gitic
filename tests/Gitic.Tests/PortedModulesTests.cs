@@ -149,6 +149,44 @@ namespace Gitic.Tests
         }
 
         [Fact]
+        public void TestGitParserImplAndInterface()
+        {
+            IGitParser parser = new GitParserImpl();
+            Assert.Equal("__GITIZER_COMMIT__", parser.CommitMarker);
+            Assert.Equal("__GITIZER_NUMSTAT__", parser.NumstatMarker);
+
+            // Test parsing with a minimal valid log containing one commit
+            string sampleOutput = 
+                "__GITIZER_COMMIT__\n" +
+                "abc1234\n" +
+                "2026-07-25T08:34:07Z\n" +
+                "Alice Smith\n" +
+                "alice@example.com\n" +
+                "parent123\n" +
+                "Implement IGitParser interface\n" +
+                "__GITIZER_NUMSTAT__\n" +
+                "5\t3\tsrc/Gitparser.cs\n" +
+                "diff --git a/src/Gitparser.cs b/src/Gitparser.cs\n" +
+                "@@ -1,3 +1,15 @@\n";
+
+            var commits = parser.ParseGitLog(sampleOutput);
+            Assert.Single(commits);
+
+            var commit = commits[0];
+            Assert.Equal("abc1234", commit.Hash);
+            Assert.Equal("Alice Smith", commit.Author.Name);
+            Assert.Equal("alice@example.com", commit.Author.Email);
+            Assert.Equal("Implement IGitParser interface", commit.Message);
+            Assert.Equal(1, commit.ParentCount);
+            
+            Assert.Single(commit.Files);
+            var file = commit.Files[0];
+            Assert.Equal("src/Gitparser.cs", file.Path);
+            Assert.Equal(5, file.Added);
+            Assert.Equal(3, file.Deleted);
+        }
+
+        [Fact]
         public void TestIdentity_ResolveAlias()
         {
             var identity = new GitIdentity { Name = "Alice S", Email = "alices@example.com" };

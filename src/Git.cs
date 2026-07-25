@@ -122,11 +122,13 @@ namespace Gitic
     {
         private readonly string _repoRoot;
         private readonly IGitExecutor _executor;
+        private readonly IGitParser _parser;
 
-        public GitClient(string repoRoot, IGitExecutor? executor = null)
+        public GitClient(string repoRoot, IGitExecutor? executor = null, IGitParser? parser = null)
         {
             _repoRoot = repoRoot;
             _executor = executor ?? new ExecFileGitExecutor();
+            _parser = parser ?? new GitParserImpl();
         }
 
         public async Task<string?> GetRepositoryRootAsync()
@@ -162,7 +164,7 @@ namespace Gitic
                 "log",
                 "--numstat",
                 "-p",
-                $"--format=format:{GitParser.CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{GitParser.NumstatMarker}"
+                $"--format=format:{_parser.CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{_parser.NumstatMarker}"
             };
 
             if (opt.IncludeMerges)
@@ -180,7 +182,7 @@ namespace Gitic
             }
 
             string stdout = await _executor.RunAsync(args.ToArray(), _repoRoot);
-            return GitParser.ParseGitLog(stdout);
+            return _parser.ParseGitLog(stdout);
         }
     }
 }

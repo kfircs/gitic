@@ -5,6 +5,24 @@ using System.Text.RegularExpressions;
 
 namespace Gitic
 {
+    public interface IGitParser
+    {
+        string CommitMarker { get; }
+        string NumstatMarker { get; }
+        List<GitCommitRecord> ParseGitLog(string output);
+        GitCommitRecord? ParseCommitRecord(string record);
+        List<GitFileChange> ParseNumstatAndPatches(string text);
+    }
+
+    public class GitParserImpl : IGitParser
+    {
+        public string CommitMarker => GitParser.CommitMarker;
+        public string NumstatMarker => GitParser.NumstatMarker;
+        public List<GitCommitRecord> ParseGitLog(string output) => GitParser.ParseGitLog(output);
+        public GitCommitRecord? ParseCommitRecord(string record) => GitParser.ParseCommitRecord(record);
+        public List<GitFileChange> ParseNumstatAndPatches(string text) => GitParser.ParseNumstatAndPatches(text);
+    }
+
     public static class GitParser
     {
         public const string CommitMarker = "__GITIZER_COMMIT__";
