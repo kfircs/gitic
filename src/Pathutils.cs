@@ -15,10 +15,7 @@ namespace Gitic
             {
                 normalized = normalized.Substring(2);
             }
-            while (normalized.StartsWith("/"))
-            {
-                normalized = normalized.Substring(1);
-            }
+            normalized = normalized.TrimStart('/');
             return normalized;
         }
 
