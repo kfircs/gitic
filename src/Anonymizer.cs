@@ -33,7 +33,12 @@ namespace Gitic
         }
     }
 
-    public class ResultAnonymizer
+    public interface IResultAnonymizer
+    {
+        AnalysisResult Anonymize(AnalysisResult result);
+    }
+
+    public class ResultAnonymizer : IResultAnonymizer
     {
         private readonly Dictionary<string, GitIdentity> _humanIdentities = new();
         private readonly Dictionary<string, GitIdentity> _automationIdentities = new();

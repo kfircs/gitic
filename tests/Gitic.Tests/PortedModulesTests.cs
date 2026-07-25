@@ -983,5 +983,26 @@ __GITIZER_NUMSTAT__
                 var defaultFeature = new FeatureStrategy();
                 Assert.True(defaultFeature.Matches("feat: implement new auth flow"));
             }
+
+            [Fact]
+            public void TestResultAnonymizerInterface()
+            {
+                var original = new AnalysisResult();
+                IResultAnonymizer anonymizer = new ResultAnonymizer();
+                var result = anonymizer.Anonymize(original);
+                Assert.NotNull(result);
+
+                IResultAnonymizer noOpAnonymizer = new NoOpResultAnonymizer();
+                var unchanged = noOpAnonymizer.Anonymize(original);
+                Assert.Same(original, unchanged);
+            }
+
+            private class NoOpResultAnonymizer : IResultAnonymizer
+            {
+                public AnalysisResult Anonymize(AnalysisResult result)
+                {
+                    return result;
+                }
+            }
         }
     }

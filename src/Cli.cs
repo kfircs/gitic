@@ -106,7 +106,7 @@ namespace Gitic
 
                 if (parsed.Settings.Anonymize)
                 {
-                    var anonymizer = new ResultAnonymizer();
+                    IResultAnonymizer anonymizer = new ResultAnonymizer();
                     result = anonymizer.Anonymize(result);
                 }
 
