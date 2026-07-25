@@ -34,7 +34,7 @@ namespace Gitic
 
         public ContributorMetric Find(string lookup)
         {
-            var exact = _contributors.FirstOrDefault(c => c.Name == lookup);
+            var exact = _contributors.FirstOrDefault(c => string.Equals(c.Name, lookup, StringComparison.Ordinal));
             if (exact != null)
             {
                 return exact;
