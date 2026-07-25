@@ -16,6 +16,13 @@ namespace Gitic
 
     public class GitParser : IGitParser
     {
+        private static readonly Regex DiffGitRegex = new(@" b/(.*)$", RegexOptions.Compiled);
+        private static readonly Regex HunkHeaderRegex = new(@"^@@\s+-\d+(?:,\d+)?\s+\+\d+(?:,\d+)?\s+@@\s*(.*)$", RegexOptions.Compiled);
+        private static readonly Regex ImportExcludeRegex = new(@"^(import|require|using|export\s+\*\s+from)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex SemicolonSuffixRegex = new(@";\s*$", RegexOptions.Compiled);
+        private static readonly Regex BracketsSuffixRegex = new(@"\s*[\{\(\[]\s*$", RegexOptions.Compiled);
+        private static readonly Regex CoAuthoredByRegex = new(@"^Co-authored-by:\s*(.*?)\s*<([^>]+)>", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+
         public string CommitMarker => "__GITIZER_COMMIT__";
         public string NumstatMarker => "__GITIZER_NUMSTAT__";
 
@@ -141,7 +148,7 @@ namespace Gitic
             {
                 if (line.StartsWith("diff --git "))
                 {
-                    var match = Regex.Match(line, @" b/(.*)$");
+                    var match = DiffGitRegex.Match(line);
                     if (match.Success)
                     {
                         currentPath = PathUtils.NormalizeGitPath(match.Groups[1].Value);
@@ -153,7 +160,7 @@ namespace Gitic
                 }
                 else if (line.StartsWith("@@ ") && currentPath != null)
                 {
-                    var match = Regex.Match(line, @"^@@\s+-\d+(?:,\d+)?\s+\+\d+(?:,\d+)?\s+@@\s*(.*)$");
+                    var match = HunkHeaderRegex.Match(line);
                     if (match.Success && match.Groups.Count >= 2)
                     {
                         string symbol = CleanSymbol(match.Groups[1].Value);
@@ -180,17 +187,17 @@ namespace Gitic
             {
                 return "";
             }
-            if (Regex.IsMatch(cleaned, @"^(import|require|using|export\s+\*\s+from)\b", RegexOptions.IgnoreCase))
+            if (ImportExcludeRegex.IsMatch(cleaned))
             {
                 return "";
             }
 
-            cleaned = Regex.Replace(cleaned, @";\s*$", "");
+            cleaned = SemicolonSuffixRegex.Replace(cleaned, "");
 
             while (true)
             {
                 string prev = cleaned;
-                cleaned = Regex.Replace(cleaned, @"\s*[\{\(\[]\s*$", "");
+                cleaned = BracketsSuffixRegex.Replace(cleaned, "");
                 if (cleaned == prev)
                 {
                     break;
@@ -209,7 +216,7 @@ namespace Gitic
         {
             var identities = new List<GitIdentity>();
             var seen = new HashSet<string>();
-            var matches = Regex.Matches(message, @"^Co-authored-by:\s*(.*?)\s*<([^>]+)>", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+            var matches = CoAuthoredByRegex.Matches(message);
             foreach (Match match in matches)
             {
                 if (match.Groups.Count >= 3)
