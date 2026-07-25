@@ -40,10 +40,9 @@ namespace Gitic
                 return exact;
             }
 
-            string normalizedLookup = lookup.ToLower();
             var matches = _contributors.Where(c =>
-                c.Name.ToLower() == normalizedLookup ||
-                c.Email.ToLower() == normalizedLookup
+                string.Equals(c.Name, lookup, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(c.Email, lookup, StringComparison.OrdinalIgnoreCase)
             ).ToList();
 
             if (matches.Count == 1)
