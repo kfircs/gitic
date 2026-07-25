@@ -203,7 +203,7 @@ namespace Gitic
                 }
                 else
                 {
-                    mergeKey = identity.Email.ToLowerInvariant();
+                    mergeKey = emailLower;
                 }
 
                 if (_emailCanonical.TryGetValue(mergeKey, out var canonical))
