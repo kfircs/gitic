@@ -27,10 +27,11 @@ namespace Gitic.Tests
                 new() { Name = "Backend", Paths = new List<string> { "src/api/**" } }
             };
 
-            Assert.Equal("Frontend", Exclusions.AreaForPath("src/ui/components/button.cs", 2, namedAreas));
-            Assert.Equal("Backend", Exclusions.AreaForPath("src/api/controllers/user.cs", 2, namedAreas));
-            Assert.Equal("src/db", Exclusions.AreaForPath("src/db/migrations/init.cs", 2, namedAreas));
-            Assert.Equal("src", Exclusions.AreaForPath("src/db/migrations/init.cs", 1, namedAreas));
+            var mapper = new AreaMapper();
+            Assert.Equal("Frontend", mapper.AreaForPath("src/ui/components/button.cs", 2, namedAreas));
+            Assert.Equal("Backend", mapper.AreaForPath("src/api/controllers/user.cs", 2, namedAreas));
+            Assert.Equal("src/db", mapper.AreaForPath("src/db/migrations/init.cs", 2, namedAreas));
+            Assert.Equal("src", mapper.AreaForPath("src/db/migrations/init.cs", 1, namedAreas));
         }
 
         [Fact]

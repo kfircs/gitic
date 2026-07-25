@@ -252,19 +252,22 @@ namespace Gitic
         private readonly int _depth;
         private readonly IKnowledgeSiloCalculator _siloCalculator;
         private readonly IScoreCalculatorProvider _scoreCalculatorProvider;
+        private readonly IAreaMapper _areaMapper;
 
         public FamiliarityScoringEngine(
             GitizerConfig config,
             HashSet<string>? activeContributorKeys = null,
             int depth = 2,
             IKnowledgeSiloCalculator? siloCalculator = null,
-            IScoreCalculatorProvider? scoreCalculatorProvider = null)
+            IScoreCalculatorProvider? scoreCalculatorProvider = null,
+            IAreaMapper? areaMapper = null)
         {
             _config = config;
             _activeContributorKeys = activeContributorKeys ?? new HashSet<string>();
             _depth = depth;
             _siloCalculator = siloCalculator ?? new KnowledgeSiloCalculator();
             _scoreCalculatorProvider = scoreCalculatorProvider ?? new DefaultScoreCalculatorProvider();
+            _areaMapper = areaMapper ?? new AreaMapper();
         }
 
         private class ScoringContext
@@ -373,7 +376,7 @@ namespace Gitic
                 return new FileMetric
                 {
                     Path = item.Key,
-                    Area = Exclusions.AreaForPath(item.Key, targetDepth, _config.Areas),
+                    Area = _areaMapper.AreaForPath(item.Key, targetDepth, _config.Areas),
                     Touches = item.Touches,
                     Added = item.Added,
                     Deleted = item.Deleted,

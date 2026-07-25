@@ -22,6 +22,7 @@ namespace Gitic
     {
         private readonly IPathClassifier _filter;
         private readonly ICommitClassifier _classifier;
+        private readonly IAreaMapper _areaMapper;
         private readonly Dictionary<string, ItemAccumulator> _files = new();
         private readonly Dictionary<string, ItemAccumulator> _areas = new();
         private readonly Dictionary<string, ContributorAccumulator> _contributors = new();
@@ -38,13 +39,15 @@ namespace Gitic
             AnalysisSettings settings,
             IPathClassifier filter,
             IIdentityRegistry identityRegistry,
-            ICommitClassifier? classifier = null)
+            ICommitClassifier? classifier = null,
+            IAreaMapper? areaMapper = null)
         {
             _config = config;
             _settings = settings;
             _filter = filter;
             _identityRegistry = identityRegistry;
             _classifier = classifier ?? new CommitClassifier();
+            _areaMapper = areaMapper ?? new AreaMapper();
         }
 
         public void PrepareIdentityMerging(List<GitCommitRecord> commits)
@@ -75,7 +78,7 @@ namespace Gitic
                 }
 
                 _includedFileChangeCount += 1;
-                string areaName = Exclusions.AreaForPath(path, _settings.Depth, _config.Areas, _warnings);
+                string areaName = _areaMapper.AreaForPath(path, _settings.Depth, _config.Areas, _warnings);
                 var fileAccumulator = GetOrCreateItem(_files, path);
                 var areaAccumulator = GetOrCreateItem(_areas, areaName);
                 
