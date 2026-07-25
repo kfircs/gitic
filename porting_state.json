@@ -1,0 +1,168 @@
+{
+  "SourceDirectory": "../gitizer",
+  "TargetDirectory": ".",
+  "Files": [
+    {
+      "SourceRelativePath": "src/accumulator.ts",
+      "TargetRelativePath": "src/Accumulator.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:17:46.690713"
+    },
+    {
+      "SourceRelativePath": "src/analyzer.ts",
+      "TargetRelativePath": "src/Analyzer.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:17:46.690788"
+    },
+    {
+      "SourceRelativePath": "src/anonymizer.ts",
+      "TargetRelativePath": "src/Anonymizer.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:17:46.690790"
+    },
+    {
+      "SourceRelativePath": "src/areas.ts",
+      "TargetRelativePath": "src/Areas.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:17:46.690791"
+    },
+    {
+      "SourceRelativePath": "src/argsParser.ts",
+      "TargetRelativePath": "src/Argsparser.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:17:46.690791"
+    },
+    {
+      "SourceRelativePath": "src/argsValidator.ts",
+      "TargetRelativePath": "src/Argsvalidator.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:28:50.636923"
+    },
+    {
+      "SourceRelativePath": "src/classifier.ts",
+      "TargetRelativePath": "src/Classifier.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:28:50.636980"
+    },
+    {
+      "SourceRelativePath": "src/cli.ts",
+      "TargetRelativePath": "src/Cli.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:28:50.636982"
+    },
+    {
+      "SourceRelativePath": "src/config.ts",
+      "TargetRelativePath": "src/Config.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:28:50.636983"
+    },
+    {
+      "SourceRelativePath": "src/configValidator.ts",
+      "TargetRelativePath": "src/Configvalidator.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:28:50.636984"
+    },
+    {
+      "SourceRelativePath": "src/contributorRegistry.ts",
+      "TargetRelativePath": "src/Contributorregistry.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:31:38.991013"
+    },
+    {
+      "SourceRelativePath": "src/exclusions.ts",
+      "TargetRelativePath": "src/Exclusions.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:31:38.991093"
+    },
+    {
+      "SourceRelativePath": "src/fileStats.ts",
+      "TargetRelativePath": "src/Filestats.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:31:38.991096"
+    },
+    {
+      "SourceRelativePath": "src/git.ts",
+      "TargetRelativePath": "src/Git.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:31:38.991097"
+    },
+    {
+      "SourceRelativePath": "src/gitGraph.ts",
+      "TargetRelativePath": "src/Gitgraph.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:31:38.991098"
+    },
+    {
+      "SourceRelativePath": "src/gitParser.ts",
+      "TargetRelativePath": "src/Gitparser.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:36:14.473663"
+    },
+    {
+      "SourceRelativePath": "src/identity.ts",
+      "TargetRelativePath": "src/Identity.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:36:14.473774"
+    },
+    {
+      "SourceRelativePath": "src/metricProcessors.ts",
+      "TargetRelativePath": "src/Metricprocessors.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:36:14.473776"
+    },
+    {
+      "SourceRelativePath": "src/metricsEngine.ts",
+      "TargetRelativePath": "src/Metricsengine.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:36:14.473777"
+    },
+    {
+      "SourceRelativePath": "src/pathUtils.ts",
+      "TargetRelativePath": "src/Pathutils.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:36:14.473778"
+    },
+    {
+      "SourceRelativePath": "src/renderers.ts",
+      "TargetRelativePath": "src/Renderers.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:38:33.065613"
+    },
+    {
+      "SourceRelativePath": "src/reportTemplate.ts",
+      "TargetRelativePath": "src/Reporttemplate.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:38:33.065631"
+    },
+    {
+      "SourceRelativePath": "src/scoring.ts",
+      "TargetRelativePath": "src/Scoring.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:38:33.065644"
+    },
+    {
+      "SourceRelativePath": "src/tableBuilder.ts",
+      "TargetRelativePath": "src/Tablebuilder.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:38:33.065647"
+    },
+    {
+      "SourceRelativePath": "src/types.ts",
+      "TargetRelativePath": "src/Types.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:38:33.065647"
+    },
+    {
+      "SourceRelativePath": "src/warnings.ts",
+      "TargetRelativePath": "src/Warnings.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:41:27.412974"
+    },
+    {
+      "SourceRelativePath": "src/yamlParser.ts",
+      "TargetRelativePath": "src/Yamlparser.cs",
+      "Status": "Ported",
+      "PortedAt": "2026-07-25T06:41:27.412985"
+    }
+  ]
+}
