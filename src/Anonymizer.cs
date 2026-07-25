@@ -79,13 +79,6 @@ namespace Gitic
             return identity;
         }
 
-        private T AnonymizeHumanContributor<T>(T contributor, Func<T, string, string, T> withNewIdentity)
-            where T : class
-        {
-            // We use reflection or delegate to get name/email. Let's make it simple.
-            return contributor;
-        }
-
         private ContributorShare AnonymizeHumanContributorShare(ContributorShare contributor)
         {
             var identity = AnonymizeHuman(contributor.Name, contributor.Email);
