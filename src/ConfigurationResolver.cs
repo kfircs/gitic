@@ -9,8 +9,8 @@ namespace Gitic
 
     public class ResolvedConfiguration
     {
-        public AnalysisSettings Settings { get; set; } = new();
-        public GitizerConfig Config { get; set; } = GitizerConfig.Default;
+        public AnalysisSettings Settings { get; init; } = new();
+        public GitizerConfig Config { get; init; } = GitizerConfig.Default;
     }
 
     public class ConfigurationResolver : IConfigurationResolver
