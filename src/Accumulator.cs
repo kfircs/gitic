@@ -9,10 +9,10 @@ namespace Gitic
         void PrepareIdentityMerging(List<GitCommitRecord> commits);
         List<EmailCollision> GetEmailCollisions();
         void AddCommit(GitCommitRecord commit, List<string> filesInCommit);
-        Dictionary<string, ItemAccumulator> GetFiles();
-        Dictionary<string, ItemAccumulator> GetAreas();
-        Dictionary<string, ContributorAccumulator> GetContributors();
-        Dictionary<string, ContributorAccumulator> GetAutomation();
+        IReadOnlyDictionary<string, ItemAccumulator> GetFiles();
+        IReadOnlyDictionary<string, ItemAccumulator> GetAreas();
+        IReadOnlyDictionary<string, ContributorAccumulator> GetContributors();
+        IReadOnlyDictionary<string, ContributorAccumulator> GetAutomation();
         List<ExclusionSummary> GetExclusions();
         HashSet<string> GetWarnings();
         int GetIncludedFileChangeCount();
@@ -108,22 +108,22 @@ namespace Gitic
             }
         }
 
-        public Dictionary<string, ItemAccumulator> GetFiles()
+        public IReadOnlyDictionary<string, ItemAccumulator> GetFiles()
         {
             return _files;
         }
 
-        public Dictionary<string, ItemAccumulator> GetAreas()
+        public IReadOnlyDictionary<string, ItemAccumulator> GetAreas()
         {
             return _areas;
         }
 
-        public Dictionary<string, ContributorAccumulator> GetContributors()
+        public IReadOnlyDictionary<string, ContributorAccumulator> GetContributors()
         {
             return _contributors;
         }
 
-        public Dictionary<string, ContributorAccumulator> GetAutomation()
+        public IReadOnlyDictionary<string, ContributorAccumulator> GetAutomation()
         {
             return _automation;
         }
