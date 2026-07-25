@@ -486,6 +486,38 @@ __GITIZER_NUMSTAT__
         }
 
         [Fact]
+        public void TestGitParser_BuildGitLogArguments()
+        {
+            var parser = new GitParser();
+            
+            // Case 1: AllTime=true, IncludeMerges=true
+            var options1 = new GitHistoryExtractorOptions
+            {
+                AllTime = true,
+                IncludeMerges = true
+            };
+            var args1 = parser.BuildGitLogArguments(options1);
+            Assert.Contains("log", args1);
+            Assert.Contains("--numstat", args1);
+            Assert.Contains("-p", args1);
+            Assert.Contains("--cc", args1);
+            Assert.DoesNotContain("--no-merges", args1);
+            Assert.All(args1, arg => Assert.False(arg.StartsWith("--since=")));
+
+            // Case 2: AllTime=false, IncludeMerges=false, Since="2026-01-01T00:00:00Z"
+            var options2 = new GitHistoryExtractorOptions
+            {
+                AllTime = false,
+                IncludeMerges = false,
+                Since = "2026-01-01T00:00:00Z"
+            };
+            var args2 = parser.BuildGitLogArguments(options2);
+            Assert.Contains("--no-merges", args2);
+            Assert.DoesNotContain("--cc", args2);
+            Assert.Contains("--since=2026-01-01T00:00:00Z", args2);
+        }
+
+        [Fact]
         public void TestMetricProcessors()
         {
             var accums = new List<ContributorAccumulator>

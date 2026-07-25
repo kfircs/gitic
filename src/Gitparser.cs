@@ -12,6 +12,7 @@ namespace Gitic
         List<GitCommitRecord> ParseGitLog(string output);
         GitCommitRecord? ParseCommitRecord(string record);
         List<GitFileChange> ParseNumstatAndPatches(string text);
+        List<string> BuildGitLogArguments(GitHistoryExtractorOptions options);
     }
 
     public class GitParser : IGitParser
@@ -25,6 +26,34 @@ namespace Gitic
 
         public string CommitMarker => "__GITIZER_COMMIT__";
         public string NumstatMarker => "__GITIZER_NUMSTAT__";
+
+        public List<string> BuildGitLogArguments(GitHistoryExtractorOptions options)
+        {
+            var opt = options ?? new GitHistoryExtractorOptions();
+            var args = new List<string>
+            {
+                "log",
+                "--numstat",
+                "-p",
+                $"--format=format:{CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{NumstatMarker}"
+            };
+
+            if (opt.IncludeMerges)
+            {
+                args.Add("--cc");
+            }
+            else
+            {
+                args.Add("--no-merges");
+            }
+
+            if (!opt.AllTime)
+            {
+                args.Add($"--since={opt.Since ?? GitUtils.DefaultSinceDate()}");
+            }
+
+            return args;
+        }
 
         public List<GitCommitRecord> ParseGitLog(string output)
         {

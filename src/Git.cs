@@ -129,27 +129,7 @@ namespace Gitic
         public async Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null)
         {
             var opt = options ?? new GitHistoryExtractorOptions();
-            var args = new List<string>
-            {
-                "log",
-                "--numstat",
-                "-p",
-                $"--format=format:{_parser.CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{_parser.NumstatMarker}"
-            };
-
-            if (opt.IncludeMerges)
-            {
-                args.Add("--cc");
-            }
-            else
-            {
-                args.Add("--no-merges");
-            }
-
-            if (!opt.AllTime)
-            {
-                args.Add($"--since={opt.Since ?? GitUtils.DefaultSinceDate()}");
-            }
+            var args = _parser.BuildGitLogArguments(opt);
 
             string stdout = await _executor.RunAsync(args.ToArray(), _repoRoot);
             return _parser.ParseGitLog(stdout);
