@@ -71,7 +71,7 @@ namespace Gitic
             string? mdPath = null;
             string? svgPath = null;
 
-            Func<string, int, string> consumeValue = (argName, currentIndex) =>
+            string ConsumeValue(string argName, int currentIndex)
             {
                 if (currentIndex + 1 >= _args.Count)
                 {
@@ -79,7 +79,7 @@ namespace Gitic
                 }
                 string rawValue = _args[currentIndex + 1];
                 return _validator.ValidateNextValue(argName, rawValue);
-            };
+            }
 
             for (int index = 1; index < _args.Count; index += 1)
             {
@@ -110,33 +110,33 @@ namespace Gitic
                 }
                 else if (arg == "--since")
                 {
-                    settings.Since = consumeValue(arg, index);
+                    settings.Since = ConsumeValue(arg, index);
                     index += 1;
                 }
                 else if (arg == "--path")
                 {
-                    settings.Path = consumeValue(arg, index);
+                    settings.Path = ConsumeValue(arg, index);
                     index += 1;
                 }
                 else if (arg == "--depth")
                 {
-                    string rawDepth = consumeValue(arg, index);
+                    string rawDepth = ConsumeValue(arg, index);
                     settings.Depth = _validator.ValidateDepth(rawDepth);
                     index += 1;
                 }
                 else if (arg == "--html")
                 {
-                    htmlPath = consumeValue(arg, index);
+                    htmlPath = ConsumeValue(arg, index);
                     index += 1;
                 }
                 else if (arg == "--md")
                 {
-                    mdPath = consumeValue(arg, index);
+                    mdPath = ConsumeValue(arg, index);
                     index += 1;
                 }
                 else if (arg == "--svg")
                 {
-                    svgPath = consumeValue(arg, index);
+                    svgPath = ConsumeValue(arg, index);
                     index += 1;
                 }
                 else if (arg.StartsWith("--"))
