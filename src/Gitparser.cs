@@ -154,8 +154,8 @@ namespace Gitic
 
                         if (path.Length > 0)
                         {
-                            int added = addedStr == "-" ? 0 : (int.TryParse(addedStr, out var addVal) ? addVal : 0);
-                            int deleted = deletedStr == "-" ? 0 : (int.TryParse(deletedStr, out var delVal) ? delVal : 0);
+                            int added = ParseDiffLineCount(addedStr);
+                            int deleted = ParseDiffLineCount(deletedStr);
                             
                             var change = new GitFileChange { Path = path, Added = added, Deleted = deleted, Symbols = new List<string>() };
                             fileChanges.Add(change);
@@ -283,6 +283,11 @@ namespace Gitic
                 }
             }
             return normalized;
+        }
+
+        private int ParseDiffLineCount(string value)
+        {
+            return value == "-" ? 0 : (int.TryParse(value, out var parsedVal) ? parsedVal : 0);
         }
     }
 }

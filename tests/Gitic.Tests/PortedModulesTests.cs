@@ -519,6 +519,25 @@ namespace Gitic.Tests
         }
 
         [Fact]
+        public void TestGitParser_ParseNumstatAndPatches_BinaryAndInvalid()
+        {
+            var parser = new GitParser();
+            string numstatText = "-\t-\tbin/logo.png\nxyz\t999\tsrc/weird.cs\n";
+            var files = parser.ParseNumstatAndPatches(numstatText);
+            Assert.Equal(2, files.Count);
+
+            var logo = files[0];
+            Assert.Equal("bin/logo.png", logo.Path);
+            Assert.Equal(0, logo.Added);
+            Assert.Equal(0, logo.Deleted);
+
+            var weird = files[1];
+            Assert.Equal("src/weird.cs", weird.Path);
+            Assert.Equal(0, weird.Added);
+            Assert.Equal(999, weird.Deleted);
+        }
+
+        [Fact]
         public void TestGitParser_ParseGitLog()
         {
             var parser = new GitParser();
