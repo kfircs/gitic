@@ -18,9 +18,8 @@ namespace Gitic
             while (queue.Count > 0 && count < maxCount)
             {
                 string curr = queue.Dequeue();
-                if (!ancestors.Contains(curr))
+                if (ancestors.Add(curr))
                 {
-                    ancestors.Add(curr);
                     if (commitMap.TryGetValue(curr, out var rec))
                     {
                         foreach (var parent in rec.Parents)
@@ -53,9 +52,8 @@ namespace Gitic
                 {
                     continue;
                 }
-                if (!visited.Contains(curr))
+                if (visited.Add(curr))
                 {
-                    visited.Add(curr);
                     if (commitMap.TryGetValue(curr, out var rec))
                     {
                         branchCommits.Add(rec);
