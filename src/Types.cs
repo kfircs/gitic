@@ -51,6 +51,22 @@ namespace Gitic
 
         [JsonPropertyName("depth")]
         public int Depth { get; set; }
+
+        public AnalysisSettings Clone()
+        {
+            return new AnalysisSettings
+            {
+                Json = Json,
+                AllTime = AllTime,
+                Since = Since,
+                IncludeMerges = IncludeMerges,
+                IncludeDeleted = IncludeDeleted,
+                MergeByEmail = MergeByEmail,
+                Path = Path,
+                Anonymize = Anonymize,
+                Depth = Depth
+            };
+        }
     }
 
     public class GitFileChange

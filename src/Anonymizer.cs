@@ -96,18 +96,7 @@ namespace Gitic
                     CommitCount = result.Analysis.CommitCount,
                     IncludedFileChangeCount = result.Analysis.IncludedFileChangeCount
                 },
-                Settings = new AnalysisSettings
-                {
-                    Json = result.Settings.Json,
-                    AllTime = result.Settings.AllTime,
-                    Since = result.Settings.Since,
-                    IncludeMerges = result.Settings.IncludeMerges,
-                    IncludeDeleted = result.Settings.IncludeDeleted,
-                    MergeByEmail = result.Settings.MergeByEmail,
-                    Path = result.Settings.Path,
-                    Anonymize = result.Settings.Anonymize,
-                    Depth = result.Settings.Depth
-                },
+                Settings = result.Settings.Clone(),
                 Exclusions = result.Exclusions.Select(e => new ExclusionSummary
                 {
                     Category = e.Category,

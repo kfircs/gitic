@@ -1183,6 +1183,36 @@ __GITIZER_NUMSTAT__
             }
 
             [Fact]
+            public void TestAnalysisSettings_Clone_ReturnsCorrectCopy()
+            {
+                var original = new AnalysisSettings
+                {
+                    Depth = 5,
+                    Since = "2 weeks ago",
+                    Json = true,
+                    AllTime = true,
+                    IncludeMerges = true,
+                    IncludeDeleted = true,
+                    MergeByEmail = true,
+                    Path = "custom/path",
+                    Anonymize = true
+                };
+
+                var cloned = original.Clone();
+
+                Assert.NotSame(original, cloned);
+                Assert.Equal(original.Depth, cloned.Depth);
+                Assert.Equal(original.Since, cloned.Since);
+                Assert.Equal(original.Json, cloned.Json);
+                Assert.Equal(original.AllTime, cloned.AllTime);
+                Assert.Equal(original.IncludeMerges, cloned.IncludeMerges);
+                Assert.Equal(original.IncludeDeleted, cloned.IncludeDeleted);
+                Assert.Equal(original.MergeByEmail, cloned.MergeByEmail);
+                Assert.Equal(original.Path, cloned.Path);
+                Assert.Equal(original.Anonymize, cloned.Anonymize);
+            }
+
+            [Fact]
             public async Task TestRepositoryAnalyzer_UsesInjectedNormalizer()
             {
                 var fakeProvider = new FakeFileStatsProvider();
