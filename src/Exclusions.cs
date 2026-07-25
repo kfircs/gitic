@@ -254,7 +254,7 @@ namespace Gitic
             {
                 return false;
             }
-            string ext = fileName.Substring(idx + 1).ToLower();
+            string ext = fileName.Substring(idx + 1);
             return Exclusions.BinaryImageExtensions.Contains(ext);
         }
 
