@@ -4,19 +4,29 @@ using System.Linq;
 
 namespace Gitic
 {
-    public static class MetricProcessors
+    public interface IMetricProcessorService
+    {
+        List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items);
+        List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items);
+        List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command);
+        List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command);
+        List<ContributorMetric> SortContributorsForCommand(List<ContributorMetric> contributors, AnalysisCommand command);
+        HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits);
+    }
+
+    public class MetricProcessorService : IMetricProcessorService
     {
         private const long MsPerDay = 86400000L;
         private const long ActiveContributorDays = 90L;
         private const long ActiveContributorLookbackMs = ActiveContributorDays * MsPerDay;
         private const double TopQuarterFraction = 0.25;
 
-        public static List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items)
+        public List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items)
         {
             return RenderContributorAccumulatorList(items);
         }
 
-        public static List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items)
+        public List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items)
         {
             return RenderContributorAccumulatorList(items)
                 .Select(m => new AutomationMetric
@@ -28,7 +38,7 @@ namespace Gitic
                 }).ToList();
         }
 
-        private static List<ContributorMetric> RenderContributorAccumulatorList(List<ContributorAccumulator> items)
+        private List<ContributorMetric> RenderContributorAccumulatorList(List<ContributorAccumulator> items)
         {
             return items
                 .Select(item => new ContributorMetric
@@ -42,7 +52,7 @@ namespace Gitic
                 .ToList();
         }
 
-        public static List<ContributorAreaMetric> ContributorAreas(ContributorAccumulator item)
+        private List<ContributorAreaMetric> ContributorAreas(ContributorAccumulator item)
         {
             return item.Areas
                 .Select(kv =>
@@ -63,9 +73,8 @@ namespace Gitic
                 .ToList();
         }
 
-        public static List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command)
+        public List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command)
         {
-            // scoreKey = command === "areas" ? "heat_score" : "attention_score";
             if (command == AnalysisCommand.Areas)
             {
                 return files.OrderByDescending(f => f.HeatScore).ToList();
@@ -73,9 +82,8 @@ namespace Gitic
             return files.OrderByDescending(f => f.AttentionScore).ToList();
         }
 
-        public static List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command)
+        public List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command)
         {
-            // scoreKey = command === "hotspots" ? "attention_score" : "heat_score";
             if (command == AnalysisCommand.Hotspots)
             {
                 return areas.OrderByDescending(a => a.AttentionScore).ToList();
@@ -83,14 +91,14 @@ namespace Gitic
             return areas.OrderByDescending(a => a.HeatScore).ToList();
         }
 
-        public static List<ContributorMetric> SortContributorsForCommand(
+        public List<ContributorMetric> SortContributorsForCommand(
             List<ContributorMetric> contributors,
             AnalysisCommand command)
         {
             return contributors.OrderByDescending(c => c.TotalActivity).ToList();
         }
 
-        public static HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits)
+        public HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits)
         {
             var activeKeys = new HashSet<string>();
             if (commits.Count == 0)
@@ -118,5 +126,28 @@ namespace Gitic
             }
             return activeKeys;
         }
+    }
+
+    public static class MetricProcessors
+    {
+        private static readonly IMetricProcessorService _instance = new MetricProcessorService();
+
+        public static List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items)
+            => _instance.RenderContributors(items);
+
+        public static List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items)
+            => _instance.RenderAutomation(items);
+
+        public static List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command)
+            => _instance.SortFilesForCommand(files, command);
+
+        public static List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command)
+            => _instance.SortAreasForCommand(areas, command);
+
+        public static List<ContributorMetric> SortContributorsForCommand(List<ContributorMetric> contributors, AnalysisCommand command)
+            => _instance.SortContributorsForCommand(contributors, command);
+
+        public static HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits)
+            => _instance.GetActiveContributorKeys(commits);
     }
 }

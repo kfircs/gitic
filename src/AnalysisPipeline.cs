@@ -27,7 +27,8 @@ namespace Gitic
             AnalysisCommand command,
             string repoRoot,
             ITemporalCouplingEngine? temporalCouplingEngine = null,
-            ILeadTimeEngine? leadTimeEngine = null)
+            ILeadTimeEngine? leadTimeEngine = null,
+            IMetricProcessorService? metricProcessorService = null)
         {
             var gitignoreRules = PathClassifier.LoadGitignoreRules(repoRoot);
             config.Excludes.AddRange(gitignoreRules);
@@ -41,6 +42,7 @@ namespace Gitic
             int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
             ITemporalCouplingEngine actualTemporalCouplingEngine = temporalCouplingEngine ?? new TemporalCouplingEngine(temporalCouplingLimit);
             ILeadTimeEngine actualLeadTimeEngine = leadTimeEngine ?? new LeadTimeEngine();
+            IMetricProcessorService actualMetricProcessorService = metricProcessorService ?? new MetricProcessorService();
 
             foreach (var commit in commits)
             {
@@ -49,14 +51,14 @@ namespace Gitic
                 actualTemporalCouplingEngine.TrackCommitFiles(includedFilesInCommit);
             }
 
-            var activeContributorKeys = MetricProcessors.GetActiveContributorKeys(commits);
+            var activeContributorKeys = actualMetricProcessorService.GetActiveContributorKeys(commits);
             IFamiliarityScoringEngine scoringEngine = new FamiliarityScoringEngine(config, activeContributorKeys, settings.Depth);
 
             var rawFileMetrics = scoringEngine.ScoreFiles(accumulator.GetFiles().Values.ToList(), settings.Depth);
             var areaMetrics = scoringEngine.ScoreAreas(accumulator.GetAreas().Values.ToList());
 
-            var contributorMetrics = MetricProcessors.RenderContributors(accumulator.GetContributors().Values.ToList());
-            var automationMetrics = MetricProcessors.RenderAutomation(accumulator.GetAutomation().Values.ToList());
+            var contributorMetrics = actualMetricProcessorService.RenderContributors(accumulator.GetContributors().Values.ToList());
+            var automationMetrics = actualMetricProcessorService.RenderAutomation(accumulator.GetAutomation().Values.ToList());
 
             var topCouplings = actualTemporalCouplingEngine.CalculateTemporalCoupling();
             var leadTimes = actualLeadTimeEngine.CalculateLeadTimes(commits);
