@@ -166,44 +166,40 @@ excludes:
         [Fact]
         public void TestCommandLineValidator_IsCommand()
         {
-            var validator = new CommandLineValidator();
-            
             // Valid commands (case-insensitive)
-            validator.ValidateCommand("hotspots");
-            validator.ValidateCommand("Hotspots");
-            validator.ValidateCommand("areas");
-            validator.ValidateCommand("contributors");
-            validator.ValidateCommand("contributor");
-            validator.ValidateCommand("report");
-            validator.ValidateCommand("config");
+            new CommandLineParser(new[] { "hotspots" }).Parse();
+            new CommandLineParser(new[] { "Hotspots" }).Parse();
+            new CommandLineParser(new[] { "areas" }).Parse();
+            new CommandLineParser(new[] { "contributors" }).Parse();
+            new CommandLineParser(new[] { "contributor", "some_contributor" }).Parse();
+            new CommandLineParser(new[] { "report" }).Parse();
+            new CommandLineParser(new[] { "config" }).Parse();
 
             // Invalid commands
-            Assert.Throws<CommandLineParseError>(() => validator.ValidateCommand("unknown_command"));
-            Assert.Throws<CommandLineParseError>(() => validator.ValidateCommand(""));
-            Assert.Throws<CommandLineParseError>(() => validator.ValidateCommand(null));
+            Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "unknown_command" }).Parse());
+            Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new string[] { "" }).Parse());
+            Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new string[] { null! }).Parse());
         }
 
         [Fact]
         public void TestCommandLineValidator_ValidateDepth()
         {
-            var validator = new CommandLineValidator();
-
             // Valid depth values
-            Assert.Equal(1, validator.ValidateDepth("1"));
-            Assert.Equal(5, validator.ValidateDepth("5"));
-            Assert.Equal(10, validator.ValidateDepth("10"));
+            Assert.Equal(1, new CommandLineParser(new[] { "hotspots", "--depth", "1" }).Parse().Settings.Depth);
+            Assert.Equal(5, new CommandLineParser(new[] { "hotspots", "--depth", "5" }).Parse().Settings.Depth);
+            Assert.Equal(10, new CommandLineParser(new[] { "hotspots", "--depth", "10" }).Parse().Settings.Depth);
 
             // Invalid depth values
-            var ex1 = Assert.Throws<CommandLineParseError>(() => validator.ValidateDepth("0"));
+            var ex1 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "0" }).Parse());
             Assert.Equal("--depth must be a positive integer.", ex1.Message);
 
-            var ex2 = Assert.Throws<CommandLineParseError>(() => validator.ValidateDepth("-3"));
+            var ex2 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "-3" }).Parse());
             Assert.Equal("--depth must be a positive integer.", ex2.Message);
 
-            var ex3 = Assert.Throws<CommandLineParseError>(() => validator.ValidateDepth("notaninteger"));
+            var ex3 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "notaninteger" }).Parse());
             Assert.Equal("--depth must be a positive integer.", ex3.Message);
 
-            var ex4 = Assert.Throws<CommandLineParseError>(() => validator.ValidateDepth("11"));
+            var ex4 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "11" }).Parse());
             Assert.Equal("--depth must be between 1 and 10.", ex4.Message);
         }
 

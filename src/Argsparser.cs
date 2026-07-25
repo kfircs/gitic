@@ -3,6 +3,13 @@ using System.Collections.Generic;
 
 namespace Gitic
 {
+    public class CommandLineParseError : Exception
+    {
+        public CommandLineParseError(string message) : base(message)
+        {
+        }
+    }
+
     public class ParsedArgs
     {
         public string Command { get; set; } = string.Empty;
@@ -38,13 +45,24 @@ namespace Gitic
 
     public class CommandLineParser : ICommandLineParser
     {
+        private const int MinDepth = 1;
+        private const int MaxDepth = 10;
+
+        private static readonly HashSet<string> ValidCommands = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "hotspots",
+            "areas",
+            "contributors",
+            "contributor",
+            "report",
+            "config"
+        };
+
         private readonly List<string> _args;
-        private readonly CommandLineValidator _validator;
 
         public CommandLineParser(string[] args)
         {
             _args = new List<string>(args);
-            _validator = new CommandLineValidator();
         }
 
         public ParsedArgs Parse()
@@ -68,7 +86,7 @@ namespace Gitic
             }
 
             string commandName = _args[0];
-            _validator.ValidateCommand(commandName);
+            ValidateCommand(commandName);
 
             var settings = DefaultAnalysisSettings.Create();
             var positionals = new List<string>();
@@ -83,7 +101,7 @@ namespace Gitic
                     throw new CommandLineParseError($"{argName} requires a value.");
                 }
                 string rawValue = _args[currentIndex + 1];
-                return _validator.ValidateNextValue(argName, rawValue);
+                return ValidateNextValue(argName, rawValue);
             }
 
             for (int index = 1; index < _args.Count; index += 1)
@@ -126,7 +144,7 @@ namespace Gitic
                 else if (arg == "--depth")
                 {
                     string rawDepth = ConsumeValue(arg, index);
-                    settings.Depth = _validator.ValidateDepth(rawDepth);
+                    settings.Depth = ValidateDepth(rawDepth);
                     index += 1;
                 }
                 else if (arg == "--html")
@@ -146,7 +164,7 @@ namespace Gitic
                 }
                 else if (arg.StartsWith("--"))
                 {
-                    _validator.ValidateUnknownFlag(arg);
+                    ValidateUnknownFlag(arg);
                 }
                 else
                 {
@@ -177,7 +195,7 @@ namespace Gitic
             if (commandName == "contributor")
             {
                 string? contributorName = positionals.Count > 0 ? positionals[0] : null;
-                _validator.ValidateContributorName(contributorName);
+                ValidateContributorName(contributorName);
                 return new ParsedArgs
                 {
                     Command = "contributor",
@@ -202,6 +220,58 @@ namespace Gitic
                 SvgPath = svgPath,
                 ConfigAction = null
             };
+        }
+
+        private void ValidateCommand(string? commandName)
+        {
+            if (string.IsNullOrEmpty(commandName))
+            {
+                throw new CommandLineParseError("A command is required.");
+            }
+            if (!IsCommand(commandName))
+            {
+                throw new CommandLineParseError($"Unknown command: {commandName}");
+            }
+        }
+
+        private string ValidateNextValue(string argName, string? value)
+        {
+            if (value == null)
+            {
+                throw new CommandLineParseError($"{argName} requires a value.");
+            }
+            return value;
+        }
+
+        private int ValidateDepth(string value)
+        {
+            if (!int.TryParse(value, out int depth) || depth < MinDepth)
+            {
+                throw new CommandLineParseError("--depth must be a positive integer.");
+            }
+            if (depth > MaxDepth)
+            {
+                throw new CommandLineParseError($"--depth must be between {MinDepth} and {MaxDepth}.");
+            }
+            return depth;
+        }
+
+        private void ValidateUnknownFlag(string arg)
+        {
+            throw new CommandLineParseError($"Unknown flag: {arg}");
+        }
+
+        private void ValidateContributorName(string? contributorName)
+        {
+            if (string.IsNullOrEmpty(contributorName))
+            {
+                throw new CommandLineParseError("contributor requires a contributor name.");
+            }
+        }
+
+        private bool IsCommand(string command)
+        {
+            return ValidCommands.Contains(command);
         }
     }
 }
