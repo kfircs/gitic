@@ -80,7 +80,7 @@ namespace Gitic.Tests
             var settings = new AnalysisSettings();
             var mockFilter = new MockPathClassifier();
             var identityRegistry = new IdentityRegistry();
-            var accumulator = new ChangeAccumulator(config, settings, mockFilter, identityRegistry);
+            IChangeAccumulator accumulator = new ChangeAccumulator(config, settings, mockFilter, identityRegistry);
 
             var list = accumulator.GetExclusions();
             Assert.Single(list);
@@ -125,7 +125,7 @@ namespace Gitic.Tests
             var settings = new AnalysisSettings();
             var mockFilter = new MockPathClassifier();
             var mockIdentityRegistry = new MockIdentityRegistry();
-            var accumulator = new ChangeAccumulator(config, settings, mockFilter, mockIdentityRegistry);
+            IChangeAccumulator accumulator = new ChangeAccumulator(config, settings, mockFilter, mockIdentityRegistry);
 
             var commit = new GitCommitRecord
             {

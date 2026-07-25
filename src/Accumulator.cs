@@ -4,10 +4,24 @@ using System.Linq;
 
 namespace Gitic
 {
-    public class ChangeAccumulator
+    public interface IChangeAccumulator
+    {
+        void PrepareIdentityMerging(List<GitCommitRecord> commits);
+        List<EmailCollision> GetEmailCollisions();
+        void AddCommit(GitCommitRecord commit, List<string> filesInCommit);
+        Dictionary<string, ItemAccumulator> GetFiles();
+        Dictionary<string, ItemAccumulator> GetAreas();
+        Dictionary<string, ContributorAccumulator> GetContributors();
+        Dictionary<string, ContributorAccumulator> GetAutomation();
+        List<ExclusionSummary> GetExclusions();
+        HashSet<string> GetWarnings();
+        int GetIncludedFileChangeCount();
+    }
+
+    public class ChangeAccumulator : IChangeAccumulator
     {
         private readonly IPathClassifier _filter;
-        private readonly CommitClassifier _classifier = new();
+        private readonly ICommitClassifier _classifier;
         private readonly Dictionary<string, ItemAccumulator> _files = new();
         private readonly Dictionary<string, ItemAccumulator> _areas = new();
         private readonly Dictionary<string, ContributorAccumulator> _contributors = new();
@@ -23,12 +37,14 @@ namespace Gitic
             GitizerConfig config,
             AnalysisSettings settings,
             IPathClassifier filter,
-            IIdentityRegistry identityRegistry)
+            IIdentityRegistry identityRegistry,
+            ICommitClassifier? classifier = null)
         {
             _config = config;
             _settings = settings;
             _filter = filter;
             _identityRegistry = identityRegistry;
+            _classifier = classifier ?? new CommitClassifier();
         }
 
         public void PrepareIdentityMerging(List<GitCommitRecord> commits)
