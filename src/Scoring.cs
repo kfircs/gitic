@@ -4,11 +4,71 @@ using System.Linq;
 
 namespace Gitic
 {
+    public interface IKnowledgeSiloCalculator
+    {
+        KnowledgeSiloMetric CalculateKnowledgeSilo(
+            List<ContributorShare> contributors,
+            HashSet<string> activeContributorKeys);
+    }
+
+    public class KnowledgeSiloCalculator : IKnowledgeSiloCalculator
+    {
+        private const double TruckFactorThresholdPct = 0.5;
+        private const double SiloThreshold = 0.70;
+
+        public KnowledgeSiloMetric CalculateKnowledgeSilo(
+            List<ContributorShare> contributors,
+            HashSet<string> activeContributorKeys)
+        {
+            int truckFactor = 1;
+            double totalActivity = contributors.Sum(c => c.Activity);
+            if (totalActivity > 0)
+            {
+                double runningSum = 0.0;
+                int count = 0;
+                foreach (var contr in contributors)
+                {
+                    runningSum += contr.Activity;
+                    count++;
+                    if (runningSum >= totalActivity * TruckFactorThresholdPct)
+                    {
+                        truckFactor = count;
+                        break;
+                    }
+                }
+            }
+
+            double topOwnerShare = contributors.Count > 0 ? contributors[0].ActivityShare : 0.0;
+            bool isSilo = topOwnerShare >= SiloThreshold;
+
+            bool abandoned = true;
+            foreach (var contr in contributors)
+            {
+                string key = IdentityUtils.IdentityKey(new GitIdentity { Name = contr.Name, Email = contr.Email });
+                if (activeContributorKeys.Contains(key))
+                {
+                    abandoned = false;
+                    break;
+                }
+            }
+            if (contributors.Count == 0)
+            {
+                abandoned = false;
+            }
+
+            return new KnowledgeSiloMetric
+            {
+                TruckFactor = truckFactor,
+                TopOwnerShare = topOwnerShare,
+                IsSilo = isSilo,
+                Abandoned = abandoned
+            };
+        }
+    }
+
     public static class ScoringUtils
     {
         private const double MsPerDay = 86400000.0;
-        private const double TruckFactorThresholdPct = 0.5;
-        private const double SiloThreshold = 0.70;
         public const double ConcentrationHealthyMax = 0.50;
         public const double ConcentrationWatchMax = 0.70;
 
@@ -95,49 +155,7 @@ namespace Gitic
             List<ContributorShare> contributors,
             HashSet<string> activeContributorKeys)
         {
-            int truckFactor = 1;
-            double totalActivity = contributors.Sum(c => c.Activity);
-            if (totalActivity > 0)
-            {
-                double runningSum = 0.0;
-                int count = 0;
-                foreach (var contr in contributors)
-                {
-                    runningSum += contr.Activity;
-                    count++;
-                    if (runningSum >= totalActivity * TruckFactorThresholdPct)
-                    {
-                        truckFactor = count;
-                        break;
-                    }
-                }
-            }
-
-            double topOwnerShare = contributors.Count > 0 ? contributors[0].ActivityShare : 0.0;
-            bool isSilo = topOwnerShare >= SiloThreshold;
-
-            bool abandoned = true;
-            foreach (var contr in contributors)
-            {
-                string key = IdentityUtils.IdentityKey(new GitIdentity { Name = contr.Name, Email = contr.Email });
-                if (activeContributorKeys.Contains(key))
-                {
-                    abandoned = false;
-                    break;
-                }
-            }
-            if (contributors.Count == 0)
-            {
-                abandoned = false;
-            }
-
-            return new KnowledgeSiloMetric
-            {
-                TruckFactor = truckFactor,
-                TopOwnerShare = topOwnerShare,
-                IsSilo = isSilo,
-                Abandoned = abandoned
-            };
+            return new KnowledgeSiloCalculator().CalculateKnowledgeSilo(contributors, activeContributorKeys);
         }
 
         public static double CalculateHeatScore(ScoreBreakdown breakdown)
@@ -213,15 +231,18 @@ namespace Gitic
         private readonly GitizerConfig _config;
         private readonly HashSet<string> _activeContributorKeys;
         private readonly int _depth;
+        private readonly IKnowledgeSiloCalculator _siloCalculator;
 
         public FamiliarityScoringEngine(
             GitizerConfig config,
             HashSet<string>? activeContributorKeys = null,
-            int depth = 2)
+            int depth = 2,
+            IKnowledgeSiloCalculator? siloCalculator = null)
         {
             _config = config;
             _activeContributorKeys = activeContributorKeys ?? new HashSet<string>();
             _depth = depth;
+            _siloCalculator = siloCalculator ?? new KnowledgeSiloCalculator();
         }
 
         private class ScoringContext
@@ -304,7 +325,7 @@ namespace Gitic
 
                 double debtVolatility = ScoringUtils.CalculateDebtVolatility(item, context.MaxChurn, context.MaxNetLines);
                 double coordinationOverlap = ScoringUtils.CalculateCoordinationOverlap(contributors, item.Touches);
-                var knowledgeSilo = ScoringUtils.CalculateKnowledgeSilo(contributors, _activeContributorKeys);
+                var knowledgeSilo = _siloCalculator.CalculateKnowledgeSilo(contributors, _activeContributorKeys);
 
                 var breakdown = new ScoreBreakdown
                 {

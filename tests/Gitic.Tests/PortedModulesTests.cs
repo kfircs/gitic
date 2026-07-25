@@ -1585,6 +1585,74 @@ __GITIZER_NUMSTAT__
                 Assert.Empty(areas);
             }
 
+            private class MockKnowledgeSiloCalculator : IKnowledgeSiloCalculator
+            {
+                public bool Called { get; private set; }
+                public List<ContributorShare>? PassedContributors { get; private set; }
+                public HashSet<string>? PassedActiveContributorKeys { get; private set; }
+
+                public KnowledgeSiloMetric CalculateKnowledgeSilo(
+                    List<ContributorShare> contributors,
+                    HashSet<string> activeContributorKeys)
+                {
+                    Called = true;
+                    PassedContributors = contributors;
+                    PassedActiveContributorKeys = activeContributorKeys;
+                    return new KnowledgeSiloMetric
+                    {
+                        TruckFactor = 99,
+                        TopOwnerShare = 0.99,
+                        IsSilo = true,
+                        Abandoned = true
+                    };
+                }
+            }
+
+            [Fact]
+            public void TestFamiliarityScoringEngine_UsesInjectedKnowledgeSiloCalculator()
+            {
+                var config = new GitizerConfig();
+                var mockCalculator = new MockKnowledgeSiloCalculator();
+                var activeKeys = new HashSet<string> { "active" };
+                IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(
+                    config,
+                    activeKeys,
+                    depth: 2,
+                    siloCalculator: mockCalculator);
+
+                var items = new List<ItemAccumulator>
+                {
+                    new ItemAccumulator
+                    {
+                        Key = "test.txt",
+                        Touches = 1,
+                        Added = 10,
+                        Deleted = 5,
+                        Churn = 15,
+                        LastTouched = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        ContributorCredits = new Dictionary<string, ContributorCredit>
+                        {
+                            { "contributor1", new ContributorCredit { Identity = new GitIdentity { Name = "User1", Email = "user1@example.com" }, Activity = 10.0 } }
+                        }
+                    }
+                };
+
+                var files = engine.ScoreFiles(items, 2);
+
+                Assert.True(mockCalculator.Called);
+                Assert.NotNull(mockCalculator.PassedContributors);
+                Assert.Single(mockCalculator.PassedContributors);
+                Assert.Equal("User1", mockCalculator.PassedContributors[0].Name);
+                Assert.Same(activeKeys, mockCalculator.PassedActiveContributorKeys);
+
+                Assert.Single(files);
+                Assert.NotNull(files[0].KnowledgeSilo);
+                Assert.Equal(99, files[0].KnowledgeSilo!.TruckFactor);
+                Assert.Equal(0.99, files[0].KnowledgeSilo!.TopOwnerShare);
+                Assert.True(files[0].KnowledgeSilo!.IsSilo);
+                Assert.True(files[0].KnowledgeSilo!.Abandoned);
+            }
+
             public class MockFileSystem : IFileSystem
             {
                 public Dictionary<string, byte[]> Files { get; } = new();
