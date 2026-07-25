@@ -1221,6 +1221,28 @@ __GITIZER_NUMSTAT__
                 Assert.Equal("/fake/root", result.Analysis.RepoRoot);
             }
 
+            [Fact]
+            public async Task TestRepositoryAnalyzer_InterfaceUsage()
+            {
+                var fakeProvider = new FakeFileStatsProvider();
+                fakeProvider.DummyResults["src/main.cs"] = new FileStatResult { Size = 1234, Width = 88, Lines = 99 };
+
+                var input = new AnalyzeInput
+                {
+                    RepoRoot = "/fake/root",
+                    Command = AnalysisCommand.Hotspots,
+                    Settings = new AnalysisSettings { Depth = 1 },
+                    FileStatsProvider = fakeProvider,
+                    GitClient = new FakeGitClient()
+                };
+
+                IRepositoryAnalyzer analyzer = new RepositoryAnalyzer();
+                var result = await analyzer.AnalyzeAsync(input);
+
+                Assert.NotNull(result);
+                Assert.Equal("/fake/root", result.Analysis.RepoRoot);
+            }
+
             private class FakeSettingsNormalizer : IAnalysisSettingsNormalizer
             {
                 public bool NormalizeCalled { get; set; }

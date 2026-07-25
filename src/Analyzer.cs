@@ -17,7 +17,12 @@ namespace Gitic
         public IAnalysisSettingsNormalizer? SettingsNormalizer { get; set; } = null;
     }
 
-    public static class RepositoryAnalyzer
+    public interface IRepositoryAnalyzer
+    {
+        Task<AnalysisResult> AnalyzeAsync(AnalyzeInput input);
+    }
+
+    public class RepositoryAnalyzer : IRepositoryAnalyzer
     {
         [Obsolete("Use IAnalysisSettingsNormalizer instead.")]
         public static AnalysisSettings NormalizeSettings(AnalysisSettings settings)
@@ -26,6 +31,12 @@ namespace Gitic
         }
 
         public static async Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
+        {
+            IRepositoryAnalyzer analyzer = new RepositoryAnalyzer();
+            return await analyzer.AnalyzeAsync(input);
+        }
+
+        public async Task<AnalysisResult> AnalyzeAsync(AnalyzeInput input)
         {
             var normalizer = input.SettingsNormalizer ?? new AnalysisSettingsNormalizer();
             var settings = normalizer.Normalize(input.Settings);
