@@ -1,0 +1,19 @@
+# .NET
+bin/
+obj/
+
+# Visual Studio
+.vs/
+
+# User-specific files
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Output
+nupkg/
