@@ -999,6 +999,18 @@ __GITIZER_NUMSTAT__
             }
 
             [Fact]
+            public void TestICommandLineParser_InterfaceAndImplementation()
+            {
+                string[] args = new[] { "hotspots", "--json", "--since", "2026-01-01" };
+                ICommandLineParser parser = new CommandLineParser(args);
+                ParsedArgs parsed = parser.Parse();
+
+                Assert.Equal("hotspots", parsed.Command);
+                Assert.True(parsed.Settings.Json);
+                Assert.Equal("2026-01-01", parsed.Settings.Since);
+            }
+
+            [Fact]
             public void TestIYamlParserAndYamlSubsetParserImpl()
             {
                 IYamlParser parser = new YamlSubsetParserImpl();

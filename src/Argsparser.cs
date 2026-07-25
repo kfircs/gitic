@@ -31,7 +31,12 @@ namespace Gitic
         };
     }
 
-    public class CommandLineParser
+    public interface ICommandLineParser
+    {
+        ParsedArgs Parse();
+    }
+
+    public class CommandLineParser : ICommandLineParser
     {
         private readonly List<string> _args;
         private readonly CommandLineValidator _validator;

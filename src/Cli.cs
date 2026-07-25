@@ -36,7 +36,7 @@ namespace Gitic
 
         public static async Task<CliResult> RunCliAsync(string[] args)
         {
-            var parser = new CommandLineParser(args);
+            ICommandLineParser parser = new CommandLineParser(args);
             ParsedArgs parsed;
             try
             {
