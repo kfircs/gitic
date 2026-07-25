@@ -123,10 +123,7 @@ namespace Gitic
             int suspiciousCount = 0;
             foreach (var file in context.Files)
             {
-                if (file.Touches == SingleTouchCount &&
-                    file.Churn > HighChurnThreshold &&
-                    file.Contributors.Count == SingleContributorCount &&
-                    file.Contributors[0].ActivityShare >= HighActivityShareThreshold)
+                if (IsSuspiciousFile(file))
                 {
                     suspiciousCount++;
                 }
@@ -139,6 +136,14 @@ namespace Gitic
                 };
             }
             return new List<string>();
+        }
+
+        private bool IsSuspiciousFile(FileMetric file)
+        {
+            return file.Touches == SingleTouchCount &&
+                   file.Churn > HighChurnThreshold &&
+                   file.Contributors.Count == SingleContributorCount &&
+                   file.Contributors[0].ActivityShare >= HighActivityShareThreshold;
         }
     }
 
