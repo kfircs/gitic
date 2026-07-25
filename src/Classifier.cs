@@ -4,12 +4,6 @@ using System.Text.RegularExpressions;
 
 namespace Gitic
 {
-    public interface IClassifierStrategy
-    {
-        string Category { get; }
-        bool Matches(string message);
-    }
-
     public interface ICommitClassifier
     {
         string Classify(string message);
@@ -17,75 +11,68 @@ namespace Gitic
 
     public class CommitClassifier : ICommitClassifier
     {
-        private readonly List<IClassifierStrategy> _strategies;
-
-        public CommitClassifier(List<IClassifierStrategy>? strategies = null)
+        public class ClassificationRule
         {
-            _strategies = strategies ?? new List<IClassifierStrategy>
+            public string Category { get; }
+            public Regex MainRegex { get; }
+            public Regex PrefixRegex { get; }
+
+            public ClassificationRule(string category, string mainPattern, string prefixPattern)
             {
-                new BugfixStrategy(),
-                new FeatureStrategy()
+                Category = category ?? throw new ArgumentNullException(nameof(category));
+                MainRegex = new Regex(mainPattern ?? throw new ArgumentNullException(nameof(mainPattern)), RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                PrefixRegex = new Regex(prefixPattern ?? throw new ArgumentNullException(nameof(prefixPattern)), RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            }
+
+            public ClassificationRule(string category, Regex mainRegex, Regex prefixRegex)
+            {
+                Category = category ?? throw new ArgumentNullException(nameof(category));
+                MainRegex = mainRegex ?? throw new ArgumentNullException(nameof(mainRegex));
+                PrefixRegex = prefixRegex ?? throw new ArgumentNullException(nameof(prefixRegex));
+            }
+
+            public bool Matches(string message)
+            {
+                if (message == null) return false;
+                return MainRegex.IsMatch(message) || PrefixRegex.IsMatch(message);
+            }
+        }
+
+        private readonly List<ClassificationRule> _rules;
+
+        public CommitClassifier()
+        {
+            _rules = new List<ClassificationRule>
+            {
+                new ClassificationRule(
+                    "bugfix",
+                    @"(?:bug|fix|revert|issue|crash|error|prevent|problem|fail|correct|leak)",
+                    @"^(?:fix|revert)(?:\(.+\))?:"
+                ),
+                new ClassificationRule(
+                    "feature",
+                    @"(?:feat|feature|add|implement|introduce)",
+                    @"^feat(?:\(.+\))?:"
+                )
             };
+        }
+
+        public CommitClassifier(IEnumerable<ClassificationRule> rules)
+        {
+            _rules = new List<ClassificationRule>(rules ?? throw new ArgumentNullException(nameof(rules)));
         }
 
         public string Classify(string message)
         {
-            foreach (var strategy in _strategies)
+            if (message == null) return "other";
+            foreach (var rule in _rules)
             {
-                if (strategy.Matches(message))
+                if (rule.Matches(message))
                 {
-                    return strategy.Category;
+                    return rule.Category;
                 }
             }
             return "other";
-        }
-    }
-
-    public class BugfixStrategy : IClassifierStrategy
-    {
-        public string Category => "bugfix";
-
-        private readonly Regex _bugFixPattern;
-        private readonly Regex _bugFixPrefixPattern;
-
-        public BugfixStrategy(string? bugFixPattern = null, string? bugFixPrefixPattern = null)
-        {
-            _bugFixPattern = new Regex(
-                bugFixPattern ?? @"(?:bug|fix|revert|issue|crash|error|prevent|problem|fail|correct|leak)",
-                RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-            _bugFixPrefixPattern = new Regex(
-                bugFixPrefixPattern ?? @"^(?:fix|revert)(?:\(.+\))?:",
-                RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        }
-
-        public bool Matches(string message)
-        {
-            return _bugFixPattern.IsMatch(message) || _bugFixPrefixPattern.IsMatch(message);
-        }
-    }
-
-    public class FeatureStrategy : IClassifierStrategy
-    {
-        public string Category => "feature";
-
-        private readonly Regex _featurePattern;
-        private readonly Regex _featurePrefixPattern;
-
-        public FeatureStrategy(string? featurePattern = null, string? featurePrefixPattern = null)
-        {
-            _featurePattern = new Regex(
-                featurePattern ?? @"(?:feat|feature|add|implement|introduce)",
-                RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-            _featurePrefixPattern = new Regex(
-                featurePrefixPattern ?? @"^feat(?:\(.+\))?:",
-                RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        }
-
-        public bool Matches(string message)
-        {
-            return _featurePattern.IsMatch(message) || _featurePrefixPattern.IsMatch(message);
         }
     }
 }

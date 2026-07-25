@@ -1166,47 +1166,47 @@ __GITIZER_NUMSTAT__
             [Fact]
             public void TestCustomCommitClassifierStrategies()
             {
-                // Test 1: Verify BugfixStrategy with custom patterns
-                var customBugfix = new BugfixStrategy(
+                // Test 1: Verify ClassificationRule with custom patterns
+                var customBugfixRule = new CommitClassifier.ClassificationRule(
+                    "bugfix",
                     @"(?:defect|patch|hotfix)",
                     @"^hotfix(?:\(.+\))?:"
                 );
 
                 // Should match custom patterns
-                Assert.True(customBugfix.Matches("defect: fixed issue in login"));
-                Assert.True(customBugfix.Matches("hotfix(auth): fix credentials leak"));
+                Assert.True(customBugfixRule.Matches("defect: fixed issue in login"));
+                Assert.True(customBugfixRule.Matches("hotfix(auth): fix credentials leak"));
 
                 // Should NOT match original/default patterns unless they happen to match custom patterns
-                Assert.False(customBugfix.Matches("revert accidental commit")); // default bugfix has "revert", custom does not
-                Assert.False(customBugfix.Matches("fix: resolve crash")); // default bugfix prefix has "fix", custom does not
+                Assert.False(customBugfixRule.Matches("revert accidental commit")); // default bugfix has "revert", custom does not
+                Assert.False(customBugfixRule.Matches("fix: resolve crash")); // default bugfix prefix has "fix", custom does not
 
-                // Test 2: Verify FeatureStrategy with custom patterns
-                var customFeature = new FeatureStrategy(
+                // Test 2: Verify ClassificationRule with custom patterns
+                var customFeatureRule = new CommitClassifier.ClassificationRule(
+                    "feature",
                     @"(?:new-feature|impl|create)",
                     @"^new(?:\(.+\))?:"
                 );
 
                 // Should match custom patterns
-                Assert.True(customFeature.Matches("create database index"));
-                Assert.True(customFeature.Matches("new(db): add migrations"));
+                Assert.True(customFeatureRule.Matches("create database index"));
+                Assert.True(customFeatureRule.Matches("new(db): add migrations"));
 
                 // Should NOT match original/default patterns unless they happen to match custom patterns
-                Assert.False(customFeature.Matches("feat: refactor login")); // default feature prefix has "feat", custom does not
+                Assert.False(customFeatureRule.Matches("feat: refactor login")); // default feature prefix has "feat", custom does not
 
                 // Test 3: Verify they work via CommitClassifier when injected
-                var strategies = new List<IClassifierStrategy> { customBugfix, customFeature };
-                ICommitClassifier classifier = new CommitClassifier(strategies);
+                var customRules = new List<CommitClassifier.ClassificationRule> { customBugfixRule, customFeatureRule };
+                ICommitClassifier classifier = new CommitClassifier(customRules);
 
                 Assert.Equal("bugfix", classifier.Classify("defect: fixed issue in login"));
                 Assert.Equal("feature", classifier.Classify("create database index"));
                 Assert.Equal("other", classifier.Classify("feat: refactor login"));
 
                 // Test 4: Verify default/omitted constructor parameters retain standard behavior
-                var defaultBugfix = new BugfixStrategy();
-                Assert.True(defaultBugfix.Matches("fix: resolve crash"));
-
-                var defaultFeature = new FeatureStrategy();
-                Assert.True(defaultFeature.Matches("feat: implement new auth flow"));
+                var defaultClassifier = new CommitClassifier();
+                Assert.Equal("bugfix", defaultClassifier.Classify("fix: resolve crash"));
+                Assert.Equal("feature", defaultClassifier.Classify("feat: implement new auth flow"));
             }
 
             [Fact]
