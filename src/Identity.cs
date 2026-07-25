@@ -30,21 +30,26 @@ namespace Gitic
             return identity;
         }
 
+        private static readonly string[] DefaultBotKeywords = new[]
+        {
+            "[bot]",
+            " bot",
+            "-bot@",
+            "bot@",
+            "dependabot",
+            "renovate",
+            "copilot",
+            "github-actions",
+            "github actions",
+            "gitlab-ci",
+            "gitlab ci",
+            "jenkins",
+            "circleci"
+        };
+
         private static bool MatchesDefaultBotHeuristics(string value)
         {
-            return value.Contains("[bot]") ||
-                   value.Contains(" bot") ||
-                   value.Contains("-bot@") ||
-                   value.Contains("bot@") ||
-                   value.Contains("dependabot") ||
-                   value.Contains("renovate") ||
-                   value.Contains("copilot") ||
-                   value.Contains("github-actions") ||
-                   value.Contains("github actions") ||
-                   value.Contains("gitlab-ci") ||
-                   value.Contains("gitlab ci") ||
-                   value.Contains("jenkins") ||
-                   value.Contains("circleci");
+            return Array.Exists(DefaultBotKeywords, keyword => value.Contains(keyword));
         }
 
         private static bool MatchesAiAgentHeuristics(string name, string email)
