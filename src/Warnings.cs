@@ -163,57 +163,5 @@ namespace Gitic
             }
             return warnings.Distinct().OrderBy(w => w, StringComparer.Ordinal).ToList();
         }
-
-        // Deprecated/legacy individual functions ported as static helpers
-        public static List<string> CollectEmailCollisionWarnings(
-            List<EmailCollision> collisions,
-            int aliasCount)
-        {
-            return new EmailCollisionWarningRule().Collect(new WarningContext
-            {
-                EmailCollisions = collisions,
-                AliasCount = aliasCount
-            });
-        }
-
-        public static List<string> CollectBotConfigWarning(
-            int configuredBotCount,
-            List<AutomationMetric> automationMetrics)
-        {
-            return new BotConfigWarningRule().Collect(new WarningContext
-            {
-                ConfiguredBotCount = configuredBotCount,
-                AutomationMetrics = automationMetrics
-            });
-        }
-
-        public static List<string> CollectLeadTimeWarning(
-            LeadTimesInfo? leadTimes)
-        {
-            return new LeadTimeWarningRule().Collect(new WarningContext
-            {
-                LeadTimes = leadTimes
-            });
-        }
-
-        public static List<string> CollectNoBotsWarning(
-            int configuredBotCount,
-            List<AutomationMetric> automationMetrics)
-        {
-            return new NoBotsWarningRule().Collect(new WarningContext
-            {
-                ConfiguredBotCount = configuredBotCount,
-                AutomationMetrics = automationMetrics
-            });
-        }
-
-        public static List<string> CollectTemporalCouplingWarning(
-            TemporalCouplingEngine temporalCouplingEngine)
-        {
-            return new TemporalCouplingWarningRule().Collect(new WarningContext
-            {
-                TemporalCouplingEngine = temporalCouplingEngine
-            });
-        }
     }
 }

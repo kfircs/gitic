@@ -570,18 +570,19 @@ __GITIZER_NUMSTAT__
         }
 
         [Fact]
-        public void TestWarningCollection_LegacyFunctions()
+        public void TestWarningCollection_ModernRules()
         {
             // EmailCollisionWarnings
             var collisions = new List<EmailCollision>
             {
                 new() { Email = "test@example.com", Names = new List<string> { "Alice", "Bob" } }
             };
-            var warnings1 = WarningCollector.CollectEmailCollisionWarnings(collisions, 0);
+            var rule1 = new EmailCollisionWarningRule();
+            var warnings1 = rule1.Collect(new WarningContext { EmailCollisions = collisions, AliasCount = 0 });
             Assert.Single(warnings1);
             Assert.Contains("Contributors Alice, Bob share email test@example.com", warnings1[0]);
 
-            var warnings1Empty = WarningCollector.CollectEmailCollisionWarnings(collisions, 1);
+            var warnings1Empty = rule1.Collect(new WarningContext { EmailCollisions = collisions, AliasCount = 1 });
             Assert.Empty(warnings1Empty);
 
             // BotConfigWarning
@@ -589,48 +590,55 @@ __GITIZER_NUMSTAT__
             {
                 new() { Name = "bot", Email = "bot@example.com", TotalActivity = 10, Areas = new() }
             };
-            var warnings2 = WarningCollector.CollectBotConfigWarning(0, automationMetrics);
+            var rule2 = new BotConfigWarningRule();
+            var warnings2 = rule2.Collect(new WarningContext { ConfiguredBotCount = 0, AutomationMetrics = automationMetrics });
             Assert.Single(warnings2);
             Assert.Contains("No bots are explicitly configured", warnings2[0]);
 
-            var warnings2Empty = WarningCollector.CollectBotConfigWarning(1, automationMetrics);
+            var warnings2Empty = rule2.Collect(new WarningContext { ConfiguredBotCount = 1, AutomationMetrics = automationMetrics });
             Assert.Empty(warnings2Empty);
 
             // LeadTimeWarning
-            var warnings3Null = WarningCollector.CollectLeadTimeWarning(null);
+            var rule3 = new LeadTimeWarningRule();
+            var warnings3Null = rule3.Collect(new WarningContext { LeadTimes = null });
             Assert.Single(warnings3Null);
             Assert.Contains("No merge commits in the analysis window", warnings3Null[0]);
 
-            var warnings3EmptyList = WarningCollector.CollectLeadTimeWarning(new LeadTimesInfo { Merges = new() });
+            var warnings3EmptyList = rule3.Collect(new WarningContext { LeadTimes = new LeadTimesInfo { Merges = new() } });
             Assert.Single(warnings3EmptyList);
 
-            var warnings3HasMerges = WarningCollector.CollectLeadTimeWarning(new LeadTimesInfo
+            var warnings3HasMerges = rule3.Collect(new WarningContext
             {
-                Merges = new List<MergeLeadTimeRecord> { new() { LeadTimeHours = 1 } }
+                LeadTimes = new LeadTimesInfo
+                {
+                    Merges = new List<MergeLeadTimeRecord> { new() { LeadTimeHours = 1 } }
+                }
             });
             Assert.Empty(warnings3HasMerges);
 
             // NoBotsWarning
-            var warnings4 = WarningCollector.CollectNoBotsWarning(0, new());
+            var rule4 = new NoBotsWarningRule();
+            var warnings4 = rule4.Collect(new WarningContext { ConfiguredBotCount = 0, AutomationMetrics = new() });
             Assert.Single(warnings4);
             Assert.Contains("No bots are configured and no automation identities were detected", warnings4[0]);
 
-            var warnings4HasConfigured = WarningCollector.CollectNoBotsWarning(1, new());
+            var warnings4HasConfigured = rule4.Collect(new WarningContext { ConfiguredBotCount = 1, AutomationMetrics = new() });
             Assert.Empty(warnings4HasConfigured);
 
-            var warnings4HasDetected = WarningCollector.CollectNoBotsWarning(0, automationMetrics);
+            var warnings4HasDetected = rule4.Collect(new WarningContext { ConfiguredBotCount = 0, AutomationMetrics = automationMetrics });
             Assert.Empty(warnings4HasDetected);
 
             // TemporalCouplingWarning
             var engine = new TemporalCouplingEngine(1);
             engine.TrackCommitFiles(new List<string> { "file1.ts", "file2.ts" });
-            var warnings5 = WarningCollector.CollectTemporalCouplingWarning(engine);
+            var rule5 = new TemporalCouplingWarningRule();
+            var warnings5 = rule5.Collect(new WarningContext { TemporalCouplingEngine = engine });
             Assert.Single(warnings5);
             Assert.Contains("1 commit(s) changed more than 1 files", warnings5[0]);
 
             var normalEngine = new TemporalCouplingEngine(5);
             normalEngine.TrackCommitFiles(new List<string> { "file1.ts", "file2.ts" });
-            var warnings5Empty = WarningCollector.CollectTemporalCouplingWarning(normalEngine);
+            var warnings5Empty = rule5.Collect(new WarningContext { TemporalCouplingEngine = normalEngine });
             Assert.Empty(warnings5Empty);
         }
 
