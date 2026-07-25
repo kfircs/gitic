@@ -1114,6 +1114,74 @@ __GITIZER_NUMSTAT__
                 }
             }
 
+            [Fact]
+            public async Task TestDiskFileStatsProvider_EdgeCases()
+            {
+                var provider = new DiskFileStatsProvider();
+                string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+                Directory.CreateDirectory(tempDir);
+
+                try
+                {
+                    // 1. Empty file
+                    string emptyFile = Path.Combine(tempDir, "empty.txt");
+                    await File.WriteAllBytesAsync(emptyFile, Array.Empty<byte>());
+
+                    // 2. File with trailing newline
+                    string trailingNewlineFile = Path.Combine(tempDir, "trailing.txt");
+                    await File.WriteAllTextAsync(trailingNewlineFile, "line 1\nline 2\n");
+
+                    // 3. File with CR LF and trailing newline
+                    string crlfFile = Path.Combine(tempDir, "crlf.txt");
+                    await File.WriteAllTextAsync(crlfFile, "line 1\r\nline 2\r\n");
+
+                    // 4. Binary file
+                    string binaryFile = Path.Combine(tempDir, "binary.bin");
+                    await File.WriteAllBytesAsync(binaryFile, new byte[] { 1, 2, 0, 4, 5 });
+
+                    // Compute stats
+                    var files = new List<string> { "empty.txt", "trailing.txt", "crlf.txt", "binary.bin", "nonexistent.txt" };
+                    var stats = await provider.ComputeFileStatsAsync(tempDir, files);
+
+                    Assert.NotNull(stats);
+
+                    // Assert empty file
+                    Assert.True(stats.ContainsKey("empty.txt"));
+                    Assert.Equal(0, stats["empty.txt"].Size);
+                    Assert.Equal(1, stats["empty.txt"].Lines); // matching split behavior
+                    Assert.Equal(0, stats["empty.txt"].Width);
+
+                    // Assert trailing newline file
+                    Assert.True(stats.ContainsKey("trailing.txt"));
+                    Assert.Equal(3, stats["trailing.txt"].Lines); // "line 1", "line 2", ""
+                    Assert.Equal(6, stats["trailing.txt"].Width);
+
+                    // Assert CRLF trailing newline file
+                    Assert.True(stats.ContainsKey("crlf.txt"));
+                    Assert.Equal(3, stats["crlf.txt"].Lines); // "line 1", "line 2", ""
+                    Assert.Equal(6, stats["crlf.txt"].Width);
+
+                    // Assert binary file
+                    Assert.True(stats.ContainsKey("binary.bin"));
+                    Assert.Equal(5, stats["binary.bin"].Size);
+                    Assert.Equal(0, stats["binary.bin"].Lines);
+                    Assert.Equal(0, stats["binary.bin"].Width);
+
+                    // Assert nonexistent file
+                    Assert.True(stats.ContainsKey("nonexistent.txt"));
+                    Assert.Equal(0, stats["nonexistent.txt"].Size);
+                    Assert.Equal(0, stats["nonexistent.txt"].Lines);
+                    Assert.Equal(0, stats["nonexistent.txt"].Width);
+                }
+                finally
+                {
+                    if (Directory.Exists(tempDir))
+                    {
+                        Directory.Delete(tempDir, true);
+                    }
+                }
+            }
+
             private class FakeFileStatsProvider : IFileStatsProvider
             {
                 public Dictionary<string, FileStatResult> DummyResults { get; set; } = new();
