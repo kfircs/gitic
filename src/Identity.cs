@@ -19,7 +19,7 @@ namespace Gitic
 
     public static class IdentityKeyGenerator
     {
-        public static IIdentityKeyGenerator Default { get; set; } = new DefaultIdentityKeyGenerator();
+        public static IIdentityKeyGenerator Default { get; } = new DefaultIdentityKeyGenerator();
     }
 
     public static class IdentityUtils

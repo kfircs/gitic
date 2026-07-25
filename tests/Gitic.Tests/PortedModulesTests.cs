@@ -331,23 +331,14 @@ namespace Gitic.Tests
         public void TestCustomIdentityKeyGenerator()
         {
             var identity = new GitIdentity { Name = "Alice Smith", Email = "Alice@Example.com" };
-            var originalDefault = IdentityKeyGenerator.Default;
-            try
-            {
-                var customGenerator = new CustomKeyGenerator();
-                IdentityKeyGenerator.Default = customGenerator;
+            var customGenerator = new CustomKeyGenerator();
 
-                // Verify that IdentityUtils.IdentityKey uses the custom generator
-                Assert.Equal("alice smith", IdentityUtils.IdentityKey(identity));
+            // Verify that the custom generator computes keys as expected
+            Assert.Equal("alice smith", customGenerator.IdentityKey(identity));
 
-                // Verify that we can instantiate IdentityRegistry with custom key generator
-                var registry = new IdentityRegistry(keyGenerator: customGenerator);
-                Assert.NotNull(registry);
-            }
-            finally
-            {
-                IdentityKeyGenerator.Default = originalDefault;
-            }
+            // Verify that we can instantiate IdentityRegistry with custom key generator
+            var registry = new IdentityRegistry(keyGenerator: customGenerator);
+            Assert.NotNull(registry);
         }
 
         [Fact]
