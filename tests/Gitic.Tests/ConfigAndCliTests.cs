@@ -108,6 +108,39 @@ excludes:
             Assert.Throws<ContributorNotFoundError>(() => registry.Find("Charlie"));
         }
 
+        private class FakeContributorLookupRegistry : IContributorLookupRegistry
+        {
+            private readonly ContributorMetric _metric;
+
+            public FakeContributorLookupRegistry(ContributorMetric metric)
+            {
+                _metric = metric;
+            }
+
+            public ContributorMetric Find(string lookup)
+            {
+                return _metric;
+            }
+        }
+
+        [Fact]
+        public void TestIContributorLookupRegistryInterfaceAndMock()
+        {
+            var contributors = new List<ContributorMetric>
+            {
+                new() { Name = "Alice Smith", Email = "alice@example.com" }
+            };
+            IContributorLookupRegistry registry = new ContributorLookupRegistry(contributors);
+            var result = registry.Find("Alice Smith");
+            Assert.Equal("alice@example.com", result.Email);
+
+            var preconfiguredMetric = new ContributorMetric { Name = "Mocked Contributor", Email = "mocked@example.com" };
+            IContributorLookupRegistry fakeRegistry = new FakeContributorLookupRegistry(preconfiguredMetric);
+            var mockResult = fakeRegistry.Find("Any Lookup");
+            Assert.Equal("Mocked Contributor", mockResult.Name);
+            Assert.Equal("mocked@example.com", mockResult.Email);
+        }
+
         [Fact]
         public void TestCommandLineParser_Success()
         {

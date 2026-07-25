@@ -92,7 +92,7 @@ namespace Gitic
 
                 if (parsed.Command == "contributor")
                 {
-                    var registry = new ContributorLookupRegistry(result.Contributors);
+                    IContributorLookupRegistry registry = new ContributorLookupRegistry(result.Contributors);
                     try
                     {
                         var filtered = registry.Find(parsed.ContributorName ?? "");

@@ -18,7 +18,12 @@ namespace Gitic
         }
     }
 
-    public class ContributorLookupRegistry
+    public interface IContributorLookupRegistry
+    {
+        ContributorMetric Find(string lookup);
+    }
+
+    public class ContributorLookupRegistry : IContributorLookupRegistry
     {
         private readonly List<ContributorMetric> _contributors;
 
