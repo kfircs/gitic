@@ -347,6 +347,48 @@ excludes:
         }
 
         [Fact]
+        public async Task TestMarkdownRenderer_DeterministicTimestamp()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Directory.CreateDirectory(tempDir);
+            try
+            {
+                var renderer = new MarkdownRenderer(tempDir);
+                var resultWithValidTimestamp = new AnalysisResult
+                {
+                    Analysis = new AnalysisMetadata
+                    {
+                        GeneratedAt = "2026-07-25T12:34:56.000Z"
+                    }
+                };
+
+                await renderer.RenderAsync(resultWithValidTimestamp);
+                string expectedFile = Path.Combine(tempDir, "report.md");
+                string content = await File.ReadAllTextAsync(expectedFile);
+                Assert.Contains("Generated on: 2026-07-25 12:34:56 UTC", content);
+
+                var resultWithInvalidTimestamp = new AnalysisResult
+                {
+                    Analysis = new AnalysisMetadata
+                    {
+                        GeneratedAt = "Not a date string"
+                    }
+                };
+
+                await renderer.RenderAsync(resultWithInvalidTimestamp);
+                content = await File.ReadAllTextAsync(expectedFile);
+                Assert.Contains("Generated on: Not a date string", content);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        [Fact]
         public async Task TestSvgRenderer_DirectoryPathAndContents()
         {
             string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());

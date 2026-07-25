@@ -73,7 +73,16 @@ namespace Gitic
             if (string.IsNullOrEmpty(repoName)) repoName = "Repository";
 
             sb.AppendLine($"# 📊 Gitic Analysis Report: {repoName}");
-            sb.AppendLine($"Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n");
+            string genDateStr;
+            if (DateTimeOffset.TryParse(result.Analysis.GeneratedAt, out var parsedGenAt))
+            {
+                genDateStr = parsedGenAt.ToString("yyyy-MM-dd HH:mm:ss") + " UTC";
+            }
+            else
+            {
+                genDateStr = result.Analysis.GeneratedAt;
+            }
+            sb.AppendLine($"Generated on: {genDateStr}\n");
 
             sb.AppendLine("## 📈 Repository Overview");
             sb.AppendLine($"- **Repository Root:** `{result.Analysis.RepoRoot}`");
