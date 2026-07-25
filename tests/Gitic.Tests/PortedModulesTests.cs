@@ -1029,5 +1029,20 @@ __GITIZER_NUMSTAT__
                     return result;
                 }
             }
+
+            [Fact]
+            public void TestIFamiliarityScoringEngine_InterfaceAndImplementation()
+            {
+                var config = new GitizerConfig();
+                IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(config);
+                var items = new List<ItemAccumulator>();
+                var files = engine.ScoreFiles(items, 2);
+                var areas = engine.ScoreAreas(items);
+
+                Assert.NotNull(files);
+                Assert.Empty(files);
+                Assert.NotNull(areas);
+                Assert.Empty(areas);
+            }
         }
     }

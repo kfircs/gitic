@@ -202,7 +202,13 @@ namespace Gitic
         }
     }
 
-    public class FamiliarityScoringEngine
+    public interface IFamiliarityScoringEngine
+    {
+        List<FileMetric> ScoreFiles(List<ItemAccumulator> items, int depth);
+        List<AreaMetric> ScoreAreas(List<ItemAccumulator> items);
+    }
+
+    public class FamiliarityScoringEngine : IFamiliarityScoringEngine
     {
         private readonly GitizerConfig _config;
         private readonly HashSet<string> _activeContributorKeys;
@@ -284,9 +290,9 @@ namespace Gitic
                 .ToList();
         }
 
-        public List<FileMetric> ScoreFiles(List<ItemAccumulator> items, int? depth = null)
+        public List<FileMetric> ScoreFiles(List<ItemAccumulator> items, int depth)
         {
-            int targetDepth = depth ?? _depth;
+            int targetDepth = depth;
             var context = CalculateScoringContext(items);
 
             return items.Select(item =>

@@ -71,7 +71,7 @@ namespace Gitic
             }
 
             var activeContributorKeys = MetricProcessors.GetActiveContributorKeys(commits);
-            var scoringEngine = new FamiliarityScoringEngine(config, activeContributorKeys, settings.Depth);
+            IFamiliarityScoringEngine scoringEngine = new FamiliarityScoringEngine(config, activeContributorKeys, settings.Depth);
 
             var rawFileMetrics = scoringEngine.ScoreFiles(accumulator.GetFiles().Values.ToList(), settings.Depth);
             var filePaths = rawFileMetrics.Select(f => f.Path).ToList();
