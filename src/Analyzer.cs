@@ -12,6 +12,8 @@ namespace Gitic
         public AnalysisSettings Settings { get; set; } = new();
         public GitizerConfig? Config { get; set; }
         public string? ContributorName { get; set; }
+        public IFileStatsProvider? FileStatsProvider { get; set; } = null;
+        public IGitClient? GitClient { get; set; } = null;
     }
 
     public static class RepositoryAnalyzer
@@ -37,7 +39,7 @@ namespace Gitic
         {
             var settings = NormalizeSettings(input.Settings);
             var config = input.Config ?? GitizerConfig.Default;
-            var gitClient = new GitClient(input.RepoRoot);
+            var gitClient = input.GitClient ?? new GitClient(input.RepoRoot);
 
             var commitsTask = gitClient.ExtractHistoryAsync(new GitHistoryExtractorOptions
             {
@@ -74,7 +76,8 @@ namespace Gitic
             var rawFileMetrics = scoringEngine.ScoreFiles(accumulator.GetFiles().Values.ToList(), settings.Depth);
             var filePaths = rawFileMetrics.Select(f => f.Path).ToList();
 
-            var fileStats = await FileStats.ComputeFileStatsAsync(input.RepoRoot, filePaths);
+            var provider = input.FileStatsProvider ?? new DiskFileStatsProvider();
+            var fileStats = await provider.ComputeFileStatsAsync(input.RepoRoot, filePaths);
             var fileMetrics = rawFileMetrics.Select(f =>
             {
                 if (fileStats.TryGetValue(f.Path, out var stats))

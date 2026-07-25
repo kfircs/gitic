@@ -821,6 +821,121 @@ __GITIZER_NUMSTAT__
             Assert.Equal("This is a commit message.", record.Message);
             Assert.Single(record.Files);
             Assert.Equal("src/main.cs", record.Files[0].Path);
+            }
+
+            [Fact]
+            public async Task TestRepositoryAnalyzer_WithFakeFileStatsProvider()
+            {
+                var fakeProvider = new FakeFileStatsProvider();
+                fakeProvider.DummyResults["src/main.cs"] = new FileStatResult { Size = 1234, Width = 88, Lines = 99 };
+
+                var input = new AnalyzeInput
+                {
+                    RepoRoot = "/fake/root",
+                    Command = AnalysisCommand.Hotspots,
+                    Settings = new AnalysisSettings { Depth = 1 },
+                    FileStatsProvider = fakeProvider,
+                    GitClient = new FakeGitClient()
+                };
+
+                var result = await RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
+
+                Assert.NotNull(result);
+                if (result.Files.Any())
+                {
+                    var mainFile = result.Files.FirstOrDefault(f => f.Path == "src/main.cs");
+                    if (mainFile != null)
+                    {
+                        Assert.Equal(1234, mainFile.Size);
+                        Assert.Equal(88, mainFile.Width);
+                        Assert.Equal(99, mainFile.Lines);
+                    }
+
+                    var otherFile = result.Files.FirstOrDefault(f => f.Path != "src/main.cs");
+                    if (otherFile != null)
+                    {
+                        Assert.Equal(100, otherFile.Size);
+                        Assert.Equal(10, otherFile.Width);
+                        Assert.Equal(5, otherFile.Lines);
+                    }
+                }
+            }
+
+            [Fact]
+            public async Task TestDiskFileStatsProvider_ComputesStats()
+            {
+                var provider = new DiskFileStatsProvider();
+                string tempFile = Path.GetTempFileName();
+                try
+                {
+                    await File.WriteAllTextAsync(tempFile, "line 1\nline 2\nlongest line here");
+                    var relativePath = Path.GetFileName(tempFile);
+                    var repoRoot = Path.GetDirectoryName(tempFile)!;
+
+                    var stats = await provider.ComputeFileStatsAsync(repoRoot, new List<string> { relativePath });
+                    Assert.NotNull(stats);
+                    Assert.True(stats.ContainsKey(relativePath));
+                    var fileStat = stats[relativePath];
+                    Assert.True(fileStat.Size > 0);
+                    Assert.Equal(3, fileStat.Lines);
+                    Assert.Equal("longest line here".Length, fileStat.Width);
+                }
+                finally
+                {
+                    if (File.Exists(tempFile))
+                    {
+                        File.Delete(tempFile);
+                    }
+                }
+            }
+
+            private class FakeFileStatsProvider : IFileStatsProvider
+            {
+                public Dictionary<string, FileStatResult> DummyResults { get; set; } = new();
+
+                public Task<Dictionary<string, FileStatResult>> ComputeFileStatsAsync(
+                    string repoRoot,
+                    List<string> files,
+                    int concurrency = 20)
+                {
+                    var results = new Dictionary<string, FileStatResult>();
+                    foreach (var file in files)
+                    {
+                        if (DummyResults.TryGetValue(file, out var stats))
+                        {
+                            results[file] = stats;
+                        }
+                        else
+                        {
+                            results[file] = new FileStatResult { Size = 100, Width = 10, Lines = 5 };
+                        }
+                    }
+                    return Task.FromResult(results);
+                }
+            }
+
+            private class FakeGitClient : IGitClient
+            {
+                public Task<string?> GetRepositoryRootAsync() => Task.FromResult<string?>("/fake/root");
+                public Task<HashSet<string>> ListHeadFilesAsync() => Task.FromResult(new HashSet<string> { "src/main.cs" });
+                public Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null)
+                {
+                    return Task.FromResult(new List<GitCommitRecord>
+                    {
+                        new GitCommitRecord
+                        {
+                            Hash = "hash1",
+                            Author = new GitIdentity { Name = "Author", Email = "author@email.com" },
+                            Date = "2026-07-25T12:00:00Z",
+                            Timestamp = 1785000000000,
+                            Message = "feat: add main file",
+                            Files = new List<GitFileChange>
+                            {
+                                new GitFileChange { Path = "src/main.cs", Added = 10, Deleted = 5 }
+                            }
+                        }
+                    });
+                }
+            }
         }
     }
-}

@@ -8,22 +8,17 @@ using System.Threading.Tasks;
 
 namespace Gitic
 {
-    public static class FileStats
+    public interface IFileStatsProvider
     {
-        public static bool IsBinaryFile(byte[] buffer)
-        {
-            int limit = Math.Min(buffer.Length, 8000);
-            for (int i = 0; i < limit; i++)
-            {
-                if (buffer[i] == 0)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        Task<Dictionary<string, FileStatResult>> ComputeFileStatsAsync(
+            string repoRoot,
+            List<string> files,
+            int concurrency = 20);
+    }
 
-        public static async Task<Dictionary<string, FileStatResult>> ComputeFileStatsAsync(
+    public class DiskFileStatsProvider : IFileStatsProvider
+    {
+        public async Task<Dictionary<string, FileStatResult>> ComputeFileStatsAsync(
             string repoRoot,
             List<string> files,
             int concurrency = 20)
@@ -49,7 +44,7 @@ namespace Gitic
                             int linesCount = 0;
 
                             byte[] buffer = await File.ReadAllBytesAsync(fullPath);
-                            if (!IsBinaryFile(buffer))
+                            if (!FileStats.IsBinaryFile(buffer))
                             {
                                 string content = Encoding.UTF8.GetString(buffer);
                                 var fileLines = content.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
@@ -82,6 +77,31 @@ namespace Gitic
 
             await Task.WhenAll(tasks);
             return new Dictionary<string, FileStatResult>(results);
+        }
+    }
+
+    public static class FileStats
+    {
+        public static bool IsBinaryFile(byte[] buffer)
+        {
+            int limit = Math.Min(buffer.Length, 8000);
+            for (int i = 0; i < limit; i++)
+            {
+                if (buffer[i] == 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static Task<Dictionary<string, FileStatResult>> ComputeFileStatsAsync(
+            string repoRoot,
+            List<string> files,
+            int concurrency = 20)
+        {
+            var provider = new DiskFileStatsProvider();
+            return provider.ComputeFileStatsAsync(repoRoot, files, concurrency);
         }
     }
 
