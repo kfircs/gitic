@@ -14,21 +14,12 @@ namespace Gitic
         List<GitFileChange> ParseNumstatAndPatches(string text);
     }
 
-    public class GitParserImpl : IGitParser
+    public class GitParser : IGitParser
     {
-        public string CommitMarker => GitParser.CommitMarker;
-        public string NumstatMarker => GitParser.NumstatMarker;
-        public List<GitCommitRecord> ParseGitLog(string output) => GitParser.ParseGitLog(output);
-        public GitCommitRecord? ParseCommitRecord(string record) => GitParser.ParseCommitRecord(record);
-        public List<GitFileChange> ParseNumstatAndPatches(string text) => GitParser.ParseNumstatAndPatches(text);
-    }
+        public string CommitMarker => "__GITIZER_COMMIT__";
+        public string NumstatMarker => "__GITIZER_NUMSTAT__";
 
-    public static class GitParser
-    {
-        public const string CommitMarker = "__GITIZER_COMMIT__";
-        public const string NumstatMarker = "__GITIZER_NUMSTAT__";
-
-        public static List<GitCommitRecord> ParseGitLog(string output)
+        public List<GitCommitRecord> ParseGitLog(string output)
         {
             return output
                 .Split(new[] { CommitMarker }, StringSplitOptions.None)
@@ -40,7 +31,7 @@ namespace Gitic
                 .ToList();
         }
 
-        public static GitCommitRecord? ParseCommitRecord(string record)
+        public GitCommitRecord? ParseCommitRecord(string record)
         {
             int markerIndex = record.IndexOf(NumstatMarker);
             if (markerIndex == -1)
@@ -95,7 +86,7 @@ namespace Gitic
             };
         }
 
-        public static List<GitFileChange> ParseNumstatAndPatches(string text)
+        public List<GitFileChange> ParseNumstatAndPatches(string text)
         {
             var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(line => line.Trim())
@@ -107,7 +98,7 @@ namespace Gitic
             return fileChanges;
         }
 
-        public static (List<GitFileChange> fileChanges, Dictionary<string, GitFileChange> fileChangesMap) ParseNumstatMetadata(List<string> lines)
+        public (List<GitFileChange> fileChanges, Dictionary<string, GitFileChange> fileChangesMap) ParseNumstatMetadata(List<string> lines)
         {
             var fileChanges = new List<GitFileChange>();
             var fileChangesMap = new Dictionary<string, GitFileChange>();
@@ -141,7 +132,7 @@ namespace Gitic
             return (fileChanges, fileChangesMap);
         }
 
-        public static void ExtractSymbolsFromHunks(
+        public void ExtractSymbolsFromHunks(
             List<string> lines,
             Dictionary<string, GitFileChange> fileChangesMap)
         {
@@ -182,7 +173,7 @@ namespace Gitic
             }
         }
 
-        public static string CleanSymbol(string symbol)
+        public string CleanSymbol(string symbol)
         {
             string cleaned = symbol.Trim();
             if (cleaned.StartsWith("@"))
@@ -214,7 +205,7 @@ namespace Gitic
             return cleaned;
         }
 
-        public static List<GitIdentity> ParseCoAuthors(string message)
+        public List<GitIdentity> ParseCoAuthors(string message)
         {
             var identities = new List<GitIdentity>();
             var seen = new HashSet<string>();
@@ -239,7 +230,7 @@ namespace Gitic
             return identities;
         }
 
-        public static string NormalizeNumstatPath(string path)
+        public string NormalizeNumstatPath(string path)
         {
             string normalized = PathUtils.NormalizeGitPath(path);
             var match = Regex.Match(normalized, @"\{.*? => (.*?)\}");

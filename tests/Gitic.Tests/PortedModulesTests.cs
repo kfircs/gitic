@@ -300,7 +300,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestGitParserImplAndInterface()
         {
-            IGitParser parser = new GitParserImpl();
+            IGitParser parser = new GitParser();
             Assert.Equal("__GITIZER_COMMIT__", parser.CommitMarker);
             Assert.Equal("__GITIZER_NUMSTAT__", parser.NumstatMarker);
 
@@ -424,20 +424,22 @@ namespace Gitic.Tests
         [Fact]
         public void TestGitParser_CleanSymbol()
         {
-            Assert.Equal("", GitParser.CleanSymbol("@decorator"));
-            Assert.Equal("", GitParser.CleanSymbol("import { something } from 'somewhere'"));
-            Assert.Equal("", GitParser.CleanSymbol("using System;"));
-            Assert.Equal("myFunc()", GitParser.CleanSymbol("myFunc();"));
-            Assert.Equal("class MyClass", GitParser.CleanSymbol("class MyClass {  "));
-            Assert.Equal("method(param)", GitParser.CleanSymbol("method(param)"));
-            Assert.Equal("a_very_long_symbol_string_that_exceeds_sixty_characters_shou...", GitParser.CleanSymbol("a_very_long_symbol_string_that_exceeds_sixty_characters_should_be_truncated_with_ellipses"));
+            var parser = new GitParser();
+            Assert.Equal("", parser.CleanSymbol("@decorator"));
+            Assert.Equal("", parser.CleanSymbol("import { something } from 'somewhere'"));
+            Assert.Equal("", parser.CleanSymbol("using System;"));
+            Assert.Equal("myFunc()", parser.CleanSymbol("myFunc();"));
+            Assert.Equal("class MyClass", parser.CleanSymbol("class MyClass {  "));
+            Assert.Equal("method(param)", parser.CleanSymbol("method(param)"));
+            Assert.Equal("a_very_long_symbol_string_that_exceeds_sixty_characters_shou...", parser.CleanSymbol("a_very_long_symbol_string_that_exceeds_sixty_characters_should_be_truncated_with_ellipses"));
         }
 
         [Fact]
         public void TestGitParser_ParseCoAuthors()
         {
+            var parser = new GitParser();
             string message = "Commit message here\n\nCo-authored-by: Alice <alice@example.com>\nCo-authored-by: Bob <bob@example.com>\nCo-authored-by: Alice <alice@example.com>";
-            var coAuthors = GitParser.ParseCoAuthors(message);
+            var coAuthors = parser.ParseCoAuthors(message);
             Assert.Equal(2, coAuthors.Count);
             Assert.Equal("Alice", coAuthors[0].Name);
             Assert.Equal("alice@example.com", coAuthors[0].Email);
@@ -448,14 +450,16 @@ namespace Gitic.Tests
         [Fact]
         public void TestGitParser_NormalizeNumstatPath()
         {
-            Assert.Equal("src/main.cs", GitParser.NormalizeNumstatPath("src/{utils => main}.cs"));
-            Assert.Equal("src/main.cs", GitParser.NormalizeNumstatPath("src/main.cs"));
-            Assert.Equal("new_main.cs", GitParser.NormalizeNumstatPath("old_main.cs => new_main.cs"));
+            var parser = new GitParser();
+            Assert.Equal("src/main.cs", parser.NormalizeNumstatPath("src/{utils => main}.cs"));
+            Assert.Equal("src/main.cs", parser.NormalizeNumstatPath("src/main.cs"));
+            Assert.Equal("new_main.cs", parser.NormalizeNumstatPath("old_main.cs => new_main.cs"));
         }
 
         [Fact]
         public void TestGitParser_ParseGitLog()
         {
+            var parser = new GitParser();
             string logOutput = $@"__GITIZER_COMMIT__
 hash1
 2026-06-01T12:00:00Z
@@ -468,7 +472,7 @@ __GITIZER_NUMSTAT__
 10	5	src/main.cs
 2	0	src/helper.cs
 ";
-            var records = GitParser.ParseGitLog(logOutput);
+            var records = parser.ParseGitLog(logOutput);
             Assert.Single(records);
             var record = records[0];
             Assert.Equal("hash1", record.Hash);
@@ -1005,7 +1009,7 @@ __GITIZER_NUMSTAT__
                 "log",
                 "--numstat",
                 "-p",
-                $"--format=format:{GitParser.CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{GitParser.NumstatMarker}",
+                $"--format=format:{new GitParser().CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{new GitParser().NumstatMarker}",
                 "--no-merges",
                 "--since=2026-06-01T12:00:00Z"
             }, logOutput);
