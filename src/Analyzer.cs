@@ -14,30 +14,21 @@ namespace Gitic
         public string? ContributorName { get; set; }
         public IFileStatsProvider? FileStatsProvider { get; set; } = null;
         public IGitClient? GitClient { get; set; } = null;
+        public IAnalysisSettingsNormalizer? SettingsNormalizer { get; set; } = null;
     }
 
     public static class RepositoryAnalyzer
     {
+        [Obsolete("Use IAnalysisSettingsNormalizer instead.")]
         public static AnalysisSettings NormalizeSettings(AnalysisSettings settings)
         {
-            var defaults = DefaultAnalysisSettings.Create();
-            return new AnalysisSettings
-            {
-                Json = settings.Json,
-                AllTime = settings.AllTime,
-                Since = settings.Since ?? defaults.Since,
-                IncludeMerges = settings.IncludeMerges,
-                IncludeDeleted = settings.IncludeDeleted,
-                MergeByEmail = settings.MergeByEmail ?? defaults.MergeByEmail,
-                Path = settings.Path ?? defaults.Path,
-                Anonymize = settings.Anonymize,
-                Depth = settings.Depth != 0 ? settings.Depth : defaults.Depth
-            };
+            return new AnalysisSettingsNormalizer().Normalize(settings);
         }
 
         public static async Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
         {
-            var settings = NormalizeSettings(input.Settings);
+            var normalizer = input.SettingsNormalizer ?? new AnalysisSettingsNormalizer();
+            var settings = normalizer.Normalize(input.Settings);
             var config = input.Config ?? GitizerConfig.Default;
             var gitClient = input.GitClient ?? new GitClient(input.RepoRoot);
 

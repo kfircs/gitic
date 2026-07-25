@@ -1086,6 +1086,92 @@ __GITIZER_NUMSTAT__
                 Assert.Equal("/fake/root", result.Analysis.RepoRoot);
             }
 
+            private class FakeSettingsNormalizer : IAnalysisSettingsNormalizer
+            {
+                public bool NormalizeCalled { get; set; }
+                public AnalysisSettings Normalize(AnalysisSettings settings)
+                {
+                    NormalizeCalled = true;
+                    return new AnalysisSettings
+                    {
+                        Depth = 99,
+                        Json = settings.Json,
+                        AllTime = settings.AllTime,
+                        Since = settings.Since,
+                        IncludeMerges = settings.IncludeMerges,
+                        IncludeDeleted = settings.IncludeDeleted,
+                        MergeByEmail = settings.MergeByEmail,
+                        Path = settings.Path,
+                        Anonymize = settings.Anonymize
+                    };
+                }
+            }
+
+            [Fact]
+            public void TestAnalysisSettingsNormalizer_DefaultNormalization()
+            {
+                var normalizer = new AnalysisSettingsNormalizer();
+                var original = new AnalysisSettings();
+                var normalized = normalizer.Normalize(original);
+
+                var defaults = DefaultAnalysisSettings.Create();
+                Assert.Equal(defaults.Since, normalized.Since);
+                Assert.Equal(defaults.Depth, normalized.Depth);
+                Assert.Equal(defaults.MergeByEmail, normalized.MergeByEmail);
+                Assert.Equal(defaults.Path, normalized.Path);
+            }
+
+            [Fact]
+            public void TestAnalysisSettingsNormalizer_PreservesValues()
+            {
+                var normalizer = new AnalysisSettingsNormalizer();
+                var original = new AnalysisSettings
+                {
+                    Depth = 5,
+                    Since = "2 weeks ago",
+                    Json = true,
+                    AllTime = true,
+                    IncludeMerges = true,
+                    IncludeDeleted = true,
+                    MergeByEmail = true,
+                    Path = "custom/path",
+                    Anonymize = true
+                };
+                var normalized = normalizer.Normalize(original);
+
+                Assert.Equal(5, normalized.Depth);
+                Assert.Equal("2 weeks ago", normalized.Since);
+                Assert.True(normalized.Json);
+                Assert.True(normalized.AllTime);
+                Assert.True(normalized.IncludeMerges);
+                Assert.True(normalized.IncludeDeleted);
+                Assert.True(normalized.MergeByEmail);
+                Assert.Equal("custom/path", normalized.Path);
+                Assert.True(normalized.Anonymize);
+            }
+
+            [Fact]
+            public async Task TestRepositoryAnalyzer_UsesInjectedNormalizer()
+            {
+                var fakeProvider = new FakeFileStatsProvider();
+                var normalizer = new FakeSettingsNormalizer();
+                var input = new AnalyzeInput
+                {
+                    RepoRoot = "/fake/root",
+                    Command = AnalysisCommand.Hotspots,
+                    Settings = new AnalysisSettings { Depth = 1 },
+                    FileStatsProvider = fakeProvider,
+                    GitClient = new FakeGitClient(),
+                    SettingsNormalizer = normalizer
+                };
+
+                var result = await RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
+
+                Assert.NotNull(result);
+                Assert.True(normalizer.NormalizeCalled);
+                Assert.Equal(99, result.Settings.Depth);
+            }
+
             [Fact]
             public async Task TestDiskFileStatsProvider_ComputesStats()
             {
