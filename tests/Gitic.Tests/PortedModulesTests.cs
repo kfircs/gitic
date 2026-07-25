@@ -998,6 +998,18 @@ __GITIZER_NUMSTAT__
                 Assert.Same(original, unchanged);
             }
 
+            [Fact]
+            public void TestIYamlParserAndYamlSubsetParserImpl()
+            {
+                IYamlParser parser = new YamlSubsetParserImpl();
+                string yaml = "key: value\nnumber: 42\nbool: true";
+                var parsed = parser.Parse(yaml, "test_source") as Dictionary<string, object?>;
+                Assert.NotNull(parsed);
+                Assert.Equal("value", parsed["key"]);
+                Assert.Equal(42L, parsed["number"]);
+                Assert.Equal(true, parsed["bool"]);
+            }
+
             private class NoOpResultAnonymizer : IResultAnonymizer
             {
                 public AnalysisResult Anonymize(AnalysisResult result)

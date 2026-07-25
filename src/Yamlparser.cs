@@ -458,11 +458,26 @@ namespace Gitic
         }
     }
 
-    public static class YamlSubsetParserHelper
+    public interface IYamlParser
     {
-        public static object? ParseYamlSubset(string content, string source)
+        object? Parse(string content, string source);
+    }
+
+    public class YamlSubsetParserImpl : IYamlParser
+    {
+        public object? Parse(string content, string source)
         {
             return new YamlSubsetParser(content, source).Parse();
+        }
+    }
+
+    public static class YamlSubsetParserHelper
+    {
+        public static IYamlParser Instance { get; set; } = new YamlSubsetParserImpl();
+
+        public static object? ParseYamlSubset(string content, string source)
+        {
+            return Instance.Parse(content, source);
         }
     }
 }
