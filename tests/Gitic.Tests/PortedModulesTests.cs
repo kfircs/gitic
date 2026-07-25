@@ -1044,5 +1044,24 @@ __GITIZER_NUMSTAT__
                 Assert.NotNull(areas);
                 Assert.Empty(areas);
             }
+
+            [Fact]
+            public void TestIMetricsEngineCoordinator_InterfaceAndImplementation()
+            {
+                IMetricsEngineCoordinator coordinator = new MetricsEngineCoordinator(maxCommitFileCount: 10);
+                
+                var temporalEngine = coordinator.GetTemporalCouplingEngine();
+                var leadTimeEngine = coordinator.GetLeadTimeEngine();
+                Assert.NotNull(temporalEngine);
+                Assert.NotNull(leadTimeEngine);
+
+                var files = new List<string> { "file1.cs", "file2.cs" };
+                coordinator.TrackCommit(files);
+
+                var commits = new List<GitCommitRecord>();
+                var (topCouplings, leadTimes) = coordinator.Calculate(commits);
+                Assert.NotNull(topCouplings);
+                Assert.NotNull(leadTimes);
+            }
         }
     }

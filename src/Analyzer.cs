@@ -61,7 +61,7 @@ namespace Gitic
             accumulator.PrepareIdentityMerging(commits);
 
             int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
-            var metricsEngine = new MetricsEngineCoordinator(temporalCouplingLimit);
+            IMetricsEngineCoordinator metricsEngine = new MetricsEngineCoordinator(temporalCouplingLimit);
 
             foreach (var commit in commits)
             {

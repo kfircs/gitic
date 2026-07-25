@@ -4,6 +4,14 @@ using System.Linq;
 
 namespace Gitic
 {
+    public interface IMetricsEngineCoordinator
+    {
+        TemporalCouplingEngine GetTemporalCouplingEngine();
+        LeadTimeEngine GetLeadTimeEngine();
+        void TrackCommit(List<string> filesInCommit);
+        (List<TemporalCoupling> topCouplings, LeadTimesInfo leadTimes) Calculate(List<GitCommitRecord> commits);
+    }
+
     public class TemporalCouplingEngine
     {
         private const int TemporalCouplingMinSharedCommits = 3;
@@ -176,7 +184,7 @@ namespace Gitic
         }
     }
 
-    public class MetricsEngineCoordinator
+    public class MetricsEngineCoordinator : IMetricsEngineCoordinator
     {
         private readonly TemporalCouplingEngine _temporalCouplingEngine;
         private readonly LeadTimeEngine _leadTimeEngine;
