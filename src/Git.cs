@@ -85,7 +85,6 @@ namespace Gitic
     {
         Task<string?> GetRepositoryRootAsync();
         Task<HashSet<string>> ListHeadFilesAsync();
-        Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null);
     }
 
     public class GitClient : IGitClient
