@@ -6,7 +6,7 @@ namespace Gitic
 {
     public class ChangeAccumulator
     {
-        private readonly PathClassifier _filter;
+        private readonly IPathClassifier _filter;
         private readonly CommitClassifier _classifier = new();
         private readonly Dictionary<string, ItemAccumulator> _files = new();
         private readonly Dictionary<string, ItemAccumulator> _areas = new();
@@ -22,17 +22,11 @@ namespace Gitic
         public ChangeAccumulator(
             GitizerConfig config,
             AnalysisSettings settings,
-            HashSet<string> headFiles)
+            IPathClassifier filter)
         {
             _config = config;
             _settings = settings;
-
-            _filter = new PathClassifier(
-                headFiles,
-                config.Excludes,
-                settings.IncludeDeleted,
-                settings.Path
-            );
+            _filter = filter;
 
             bool mergeByEmail = (_config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
             _identityRegistry = new IdentityRegistry(

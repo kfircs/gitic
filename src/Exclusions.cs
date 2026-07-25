@@ -78,7 +78,13 @@ namespace Gitic
         public string Pattern { get; set; } = string.Empty;
     }
 
-    public class PathClassifier
+    public interface IPathClassifier
+    {
+        bool Check(string path);
+        List<ExclusionSummary> GetExclusions();
+    }
+
+    public class PathClassifier : IPathClassifier
     {
         public static List<ExcludeRule> LoadGitignoreRules(string repoRoot)
         {

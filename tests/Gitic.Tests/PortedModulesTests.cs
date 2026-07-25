@@ -67,6 +67,25 @@ namespace Gitic.Tests
             Assert.Contains(exclusions, e => e.Category == "binary" && e.Pattern == "image files");
         }
 
+        public class MockPathClassifier : IPathClassifier
+        {
+            public bool Check(string path) => !path.Contains("exclude");
+            public List<ExclusionSummary> GetExclusions() => new() { new ExclusionSummary { Category = "test", Pattern = "exclude", Count = 1 } };
+        }
+
+        [Fact]
+        public void TestChangeAccumulator_WithPathClassifierMock()
+        {
+            var config = GitizerConfig.Default;
+            var settings = new AnalysisSettings();
+            var mockFilter = new MockPathClassifier();
+            var accumulator = new ChangeAccumulator(config, settings, mockFilter);
+
+            var list = accumulator.GetExclusions();
+            Assert.Single(list);
+            Assert.Equal("test", list[0].Category);
+        }
+
         [Fact]
         public void TestGitGraph()
         {

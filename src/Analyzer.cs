@@ -57,7 +57,8 @@ namespace Gitic
             var gitignoreRules = PathClassifier.LoadGitignoreRules(input.RepoRoot);
             config.Excludes.AddRange(gitignoreRules);
 
-            var accumulator = new ChangeAccumulator(config, settings, headFiles);
+            var pathClassifier = new PathClassifier(headFiles, config.Excludes, settings.IncludeDeleted, settings.Path);
+            var accumulator = new ChangeAccumulator(config, settings, pathClassifier);
             accumulator.PrepareIdentityMerging(commits);
 
             int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
