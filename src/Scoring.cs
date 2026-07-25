@@ -66,6 +66,36 @@ namespace Gitic
         }
     }
 
+    public interface IScoringUtilityService
+    {
+        double CalculateRecencyScore(long timestamp);
+        double CalculateDebtVolatility(ItemAccumulator item, double maxChurn, double maxNetLines);
+        double CalculateCoordinationOverlap(List<ContributorShare> contributors, int itemTouches);
+    }
+
+    public class ScoringUtilityService : IScoringUtilityService
+    {
+        public double CalculateRecencyScore(long timestamp)
+        {
+            return ScoringUtils.CalculateRecencyScore(timestamp);
+        }
+
+        public double CalculateDebtVolatility(
+            ItemAccumulator item,
+            double maxChurn,
+            double maxNetLines)
+        {
+            return ScoringUtils.CalculateDebtVolatility(item, maxChurn, maxNetLines);
+        }
+
+        public double CalculateCoordinationOverlap(
+            List<ContributorShare> contributors,
+            int itemTouches)
+        {
+            return ScoringUtils.CalculateCoordinationOverlap(contributors, itemTouches);
+        }
+    }
+
     public static class ScoringUtils
     {
         private const double MsPerDay = 86400000.0;
@@ -253,6 +283,7 @@ namespace Gitic
         private readonly IKnowledgeSiloCalculator _siloCalculator;
         private readonly IScoreCalculatorProvider _scoreCalculatorProvider;
         private readonly IAreaMapper _areaMapper;
+        private readonly IScoringUtilityService _scoringUtilityService;
 
         public FamiliarityScoringEngine(
             GitizerConfig config,
@@ -260,7 +291,8 @@ namespace Gitic
             int depth = 2,
             IKnowledgeSiloCalculator? siloCalculator = null,
             IScoreCalculatorProvider? scoreCalculatorProvider = null,
-            IAreaMapper? areaMapper = null)
+            IAreaMapper? areaMapper = null,
+            IScoringUtilityService? scoringUtilityService = null)
         {
             _config = config;
             _activeContributorKeys = activeContributorKeys ?? new HashSet<string>();
@@ -268,6 +300,7 @@ namespace Gitic
             _siloCalculator = siloCalculator ?? new KnowledgeSiloCalculator();
             _scoreCalculatorProvider = scoreCalculatorProvider ?? new DefaultScoreCalculatorProvider();
             _areaMapper = areaMapper ?? new AreaMapper();
+            _scoringUtilityService = scoringUtilityService ?? new ScoringUtilityService();
         }
 
         private class ScoringContext
@@ -277,7 +310,7 @@ namespace Gitic
             public double MaxRecency { get; set; }
             public double MaxNetLines { get; set; }
 
-            public static ScoringContext Create(List<ItemAccumulator> items)
+            public static ScoringContext Create(List<ItemAccumulator> items, IScoringUtilityService scoringUtilityService)
             {
                 double maxTouches = items.Count > 0 ? items.Max(item => item.Touches) : 1.0;
                 if (maxTouches < 1.0) maxTouches = 1.0;
@@ -285,7 +318,7 @@ namespace Gitic
                 double maxChurn = items.Count > 0 ? items.Max(item => item.Churn) : 1.0;
                 if (maxChurn < 1.0) maxChurn = 1.0;
 
-                double maxRecency = items.Count > 0 ? items.Max(item => ScoringUtils.CalculateRecencyScore(item.LastTouched)) : 0.001;
+                double maxRecency = items.Count > 0 ? items.Max(item => scoringUtilityService.CalculateRecencyScore(item.LastTouched)) : 0.001;
                 if (maxRecency < 0.001) maxRecency = 0.001;
 
                 double maxNetLines = items.Count > 0 ? items.Max(item => Math.Max(0.0, item.Added - item.Deleted)) : 1.0;
@@ -309,7 +342,7 @@ namespace Gitic
             {
                 Touches = 0.0,
                 Churn = ScoringUtils.RoundRatio(item.Churn / context.MaxChurn),
-                Recency = ScoringUtils.RoundRatio(ScoringUtils.CalculateRecencyScore(item.LastTouched) / context.MaxRecency),
+                Recency = ScoringUtils.RoundRatio(_scoringUtilityService.CalculateRecencyScore(item.LastTouched) / context.MaxRecency),
                 ContributorSpread = item.Touches > 0 ? ScoringUtils.RoundRatio((double)item.ContributorCredits.Count / item.Touches) : 0.0,
                 LowFamiliarityConcentration = 0.0
             };
@@ -339,7 +372,7 @@ namespace Gitic
         public List<FileMetric> ScoreFiles(List<ItemAccumulator> items, int depth)
         {
             int targetDepth = depth;
-            var context = ScoringContext.Create(items);
+            var context = ScoringContext.Create(items, _scoringUtilityService);
 
             return items.Select(item =>
             {
@@ -348,8 +381,8 @@ namespace Gitic
                 double reworkRate = item.Touches > 0 ? ScoringUtils.RoundRatio((double)item.BugFixTouches / item.Touches) : 0.0;
                 double touchesScore = ScoringUtils.RoundRatio(item.Touches / context.MaxTouches);
 
-                double debtVolatility = ScoringUtils.CalculateDebtVolatility(item, context.MaxChurn, context.MaxNetLines);
-                double coordinationOverlap = ScoringUtils.CalculateCoordinationOverlap(contributors, item.Touches);
+                double debtVolatility = _scoringUtilityService.CalculateDebtVolatility(item, context.MaxChurn, context.MaxNetLines);
+                double coordinationOverlap = _scoringUtilityService.CalculateCoordinationOverlap(contributors, item.Touches);
                 var knowledgeSilo = _siloCalculator.CalculateKnowledgeSilo(contributors, _activeContributorKeys);
 
                 var breakdown = new ScoreBreakdown
@@ -398,7 +431,7 @@ namespace Gitic
 
         public List<AreaMetric> ScoreAreas(List<ItemAccumulator> items)
         {
-            var context = ScoringContext.Create(items);
+            var context = ScoringContext.Create(items, _scoringUtilityService);
 
             return items.Select(item =>
             {

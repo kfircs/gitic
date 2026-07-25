@@ -1740,6 +1740,68 @@ __GITIZER_NUMSTAT__
                 Assert.True(files[0].KnowledgeSilo!.Abandoned);
             }
 
+            private class MockScoringUtilityService : IScoringUtilityService
+            {
+                public bool CalculateRecencyScoreCalled { get; set; }
+                public bool CalculateDebtVolatilityCalled { get; set; }
+                public bool CalculateCoordinationOverlapCalled { get; set; }
+
+                public double CalculateRecencyScore(long timestamp)
+                {
+                    CalculateRecencyScoreCalled = true;
+                    return 0.5;
+                }
+
+                public double CalculateDebtVolatility(ItemAccumulator item, double maxChurn, double maxNetLines)
+                {
+                    CalculateDebtVolatilityCalled = true;
+                    return 42.0;
+                }
+
+                public double CalculateCoordinationOverlap(List<ContributorShare> contributors, int itemTouches)
+                {
+                    CalculateCoordinationOverlapCalled = true;
+                    return 77.0;
+                }
+            }
+
+            [Fact]
+            public void TestFamiliarityScoringEngine_UsesInjectedScoringUtilityService()
+            {
+                var config = new GitizerConfig();
+                var mockUtility = new MockScoringUtilityService();
+                IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(
+                    config,
+                    scoringUtilityService: mockUtility);
+
+                var items = new List<ItemAccumulator>
+                {
+                    new ItemAccumulator
+                    {
+                        Key = "test.txt",
+                        Touches = 1,
+                        Added = 10,
+                        Deleted = 5,
+                        Churn = 15,
+                        LastTouched = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        ContributorCredits = new Dictionary<string, ContributorCredit>
+                        {
+                            { "author", new ContributorCredit { Identity = new GitIdentity { Name = "author", Email = "author@example.com" }, Activity = 10.0 } }
+                        }
+                    }
+                };
+
+                var files = engine.ScoreFiles(items, 2);
+
+                Assert.True(mockUtility.CalculateRecencyScoreCalled);
+                Assert.True(mockUtility.CalculateDebtVolatilityCalled);
+                Assert.True(mockUtility.CalculateCoordinationOverlapCalled);
+
+                var fileMetric = Assert.Single(files);
+                Assert.Equal(42.0, fileMetric.DebtVolatility);
+                Assert.Equal(77.0, fileMetric.CoordinationOverlap);
+            }
+
             private class MockScoreCalculator : IScoreCalculator
             {
                 private readonly double _value;
