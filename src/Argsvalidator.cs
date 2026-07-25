@@ -18,7 +18,7 @@ namespace Gitic
             {
                 throw new CommandLineParseError("A command is required.");
             }
-            if (!IsCommand(commandName) && commandName != "config")
+            if (!IsCommand(commandName))
             {
                 throw new CommandLineParseError($"Unknown command: {commandName}");
             }
@@ -65,7 +65,8 @@ namespace Gitic
                    command == "areas" ||
                    command == "contributors" ||
                    command == "contributor" ||
-                   command == "report";
+                   command == "report" ||
+                   command == "config";
         }
     }
 }
