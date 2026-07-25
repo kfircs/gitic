@@ -841,6 +841,28 @@ __GITIZER_NUMSTAT__
         }
 
         [Fact]
+        public void TestScoreBreakdown_Clone()
+        {
+            var breakdown = new ScoreBreakdown
+            {
+                Touches = 1.2,
+                Churn = 3.4,
+                Recency = 5.6,
+                ContributorSpread = 7.8,
+                LowFamiliarityConcentration = 9.0
+            };
+
+            var clone = breakdown.Clone();
+
+            Assert.NotSame(breakdown, clone);
+            Assert.Equal(breakdown.Touches, clone.Touches);
+            Assert.Equal(breakdown.Churn, clone.Churn);
+            Assert.Equal(breakdown.Recency, clone.Recency);
+            Assert.Equal(breakdown.ContributorSpread, clone.ContributorSpread);
+            Assert.Equal(breakdown.LowFamiliarityConcentration, clone.LowFamiliarityConcentration);
+        }
+
+        [Fact]
         public void TestCliReportFormatter_Format()
         {
             var result = new AnalysisResult

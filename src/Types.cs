@@ -142,6 +142,15 @@ namespace Gitic
 
         [JsonPropertyName("low_familiarity_concentration")]
         public double LowFamiliarityConcentration { get; set; }
+
+        public ScoreBreakdown Clone() => new()
+        {
+            Touches = Touches,
+            Churn = Churn,
+            Recency = Recency,
+            ContributorSpread = ContributorSpread,
+            LowFamiliarityConcentration = LowFamiliarityConcentration
+        };
     }
 
     public class ContributorShare

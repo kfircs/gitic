@@ -161,14 +161,7 @@ namespace Gitic
                 ).ToList(),
                 HeatScore = file.HeatScore,
                 AttentionScore = file.AttentionScore,
-                ScoreBreakdown = new ScoreBreakdown
-                {
-                    Touches = file.ScoreBreakdown.Touches,
-                    Churn = file.ScoreBreakdown.Churn,
-                    Recency = file.ScoreBreakdown.Recency,
-                    ContributorSpread = file.ScoreBreakdown.ContributorSpread,
-                    LowFamiliarityConcentration = file.ScoreBreakdown.LowFamiliarityConcentration
-                },
+                ScoreBreakdown = file.ScoreBreakdown.Clone(),
                 InnerSymbols = file.InnerSymbols?.Select(s => new InnerSymbolMetric
                 {
                     Name = s.Name,
@@ -205,14 +198,7 @@ namespace Gitic
                 ).ToList(),
                 HeatScore = area.HeatScore,
                 AttentionScore = area.AttentionScore,
-                ScoreBreakdown = new ScoreBreakdown
-                {
-                    Touches = area.ScoreBreakdown.Touches,
-                    Churn = area.ScoreBreakdown.Churn,
-                    Recency = area.ScoreBreakdown.Recency,
-                    ContributorSpread = area.ScoreBreakdown.ContributorSpread,
-                    LowFamiliarityConcentration = area.ScoreBreakdown.LowFamiliarityConcentration
-                },
+                ScoreBreakdown = area.ScoreBreakdown.Clone(),
                 ReworkRate = area.ReworkRate
             }).ToList();
 
