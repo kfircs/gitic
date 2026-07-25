@@ -12,6 +12,9 @@ namespace Gitic
 
     public class CommandLineValidator
     {
+        private const int MinDepth = 1;
+        private const int MaxDepth = 10;
+
         private static readonly HashSet<string> ValidCommands = new(StringComparer.OrdinalIgnoreCase)
         {
             "hotspots",
@@ -45,13 +48,13 @@ namespace Gitic
 
         public int ValidateDepth(string value)
         {
-            if (!int.TryParse(value, out int depth) || depth < 1)
+            if (!int.TryParse(value, out int depth) || depth < MinDepth)
             {
                 throw new CommandLineParseError("--depth must be a positive integer.");
             }
-            if (depth > 10)
+            if (depth > MaxDepth)
             {
-                throw new CommandLineParseError("--depth must be between 1 and 10.");
+                throw new CommandLineParseError($"--depth must be between {MinDepth} and {MaxDepth}.");
             }
             return depth;
         }

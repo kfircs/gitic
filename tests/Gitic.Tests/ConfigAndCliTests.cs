@@ -184,6 +184,30 @@ excludes:
         }
 
         [Fact]
+        public void TestCommandLineValidator_ValidateDepth()
+        {
+            var validator = new CommandLineValidator();
+
+            // Valid depth values
+            Assert.Equal(1, validator.ValidateDepth("1"));
+            Assert.Equal(5, validator.ValidateDepth("5"));
+            Assert.Equal(10, validator.ValidateDepth("10"));
+
+            // Invalid depth values
+            var ex1 = Assert.Throws<CommandLineParseError>(() => validator.ValidateDepth("0"));
+            Assert.Equal("--depth must be a positive integer.", ex1.Message);
+
+            var ex2 = Assert.Throws<CommandLineParseError>(() => validator.ValidateDepth("-3"));
+            Assert.Equal("--depth must be a positive integer.", ex2.Message);
+
+            var ex3 = Assert.Throws<CommandLineParseError>(() => validator.ValidateDepth("notaninteger"));
+            Assert.Equal("--depth must be a positive integer.", ex3.Message);
+
+            var ex4 = Assert.Throws<CommandLineParseError>(() => validator.ValidateDepth("11"));
+            Assert.Equal("--depth must be between 1 and 10.", ex4.Message);
+        }
+
+        [Fact]
         public void TestConfigValidator_ValidateAttentionWeightsSum()
         {
             var weights = new AttentionWeights
