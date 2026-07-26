@@ -11,14 +11,16 @@ namespace Gitic
             HashSet<string> activeContributorKeys);
     }
 
-    public class KnowledgeSiloCalculator : IKnowledgeSiloCalculator
+    public interface ITruckFactorCalculator
+    {
+        int CalculateTruckFactor(List<ContributorShare> contributors);
+    }
+
+    public class TruckFactorCalculator : ITruckFactorCalculator
     {
         private const double TruckFactorThresholdPct = 0.5;
-        private const double SiloThreshold = 0.70;
 
-        public KnowledgeSiloMetric CalculateKnowledgeSilo(
-            List<ContributorShare> contributors,
-            HashSet<string> activeContributorKeys)
+        public int CalculateTruckFactor(List<ContributorShare> contributors)
         {
             int truckFactor = 1;
             double totalActivity = contributors.Sum(c => c.Activity);
@@ -37,6 +39,25 @@ namespace Gitic
                     }
                 }
             }
+            return truckFactor;
+        }
+    }
+
+    public class KnowledgeSiloCalculator : IKnowledgeSiloCalculator
+    {
+        private const double SiloThreshold = 0.70;
+        private readonly ITruckFactorCalculator _truckFactorCalculator;
+
+        public KnowledgeSiloCalculator(ITruckFactorCalculator? truckFactorCalculator = null)
+        {
+            _truckFactorCalculator = truckFactorCalculator ?? new TruckFactorCalculator();
+        }
+
+        public KnowledgeSiloMetric CalculateKnowledgeSilo(
+            List<ContributorShare> contributors,
+            HashSet<string> activeContributorKeys)
+        {
+            int truckFactor = _truckFactorCalculator.CalculateTruckFactor(contributors);
 
             double topOwnerShare = contributors.Count > 0 ? contributors[0].ActivityShare : 0.0;
             bool isSilo = topOwnerShare >= SiloThreshold;
