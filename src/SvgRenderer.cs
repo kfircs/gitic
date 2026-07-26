@@ -7,6 +7,69 @@ using System.Threading.Tasks;
 
 namespace Gitic
 {
+    public interface ISvgChartBuilder
+    {
+        ISvgChartBuilder StartSvg(int width, int height);
+        ISvgChartBuilder StartDefs();
+        ISvgChartBuilder EndDefs();
+        ISvgChartBuilder AddGradient(string id, string x1, string y1, string x2, string y2, string startColor, string endColor, string? startOpacity = null, string? endOpacity = null);
+        ISvgChartBuilder AppendLine(string content);
+        string Build();
+    }
+
+    public class SvgChartBuilder : ISvgChartBuilder
+    {
+        private readonly StringBuilder _sb = new StringBuilder();
+
+        public ISvgChartBuilder StartSvg(int width, int height)
+        {
+            _sb.AppendLine($"<svg viewBox=\"0 0 {width} {height}\" width=\"100%\" height=\"auto\" xmlns=\"http://www.w3.org/2000/svg\" style=\"background-color:#0f172a; border-radius:8px; border:1px solid #1e293b; font-family:system-ui, -apple-system, sans-serif;\">");
+            return this;
+        }
+
+        public ISvgChartBuilder StartDefs()
+        {
+            _sb.AppendLine("  <defs>");
+            return this;
+        }
+
+        public ISvgChartBuilder EndDefs()
+        {
+            _sb.AppendLine("  </defs>");
+            return this;
+        }
+
+        public ISvgChartBuilder AddGradient(string id, string x1, string y1, string x2, string y2, string startColor, string endColor, string? startOpacity = null, string? endOpacity = null)
+        {
+            _sb.AppendLine($"    <linearGradient id=\"{id}\" x1=\"{x1}\" y1=\"{y1}\" x2=\"{x2}\" y2=\"{y2}\">");
+            
+            string startStop = $"      <stop offset=\"0%\" stop-color=\"{startColor}\"";
+            if (startOpacity != null) startStop += $" stop-opacity=\"{startOpacity}\"";
+            startStop += " />";
+            _sb.AppendLine(startStop);
+
+            string endStop = $"      <stop offset=\"100%\" stop-color=\"{endColor}\"";
+            if (endOpacity != null) endStop += $" stop-opacity=\"{endOpacity}\"";
+            endStop += " />";
+            _sb.AppendLine(endStop);
+
+            _sb.AppendLine("    </linearGradient>");
+            return this;
+        }
+
+        public ISvgChartBuilder AppendLine(string content)
+        {
+            _sb.AppendLine(content);
+            return this;
+        }
+
+        public string Build()
+        {
+            _sb.AppendLine("</svg>");
+            return _sb.ToString();
+        }
+    }
+
     public static class SvgGeneratorHelper
     {
         private static string EscapeXml(string value)
@@ -20,8 +83,6 @@ namespace Gitic
 
         public static string GenerateSvg(AnalysisResult result)
         {
-            var sb = new StringBuilder();
-
             int width = 800;
             int height = 450;
             int padLeft = 70;
@@ -40,14 +101,11 @@ namespace Gitic
             double maxChurn = sortedFiles.Count > 0 ? sortedFiles.Max(f => f.Churn) : 100;
             if (maxChurn <= 0) maxChurn = 100;
 
-            sb.AppendLine($"<svg viewBox=\"0 0 {width} {height}\" width=\"100%\" height=\"auto\" xmlns=\"http://www.w3.org/2000/svg\" style=\"background-color:#0f172a; border-radius:8px; border:1px solid #1e293b; font-family:system-ui, -apple-system, sans-serif;\">");
-
-            sb.AppendLine("  <defs>");
-            sb.AppendLine("    <linearGradient id=\"bgGrad\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">");
-            sb.AppendLine("      <stop offset=\"0%\" stop-color=\"#0f172a\" />");
-            sb.AppendLine("      <stop offset=\"100%\" stop-color=\"#1e293b\" />");
-            sb.AppendLine("    </linearGradient>");
-            sb.AppendLine("  </defs>");
+            ISvgChartBuilder sb = new SvgChartBuilder()
+                .StartSvg(width, height)
+                .StartDefs()
+                .AddGradient("bgGrad", "0", "0", "1", "1", "#0f172a", "#1e293b")
+                .EndDefs();
 
             sb.AppendLine($"  <rect width=\"{width}\" height=\"{height}\" fill=\"url(#bgGrad)\" rx=\"8\" />");
 
@@ -142,8 +200,7 @@ namespace Gitic
                 labelCount++;
             }
 
-            sb.AppendLine("</svg>");
-            return sb.ToString();
+            return sb.Build();
         }
 
         public static string GenerateComplexityRangesSvg(AnalysisResult result)
