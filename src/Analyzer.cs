@@ -23,6 +23,13 @@ namespace Gitic
 
     public class RepositoryAnalyzer : IRepositoryAnalyzer
     {
+        private readonly IConfigurationEngine _configEngine;
+
+        public RepositoryAnalyzer(IConfigurationEngine? configEngine = null)
+        {
+            _configEngine = configEngine ?? new ConfigurationEngine();
+        }
+
         public static async Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
         {
             IRepositoryAnalyzer analyzer = new RepositoryAnalyzer();
@@ -31,8 +38,7 @@ namespace Gitic
 
         public async Task<AnalysisResult> AnalyzeAsync(AnalyzeInput input)
         {
-            var configEngine = new ConfigurationEngine();
-            var resolvedConfig = await configEngine.LoadAndResolveAsync(input);
+            var resolvedConfig = await _configEngine.LoadAndResolveAsync(input);
             var settings = resolvedConfig.Settings;
             var config = resolvedConfig.Config;
             var gitClient = input.GitClient ?? new GitClient(input.RepoRoot);

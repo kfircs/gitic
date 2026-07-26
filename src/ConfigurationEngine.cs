@@ -5,13 +5,19 @@ using System.Threading.Tasks;
 
 namespace Gitic
 {
+    public interface IConfigurationEngine
+    {
+        string RenderStarterConfig();
+        Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGitizerConfigOptions? options = null);
+    }
+
     public class ResolvedConfiguration
     {
         public AnalysisSettings Settings { get; init; } = new();
         public GitizerConfig Config { get; init; } = GitizerConfig.Default;
     }
 
-    public class ConfigurationEngine
+    public class ConfigurationEngine : IConfigurationEngine
     {
         private readonly ConfigValidator _validator;
         private readonly IYamlParser _yamlParser;

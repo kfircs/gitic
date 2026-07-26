@@ -1290,6 +1290,50 @@ __GITIZER_NUMSTAT__
                 Assert.Equal("/fake/root", result.Analysis.RepoRoot);
             }
 
+            private class MockConfigurationEngine : IConfigurationEngine
+            {
+                public bool LoadAndResolveCalled { get; set; }
+                public bool RenderStarterConfigCalled { get; set; }
+
+                public string RenderStarterConfig()
+                {
+                    RenderStarterConfigCalled = true;
+                    return "";
+                }
+
+                public Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGitizerConfigOptions? options = null)
+                {
+                    LoadAndResolveCalled = true;
+                    return Task.FromResult(new ResolvedConfiguration
+                    {
+                        Settings = new AnalysisSettings(),
+                        Config = GitizerConfig.Default
+                    });
+                }
+            }
+
+            [Fact]
+            public async Task TestRepositoryAnalyzer_WithMockConfigurationEngine()
+            {
+                var fakeProvider = new FakeFileStatsProvider();
+                var mockConfigEngine = new MockConfigurationEngine();
+
+                var input = new AnalyzeInput
+                {
+                    RepoRoot = "/fake/root",
+                    Command = AnalysisCommand.Hotspots,
+                    Settings = new AnalysisSettings { Depth = 1 },
+                    FileStatsProvider = fakeProvider,
+                    GitClient = new FakeGitClient()
+                };
+
+                var analyzer = new RepositoryAnalyzer(mockConfigEngine);
+                var result = await analyzer.AnalyzeAsync(input);
+
+                Assert.NotNull(result);
+                Assert.True(mockConfigEngine.LoadAndResolveCalled);
+            }
+
 
             [Fact]
             public void TestAnalysisSettingsNormalizer_DefaultNormalization()
