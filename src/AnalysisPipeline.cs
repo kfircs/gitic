@@ -16,7 +16,8 @@ namespace Gitic
             ITemporalCouplingEngine? temporalCouplingEngine = null,
             ILeadTimeEngine? leadTimeEngine = null,
             IMetricProcessorService? metricProcessorService = null,
-            IFamiliarityScoringEngine? scoringEngine = null);
+            IFamiliarityScoringEngine? scoringEngine = null,
+            IWarningCollector? warningCollector = null);
     }
 
     public class AnalysisPipelineResult
@@ -44,7 +45,8 @@ namespace Gitic
             ITemporalCouplingEngine? temporalCouplingEngine = null,
             ILeadTimeEngine? leadTimeEngine = null,
             IMetricProcessorService? metricProcessorService = null,
-            IFamiliarityScoringEngine? scoringEngine = null)
+            IFamiliarityScoringEngine? scoringEngine = null,
+            IWarningCollector? warningCollector = null)
         {
             var gitignoreRules = PathClassifier.LoadGitignoreRules(repoRoot);
             config.Excludes.AddRange(gitignoreRules);
@@ -80,8 +82,8 @@ namespace Gitic
             var topCouplings = actualTemporalCouplingEngine.CalculateTemporalCoupling(allIncludedCommits);
             var leadTimes = actualLeadTimeEngine.CalculateLeadTimes(commits);
 
-            IWarningCollector warningCollector = new WarningCollector();
-            var warnings = warningCollector.Collect(
+            IWarningCollector actualWarningCollector = warningCollector ?? new WarningCollector();
+            var warnings = actualWarningCollector.Collect(
                 new WarningContext
                 {
                     EmailCollisions = accumulator.GetEmailCollisions(),

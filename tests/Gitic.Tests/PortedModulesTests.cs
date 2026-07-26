@@ -1350,7 +1350,8 @@ __GITIZER_NUMSTAT__
                     ITemporalCouplingEngine? temporalCouplingEngine = null,
                     ILeadTimeEngine? leadTimeEngine = null,
                     IMetricProcessorService? metricProcessorService = null,
-                    IFamiliarityScoringEngine? scoringEngine = null)
+                    IFamiliarityScoringEngine? scoringEngine = null,
+                    IWarningCollector? warningCollector = null)
                 {
                     RunCalled = true;
                     ReceivedCommits = commits;
@@ -2033,6 +2034,31 @@ __GITIZER_NUMSTAT__
                 Assert.Equal("mockfile.cs", result.Files[0].Path);
                 Assert.Single(result.Areas);
                 Assert.Equal("mockarea", result.Areas[0].Area);
+            }
+
+            [Fact]
+            public void TestAnalysisPipeline_UsesInjectedWarningCollector()
+            {
+                var pipeline = new AnalysisPipeline();
+                var mockWarningCollector = new MockWarningCollector();
+                
+                var commits = new List<GitCommitRecord>
+                {
+                    new GitCommitRecord
+                    {
+                        Hash = "123",
+                        Author = new GitIdentity { Name = "test", Email = "test@example.com" },
+                        Files = new List<GitFileChange> { new GitFileChange { Path = "mockfile.cs", Added = 10, Deleted = 5 } }
+                    }
+                };
+                var headFiles = new HashSet<string> { "mockfile.cs" };
+                var config = new GitizerConfig();
+                var settings = new AnalysisSettings();
+
+                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root", warningCollector: mockWarningCollector);
+
+                Assert.True(mockWarningCollector.CollectCalled);
+                Assert.Contains("mock_warning", result.Warnings);
             }
 
         }
