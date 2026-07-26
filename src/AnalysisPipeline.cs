@@ -27,59 +27,6 @@ namespace Gitic
         public int IncludedFileChangeCount { get; set; }
     }
 
-    public interface IPathClassifierFactory
-    {
-        IPathClassifier Create(HashSet<string> headFiles, List<ExcludeRule> excludes, bool includeDeleted, string? requestedPath);
-    }
-
-    public class PathClassifierFactory : IPathClassifierFactory
-    {
-        public IPathClassifier Create(HashSet<string> headFiles, List<ExcludeRule> excludes, bool includeDeleted, string? requestedPath)
-        {
-            return new PathClassifier(headFiles, excludes, includeDeleted, requestedPath);
-        }
-    }
-
-    public interface IChangeAccumulatorFactory
-    {
-        IChangeAccumulator Create(
-            GitizerConfig config,
-            AnalysisSettings settings,
-            IPathClassifier pathClassifier,
-            IIdentityRegistry identityRegistry);
-    }
-
-    public class ChangeAccumulatorFactory : IChangeAccumulatorFactory
-    {
-        public IChangeAccumulator Create(
-            GitizerConfig config,
-            AnalysisSettings settings,
-            IPathClassifier pathClassifier,
-            IIdentityRegistry identityRegistry)
-        {
-            return new ChangeAccumulator(config, settings, pathClassifier, identityRegistry);
-        }
-    }
-
-    public interface IFamiliarityScoringEngineFactory
-    {
-        IFamiliarityScoringEngine Create(
-            GitizerConfig config,
-            HashSet<string> activeContributorKeys,
-            int depth);
-    }
-
-    public class FamiliarityScoringEngineFactory : IFamiliarityScoringEngineFactory
-    {
-        public IFamiliarityScoringEngine Create(
-            GitizerConfig config,
-            HashSet<string> activeContributorKeys,
-            int depth)
-        {
-            return new FamiliarityScoringEngine(config, activeContributorKeys, depth);
-        }
-    }
-
     public class AnalysisPipeline : IAnalysisPipeline
     {
         private readonly ITemporalCouplingEngine? _temporalCouplingEngine;
@@ -89,9 +36,9 @@ namespace Gitic
         private readonly IWarningCollector _warningCollector;
         private readonly IIdentityRegistry? _identityRegistry;
         private readonly IChangeAccumulator? _accumulator;
-        private readonly IPathClassifierFactory _pathClassifierFactory;
-        private readonly IChangeAccumulatorFactory _changeAccumulatorFactory;
-        private readonly IFamiliarityScoringEngineFactory _scoringEngineFactory;
+        private readonly Func<HashSet<string>, List<ExcludeRule>, bool, string?, IPathClassifier> _pathClassifierFactory;
+        private readonly Func<GitizerConfig, AnalysisSettings, IPathClassifier, IIdentityRegistry, IChangeAccumulator> _changeAccumulatorFactory;
+        private readonly Func<GitizerConfig, HashSet<string>, int, IFamiliarityScoringEngine> _scoringEngineFactory;
 
         public AnalysisPipeline(
             ITemporalCouplingEngine? temporalCouplingEngine = null,
@@ -101,9 +48,9 @@ namespace Gitic
             IWarningCollector? warningCollector = null,
             IIdentityRegistry? identityRegistry = null,
             IChangeAccumulator? accumulator = null,
-            IPathClassifierFactory? pathClassifierFactory = null,
-            IChangeAccumulatorFactory? changeAccumulatorFactory = null,
-            IFamiliarityScoringEngineFactory? scoringEngineFactory = null)
+            Func<HashSet<string>, List<ExcludeRule>, bool, string?, IPathClassifier>? pathClassifierFactory = null,
+            Func<GitizerConfig, AnalysisSettings, IPathClassifier, IIdentityRegistry, IChangeAccumulator>? changeAccumulatorFactory = null,
+            Func<GitizerConfig, HashSet<string>, int, IFamiliarityScoringEngine>? scoringEngineFactory = null)
         {
             _temporalCouplingEngine = temporalCouplingEngine;
             _leadTimeEngine = leadTimeEngine ?? new LeadTimeEngine();
@@ -112,9 +59,9 @@ namespace Gitic
             _warningCollector = warningCollector ?? new WarningCollector();
             _identityRegistry = identityRegistry;
             _accumulator = accumulator;
-            _pathClassifierFactory = pathClassifierFactory ?? new PathClassifierFactory();
-            _changeAccumulatorFactory = changeAccumulatorFactory ?? new ChangeAccumulatorFactory();
-            _scoringEngineFactory = scoringEngineFactory ?? new FamiliarityScoringEngineFactory();
+            _pathClassifierFactory = pathClassifierFactory ?? ((headFiles, excludes, includeDeleted, requestedPath) => new PathClassifier(headFiles, excludes, includeDeleted, requestedPath));
+            _changeAccumulatorFactory = changeAccumulatorFactory ?? ((config, settings, pathClassifier, identityRegistry) => new ChangeAccumulator(config, settings, pathClassifier, identityRegistry));
+            _scoringEngineFactory = scoringEngineFactory ?? ((config, activeContributorKeys, depth) => new FamiliarityScoringEngine(config, activeContributorKeys, depth));
         }
 
         public AnalysisPipelineResult Run(
@@ -124,10 +71,10 @@ namespace Gitic
             AnalysisSettings settings,
             AnalysisCommand command)
         {
-            IPathClassifier pathClassifier = _pathClassifierFactory.Create(headFiles, config.Excludes, settings.IncludeDeleted, settings.Path);
+            IPathClassifier pathClassifier = _pathClassifierFactory(headFiles, config.Excludes, settings.IncludeDeleted, settings.Path);
             bool mergeByEmail = (config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
             var actualIdentityRegistry = _identityRegistry ?? new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
-            IChangeAccumulator actualAccumulator = _accumulator ?? _changeAccumulatorFactory.Create(config, settings, pathClassifier, actualIdentityRegistry);
+            IChangeAccumulator actualAccumulator = _accumulator ?? _changeAccumulatorFactory(config, settings, pathClassifier, actualIdentityRegistry);
             actualAccumulator.PrepareIdentityMerging(commits);
 
             int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
@@ -144,7 +91,7 @@ namespace Gitic
             }
 
             var activeContributorKeys = actualMetricProcessorService.GetActiveContributorKeys(commits);
-            IFamiliarityScoringEngine actualScoringEngine = _scoringEngine ?? _scoringEngineFactory.Create(config, activeContributorKeys, settings.Depth);
+            IFamiliarityScoringEngine actualScoringEngine = _scoringEngine ?? _scoringEngineFactory(config, activeContributorKeys, settings.Depth);
 
             var rawFileMetrics = actualScoringEngine.ScoreFiles(actualAccumulator.GetFiles().Values.ToList(), settings.Depth);
             var areaMetrics = actualScoringEngine.ScoreAreas(actualAccumulator.GetAreas().Values.ToList());
