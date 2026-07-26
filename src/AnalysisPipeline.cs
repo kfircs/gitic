@@ -12,14 +12,7 @@ namespace Gitic
             GitizerConfig config,
             AnalysisSettings settings,
             AnalysisCommand command,
-            string repoRoot,
-            ITemporalCouplingEngine? temporalCouplingEngine = null,
-            ILeadTimeEngine? leadTimeEngine = null,
-            IMetricProcessorService? metricProcessorService = null,
-            IFamiliarityScoringEngine? scoringEngine = null,
-            IWarningCollector? warningCollector = null,
-            IIdentityRegistry? identityRegistry = null,
-            IChangeAccumulator? accumulator = null);
+            string repoRoot);
     }
 
     public class AnalysisPipelineResult
@@ -37,13 +30,15 @@ namespace Gitic
 
     public class AnalysisPipeline : IAnalysisPipeline
     {
-        public AnalysisPipelineResult Run(
-            List<GitCommitRecord> commits,
-            HashSet<string> headFiles,
-            GitizerConfig config,
-            AnalysisSettings settings,
-            AnalysisCommand command,
-            string repoRoot,
+        private readonly ITemporalCouplingEngine? _temporalCouplingEngine;
+        private readonly ILeadTimeEngine _leadTimeEngine;
+        private readonly IMetricProcessorService _metricProcessorService;
+        private readonly IFamiliarityScoringEngine? _scoringEngine;
+        private readonly IWarningCollector _warningCollector;
+        private readonly IIdentityRegistry? _identityRegistry;
+        private readonly IChangeAccumulator? _accumulator;
+
+        public AnalysisPipeline(
             ITemporalCouplingEngine? temporalCouplingEngine = null,
             ILeadTimeEngine? leadTimeEngine = null,
             IMetricProcessorService? metricProcessorService = null,
@@ -52,19 +47,36 @@ namespace Gitic
             IIdentityRegistry? identityRegistry = null,
             IChangeAccumulator? accumulator = null)
         {
+            _temporalCouplingEngine = temporalCouplingEngine;
+            _leadTimeEngine = leadTimeEngine ?? new LeadTimeEngine();
+            _metricProcessorService = metricProcessorService ?? new MetricProcessorService();
+            _scoringEngine = scoringEngine;
+            _warningCollector = warningCollector ?? new WarningCollector();
+            _identityRegistry = identityRegistry;
+            _accumulator = accumulator;
+        }
+
+        public AnalysisPipelineResult Run(
+            List<GitCommitRecord> commits,
+            HashSet<string> headFiles,
+            GitizerConfig config,
+            AnalysisSettings settings,
+            AnalysisCommand command,
+            string repoRoot)
+        {
             var gitignoreRules = PathClassifier.LoadGitignoreRules(repoRoot);
             config.Excludes.AddRange(gitignoreRules);
 
             var pathClassifier = new PathClassifier(headFiles, config.Excludes, settings.IncludeDeleted, settings.Path);
             bool mergeByEmail = (config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
-            var actualIdentityRegistry = identityRegistry ?? new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
-            IChangeAccumulator actualAccumulator = accumulator ?? new ChangeAccumulator(config, settings, pathClassifier, actualIdentityRegistry);
+            var actualIdentityRegistry = _identityRegistry ?? new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
+            IChangeAccumulator actualAccumulator = _accumulator ?? new ChangeAccumulator(config, settings, pathClassifier, actualIdentityRegistry);
             actualAccumulator.PrepareIdentityMerging(commits);
 
             int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
-            ITemporalCouplingEngine actualTemporalCouplingEngine = temporalCouplingEngine ?? new TemporalCouplingEngine(temporalCouplingLimit);
-            ILeadTimeEngine actualLeadTimeEngine = leadTimeEngine ?? new LeadTimeEngine();
-            IMetricProcessorService actualMetricProcessorService = metricProcessorService ?? new MetricProcessorService();
+            ITemporalCouplingEngine actualTemporalCouplingEngine = _temporalCouplingEngine ?? new TemporalCouplingEngine(temporalCouplingLimit);
+            ILeadTimeEngine actualLeadTimeEngine = _leadTimeEngine;
+            IMetricProcessorService actualMetricProcessorService = _metricProcessorService;
 
             var allIncludedCommits = new List<List<string>>();
             foreach (var commit in commits)
@@ -75,7 +87,7 @@ namespace Gitic
             }
 
             var activeContributorKeys = actualMetricProcessorService.GetActiveContributorKeys(commits);
-            IFamiliarityScoringEngine actualScoringEngine = scoringEngine ?? new FamiliarityScoringEngine(config, activeContributorKeys, settings.Depth);
+            IFamiliarityScoringEngine actualScoringEngine = _scoringEngine ?? new FamiliarityScoringEngine(config, activeContributorKeys, settings.Depth);
 
             var rawFileMetrics = actualScoringEngine.ScoreFiles(actualAccumulator.GetFiles().Values.ToList(), settings.Depth);
             var areaMetrics = actualScoringEngine.ScoreAreas(actualAccumulator.GetAreas().Values.ToList());
@@ -86,7 +98,7 @@ namespace Gitic
             var topCouplings = actualTemporalCouplingEngine.CalculateTemporalCoupling(allIncludedCommits);
             var leadTimes = actualLeadTimeEngine.CalculateLeadTimes(commits);
 
-            IWarningCollector actualWarningCollector = warningCollector ?? new WarningCollector();
+            IWarningCollector actualWarningCollector = _warningCollector;
             var warnings = actualWarningCollector.Collect(
                 new WarningContext
                 {

@@ -1346,14 +1346,7 @@ __GITIZER_NUMSTAT__
                     GitizerConfig config,
                     AnalysisSettings settings,
                     AnalysisCommand command,
-                    string repoRoot,
-                    ITemporalCouplingEngine? temporalCouplingEngine = null,
-                    ILeadTimeEngine? leadTimeEngine = null,
-                    IMetricProcessorService? metricProcessorService = null,
-                    IFamiliarityScoringEngine? scoringEngine = null,
-                    IWarningCollector? warningCollector = null,
-                    IIdentityRegistry? identityRegistry = null,
-                    IChangeAccumulator? accumulator = null)
+                    string repoRoot)
                 {
                     RunCalled = true;
                     ReceivedCommits = commits;
@@ -1434,8 +1427,8 @@ __GITIZER_NUMSTAT__
                 var command = AnalysisCommand.Hotspots;
                 var repoRoot = "/fake/root";
 
-                var pipeline = new AnalysisPipeline();
                 var mockAccumulator = new MockChangeAccumulator();
+                var pipeline = new AnalysisPipeline(accumulator: mockAccumulator);
 
                 var result = pipeline.Run(
                     commits,
@@ -1443,8 +1436,7 @@ __GITIZER_NUMSTAT__
                     config,
                     settings,
                     command,
-                    repoRoot,
-                    accumulator: mockAccumulator
+                    repoRoot
                 );
 
                 Assert.NotNull(result);
@@ -2073,8 +2065,8 @@ __GITIZER_NUMSTAT__
             [Fact]
             public void TestAnalysisPipeline_UsesInjectedScoringEngine()
             {
-                var pipeline = new AnalysisPipeline();
                 var mockScoring = new MockFamiliarityScoringEngine();
+                var pipeline = new AnalysisPipeline(scoringEngine: mockScoring);
                 
                 var commits = new List<GitCommitRecord>
                 {
@@ -2089,7 +2081,7 @@ __GITIZER_NUMSTAT__
                 var config = new GitizerConfig();
                 var settings = new AnalysisSettings();
 
-                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root", scoringEngine: mockScoring);
+                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root");
 
                 Assert.True(mockScoring.ScoreFilesCalled);
                 Assert.True(mockScoring.ScoreAreasCalled);
@@ -2102,8 +2094,8 @@ __GITIZER_NUMSTAT__
             [Fact]
             public void TestAnalysisPipeline_UsesInjectedWarningCollector()
             {
-                var pipeline = new AnalysisPipeline();
                 var mockWarningCollector = new MockWarningCollector();
+                var pipeline = new AnalysisPipeline(warningCollector: mockWarningCollector);
                 
                 var commits = new List<GitCommitRecord>
                 {
@@ -2118,7 +2110,7 @@ __GITIZER_NUMSTAT__
                 var config = new GitizerConfig();
                 var settings = new AnalysisSettings();
 
-                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root", warningCollector: mockWarningCollector);
+                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root");
 
                 Assert.True(mockWarningCollector.CollectCalled);
                 Assert.Contains("mock_warning", result.Warnings);
@@ -2127,8 +2119,8 @@ __GITIZER_NUMSTAT__
             [Fact]
             public void TestAnalysisPipeline_UsesInjectedIdentityRegistry()
             {
-                var pipeline = new AnalysisPipeline();
                 var mockRegistry = new MockIdentityRegistry();
+                var pipeline = new AnalysisPipeline(identityRegistry: mockRegistry);
                 
                 var commits = new List<GitCommitRecord>
                 {
@@ -2143,7 +2135,7 @@ __GITIZER_NUMSTAT__
                 var config = new GitizerConfig();
                 var settings = new AnalysisSettings();
 
-                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root", identityRegistry: mockRegistry);
+                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root");
 
                 Assert.True(mockRegistry.RegisterRealIdentityCalled);
             }
