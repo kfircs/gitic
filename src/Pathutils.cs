@@ -52,31 +52,37 @@ namespace Gitic
         {
             return _regexCache.GetOrAdd(pattern, p =>
             {
-                string source = "^";
-                for (int index = 0; index < p.Length; index += 1)
-                {
-                    char c = p[index];
-                    if (c == '*' && index + 1 < p.Length && p[index + 1] == '*')
-                    {
-                        source += ".*";
-                        index += 1;
-                        continue;
-                    }
-                    if (c == '*')
-                    {
-                        source += "[^/]*";
-                        continue;
-                    }
-                    if (c == '?')
-                    {
-                        source += "[^/]";
-                        continue;
-                    }
-                    source += Regex.Escape(c.ToString());
-                }
-                source += "$";
-                return new Regex(source, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                string regexPattern = ConvertGlobToRegexPattern(p);
+                return new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
             });
+        }
+
+        private static string ConvertGlobToRegexPattern(string pattern)
+        {
+            string source = "^";
+            for (int index = 0; index < pattern.Length; index += 1)
+            {
+                char c = pattern[index];
+                if (c == '*' && index + 1 < pattern.Length && pattern[index + 1] == '*')
+                {
+                    source += ".*";
+                    index += 1;
+                    continue;
+                }
+                if (c == '*')
+                {
+                    source += "[^/]*";
+                    continue;
+                }
+                if (c == '?')
+                {
+                    source += "[^/]";
+                    continue;
+                }
+                source += Regex.Escape(c.ToString());
+            }
+            source += "$";
+            return source;
         }
     }
 }
