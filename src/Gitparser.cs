@@ -255,10 +255,10 @@ namespace Gitic
         public string NormalizeNumstatPath(string path)
         {
             string normalized = PathUtils.NormalizeGitPath(path);
-            var match = Regex.Match(normalized, @"\{.*? => (.*?)\}");
+            var match = GitRegexConstants.BraceRenameRegex.Match(normalized);
             if (match.Success)
             {
-                return Regex.Replace(normalized, @"\{.*? => (.*?)\}", match.Groups[1].Value);
+                return GitRegexConstants.BraceRenameRegex.Replace(normalized, match.Groups[1].Value);
             }
             if (normalized.Contains(" => ") && !normalized.Contains("{") && !normalized.Contains("}"))
             {

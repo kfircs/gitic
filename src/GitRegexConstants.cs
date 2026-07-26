@@ -10,5 +10,6 @@ namespace Gitic
         public static readonly Regex SemicolonSuffixRegex = new(@";\s*$", RegexOptions.Compiled);
         public static readonly Regex BracketsSuffixRegex = new(@"\s*[\{\(\[]\s*$", RegexOptions.Compiled);
         public static readonly Regex CoAuthoredByRegex = new(@"^Co-authored-by:\s*(.*?)\s*<([^>]+)>", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+        public static readonly Regex BraceRenameRegex = new(@"\{.*? => (.*?)\}", RegexOptions.Compiled);
     }
 }
