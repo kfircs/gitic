@@ -17,7 +17,8 @@ namespace Gitic
             ILeadTimeEngine? leadTimeEngine = null,
             IMetricProcessorService? metricProcessorService = null,
             IFamiliarityScoringEngine? scoringEngine = null,
-            IWarningCollector? warningCollector = null);
+            IWarningCollector? warningCollector = null,
+            IIdentityRegistry? identityRegistry = null);
     }
 
     public class AnalysisPipelineResult
@@ -46,15 +47,16 @@ namespace Gitic
             ILeadTimeEngine? leadTimeEngine = null,
             IMetricProcessorService? metricProcessorService = null,
             IFamiliarityScoringEngine? scoringEngine = null,
-            IWarningCollector? warningCollector = null)
+            IWarningCollector? warningCollector = null,
+            IIdentityRegistry? identityRegistry = null)
         {
             var gitignoreRules = PathClassifier.LoadGitignoreRules(repoRoot);
             config.Excludes.AddRange(gitignoreRules);
 
             var pathClassifier = new PathClassifier(headFiles, config.Excludes, settings.IncludeDeleted, settings.Path);
             bool mergeByEmail = (config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
-            var identityRegistry = new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
-            IChangeAccumulator accumulator = new ChangeAccumulator(config, settings, pathClassifier, identityRegistry);
+            var actualIdentityRegistry = identityRegistry ?? new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
+            IChangeAccumulator accumulator = new ChangeAccumulator(config, settings, pathClassifier, actualIdentityRegistry);
             accumulator.PrepareIdentityMerging(commits);
 
             int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;

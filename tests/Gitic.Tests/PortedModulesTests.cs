@@ -1351,7 +1351,8 @@ __GITIZER_NUMSTAT__
                     ILeadTimeEngine? leadTimeEngine = null,
                     IMetricProcessorService? metricProcessorService = null,
                     IFamiliarityScoringEngine? scoringEngine = null,
-                    IWarningCollector? warningCollector = null)
+                    IWarningCollector? warningCollector = null,
+                    IIdentityRegistry? identityRegistry = null)
                 {
                     RunCalled = true;
                     ReceivedCommits = commits;
@@ -2059,6 +2060,30 @@ __GITIZER_NUMSTAT__
 
                 Assert.True(mockWarningCollector.CollectCalled);
                 Assert.Contains("mock_warning", result.Warnings);
+            }
+
+            [Fact]
+            public void TestAnalysisPipeline_UsesInjectedIdentityRegistry()
+            {
+                var pipeline = new AnalysisPipeline();
+                var mockRegistry = new MockIdentityRegistry();
+                
+                var commits = new List<GitCommitRecord>
+                {
+                    new GitCommitRecord
+                    {
+                        Hash = "123",
+                        Author = new GitIdentity { Name = "test", Email = "test@example.com" },
+                        Files = new List<GitFileChange> { new GitFileChange { Path = "mockfile.cs", Added = 10, Deleted = 5 } }
+                    }
+                };
+                var headFiles = new HashSet<string> { "mockfile.cs" };
+                var config = new GitizerConfig();
+                var settings = new AnalysisSettings();
+
+                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root", identityRegistry: mockRegistry);
+
+                Assert.True(mockRegistry.RegisterRealIdentityCalled);
             }
 
         }
