@@ -446,6 +446,17 @@ namespace Gitic.Tests
         }
 
         [Fact]
+        public void TestIdentity_ParseNoreplyUsername()
+        {
+            Assert.Equal("bob", IdentityUtils.ParseNoreplyUsername("12345+bob@users.noreply.github.com"));
+            Assert.Equal("bob", IdentityUtils.ParseNoreplyUsername("bob@users.noreply.github.com"));
+            Assert.Equal("bob", IdentityUtils.ParseNoreplyUsername("12345+bob"));
+            Assert.Equal("bob", IdentityUtils.ParseNoreplyUsername("12345+BoB@users.noreply.github.com"));
+            Assert.Equal(string.Empty, IdentityUtils.ParseNoreplyUsername(null!));
+            Assert.Equal(string.Empty, IdentityUtils.ParseNoreplyUsername(""));
+        }
+
+        [Fact]
         public void TestIdentity_IdentityRegistry()
         {
             var aliases = new List<AliasRule>

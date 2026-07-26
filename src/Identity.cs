@@ -119,14 +119,10 @@ namespace Gitic
 
         public static string ParseNoreplyUsername(string email)
         {
-            int at = email.LastIndexOf('@');
-            string local = at >= 0 ? email.Substring(0, at) : email;
+            if (string.IsNullOrWhiteSpace(email)) return string.Empty;
+            string local = email.Split('@')[0];
             int plus = local.LastIndexOf('+');
-            if (plus >= 0)
-            {
-                local = local.Substring(plus + 1);
-            }
-            return local.ToLowerInvariant();
+            return (plus >= 0 ? local.Substring(plus + 1) : local).ToLowerInvariant();
         }
     }
 
