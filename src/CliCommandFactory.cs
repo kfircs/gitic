@@ -271,9 +271,10 @@ Options:
             }
             if (Parsed.SvgPath != null)
             {
-                var svgRenderer = new SvgRenderer();
-                string svgContent = await svgRenderer.RenderAsync(result);
-                string complexitySvgContent = svgRenderer.RenderComplexity(result);
+                var svgSummaryRenderer = new SvgSummaryRenderer();
+                var svgComplexityRenderer = new SvgComplexityRenderer();
+                string svgContent = await svgSummaryRenderer.RenderAsync(result);
+                string complexitySvgContent = await svgComplexityRenderer.RenderAsync(result);
                 
                 string targetPath = Parsed.SvgPath;
                 string targetComplexityPath = Parsed.SvgPath;

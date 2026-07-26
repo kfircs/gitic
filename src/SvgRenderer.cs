@@ -281,20 +281,19 @@ namespace Gitic
         }
     }
 
-    public class SvgRenderer : IReportRenderer
+    public class SvgSummaryRenderer : IReportRenderer
     {
-        public SvgRenderer()
-        {
-        }
-
         public Task<string> RenderAsync(AnalysisResult result)
         {
             return Task.FromResult(SvgGeneratorHelper.GenerateSvg(result));
         }
+    }
 
-        public string RenderComplexity(AnalysisResult result)
+    public class SvgComplexityRenderer : IReportRenderer
+    {
+        public Task<string> RenderAsync(AnalysisResult result)
         {
-            return SvgGeneratorHelper.GenerateComplexityRangesSvg(result);
+            return Task.FromResult(SvgGeneratorHelper.GenerateComplexityRangesSvg(result));
         }
     }
 }

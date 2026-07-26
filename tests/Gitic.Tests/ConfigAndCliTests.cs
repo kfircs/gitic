@@ -353,7 +353,8 @@ excludes:
         [Fact]
         public async Task TestSvgRenderer_DirectoryPathAndContents()
         {
-            var renderer = new SvgRenderer();
+            var summaryRenderer = new SvgSummaryRenderer();
+            var complexityRenderer = new SvgComplexityRenderer();
             var result = new AnalysisResult
             {
                 Files = new List<FileMetric>
@@ -366,8 +367,8 @@ excludes:
                 }
             };
 
-            string content = await renderer.RenderAsync(result);
-            string complexityContent = renderer.RenderComplexity(result);
+            string content = await summaryRenderer.RenderAsync(result);
+            string complexityContent = await complexityRenderer.RenderAsync(result);
 
             Assert.Contains("<svg viewBox=\"0 0 800 450\"", content);
             Assert.Contains("<circle cx=", content);
