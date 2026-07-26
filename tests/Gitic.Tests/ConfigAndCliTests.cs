@@ -106,6 +106,16 @@ excludes:
 
             // Not found
             Assert.Throws<ContributorNotFoundError>(() => registry.Find("Charlie"));
+
+            // Null or whitespace checks
+            var nullEx = Assert.Throws<ArgumentException>(() => registry.Find(null!));
+            Assert.Equal("lookup", nullEx.ParamName);
+
+            var emptyEx = Assert.Throws<ArgumentException>(() => registry.Find(""));
+            Assert.Equal("lookup", emptyEx.ParamName);
+
+            var whitespaceEx = Assert.Throws<ArgumentException>(() => registry.Find("   "));
+            Assert.Equal("lookup", whitespaceEx.ParamName);
         }
 
         private class FakeContributorLookupRegistry : IContributorLookupRegistry

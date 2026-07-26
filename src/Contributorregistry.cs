@@ -34,6 +34,11 @@ namespace Gitic
 
         public ContributorMetric Find(string lookup)
         {
+            if (string.IsNullOrWhiteSpace(lookup))
+            {
+                throw new ArgumentException("Lookup query cannot be null or whitespace.", nameof(lookup));
+            }
+
             var exact = _contributors.FirstOrDefault(c => string.Equals(c.Name, lookup, StringComparison.Ordinal));
             if (exact != null)
             {
