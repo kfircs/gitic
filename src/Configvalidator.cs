@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Gitic.Tests")]
+
 namespace Gitic
 {
     public static class DefaultAttentionWeights
@@ -20,13 +22,13 @@ namespace Gitic
         };
     }
 
-    public interface IConfigValidator
+    internal interface IConfigValidator
     {
         void ValidateAttentionWeights(AttentionWeights attention, string source, List<string>? errors = null);
         GitizerConfigOverrides NormalizeOverride(object? input, string source);
     }
 
-    public class ConfigValidator : IConfigValidator
+    internal class ConfigValidator : IConfigValidator
     {
         public static readonly List<string> TopLevelKeys = new()
         {
