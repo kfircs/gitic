@@ -5,24 +5,23 @@ using System.Threading.Tasks;
 
 namespace Gitic
 {
-    public interface IConfigManager
+    public class ResolvedConfiguration
     {
-        Task<LoadedGitizerConfig> LoadGitizerConfigAsync(LoadGitizerConfigOptions? options = null);
-        GitizerConfig ApplyConfigOverrides(GitizerConfig baseConfig, GitizerConfigOverrides overrides);
-        string RenderStarterConfig();
-        GitizerConfig CloneConfig(GitizerConfig config);
-        GitizerConfig MergeConfig(GitizerConfig baseConfig, GitizerConfigOverrides? overrideConfig = null);
+        public AnalysisSettings Settings { get; init; } = new();
+        public GitizerConfig Config { get; init; } = GitizerConfig.Default;
     }
 
-    public class ConfigManager : IConfigManager
+    public class ConfigurationEngine
     {
-        private readonly IConfigValidator _validator;
+        private readonly ConfigValidator _validator;
         private readonly IYamlParser _yamlParser;
+        private readonly AnalysisSettingsNormalizer _normalizer;
 
-        public ConfigManager(IConfigValidator? validator = null, IYamlParser? yamlParser = null)
+        public ConfigurationEngine(IYamlParser? yamlParser = null)
         {
-            _validator = validator ?? new ConfigValidator();
+            _validator = new ConfigValidator();
             _yamlParser = yamlParser ?? new YamlSubsetParserImpl();
+            _normalizer = new AnalysisSettingsNormalizer();
         }
 
         public string RenderStarterConfig()
@@ -49,10 +48,26 @@ namespace Gitic
                 "  temporal_coupling_max_commit_file_count: 20\n";
         }
 
-        public async Task<LoadedGitizerConfig> LoadGitizerConfigAsync(LoadGitizerConfigOptions? options = null)
+        public async Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGitizerConfigOptions? options = null)
         {
-            options ??= new LoadGitizerConfigOptions();
+            options ??= new LoadGitizerConfigOptions { RepoRoot = input.RepoRoot };
+            
+            var loadedConfig = await LoadGitizerConfigInternalAsync(options);
+            var mergedConfig = input.Config != null 
+                ? MergeConfig(loadedConfig.Config, ConvertToOverrides(input.Config)) 
+                : loadedConfig.Config;
 
+            var settings = _normalizer.Normalize(input.Settings ?? new AnalysisSettings());
+
+            return new ResolvedConfiguration
+            {
+                Settings = settings,
+                Config = mergedConfig
+            };
+        }
+
+        private async Task<LoadedGitizerConfig> LoadGitizerConfigInternalAsync(LoadGitizerConfigOptions options)
+        {
             string userHome = options.UserHome ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             string userConfigPath = options.UserConfigPath ?? Path.Combine(userHome, ".config", "gitizer", "config.yml");
             string? repoConfigPath = options.RepoConfigPath ?? (options.RepoRoot == null ? null : Path.Combine(options.RepoRoot, ".gitizer.yml"));
@@ -86,16 +101,57 @@ namespace Gitic
             };
         }
 
-        public GitizerConfig ApplyConfigOverrides(
-            GitizerConfig baseConfig,
-            GitizerConfigOverrides overrides)
+        private static async Task<string?> ReadOptionalUtf8Async(string path)
         {
-            var merged = MergeConfig(baseConfig, overrides);
-            _validator.ValidateAttentionWeights(merged.Scoring.Attention, "effective config");
-            return merged;
+            try
+            {
+                return await File.ReadAllTextAsync(path);
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return null;
+            }
         }
 
-        public GitizerConfig CloneConfig(GitizerConfig config)
+        private GitizerConfigOverrides ParseAndValidateOverride(string content, string source)
+        {
+            var parsed = _yamlParser.Parse(content, source);
+            return _validator.NormalizeOverride(parsed, source);
+        }
+
+        private GitizerConfig CloneDefaultConfig()
+        {
+            return CloneConfig(GitizerConfig.Default);
+        }
+
+        private GitizerConfigOverrides ConvertToOverrides(GitizerConfig config)
+        {
+            return new GitizerConfigOverrides
+            {
+                Aliases = config.Aliases,
+                Bots = config.Bots,
+                Excludes = config.Excludes,
+                Areas = config.Areas,
+                Scoring = new ScoringConfigOverrides
+                {
+                    Attention = new AttentionWeightsOverrides
+                    {
+                        Churn = config.Scoring.Attention.Churn,
+                        Recency = config.Scoring.Attention.Recency,
+                        ContributorSpread = config.Scoring.Attention.ContributorSpread,
+                        LowFamiliarityConcentration = config.Scoring.Attention.LowFamiliarityConcentration
+                    }
+                },
+                Identity = new IdentityConfigOverrides { MergeOnEmail = config.Identity.MergeOnEmail },
+                Metrics = new MetricsConfigOverrides { TemporalCouplingMaxCommitFileCount = config.Metrics.TemporalCouplingMaxCommitFileCount }
+            };
+        }
+
+        private GitizerConfig CloneConfig(GitizerConfig config)
         {
             return new GitizerConfig
             {
@@ -122,14 +178,7 @@ namespace Gitic
             };
         }
 
-        private GitizerConfig CloneDefaultConfig()
-        {
-            return CloneConfig(GitizerConfig.Default);
-        }
-
-        public GitizerConfig MergeConfig(
-            GitizerConfig baseConfig,
-            GitizerConfigOverrides? overrideConfig = null)
+        private GitizerConfig MergeConfig(GitizerConfig baseConfig, GitizerConfigOverrides? overrideConfig = null)
         {
             var cloned = CloneConfig(baseConfig);
             if (overrideConfig == null)
@@ -185,28 +234,6 @@ namespace Gitic
             }
 
             return cloned;
-        }
-
-        private static async Task<string?> ReadOptionalUtf8Async(string path)
-        {
-            try
-            {
-                return await File.ReadAllTextAsync(path);
-            }
-            catch (FileNotFoundException)
-            {
-                return null;
-            }
-            catch (DirectoryNotFoundException)
-            {
-                return null;
-            }
-        }
-
-        private GitizerConfigOverrides ParseAndValidateOverride(string content, string source)
-        {
-            var parsed = _yamlParser.Parse(content, source);
-            return _validator.NormalizeOverride(parsed, source);
         }
     }
 }

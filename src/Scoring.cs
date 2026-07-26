@@ -188,20 +188,25 @@ namespace Gitic
             return new KnowledgeSiloCalculator().CalculateKnowledgeSilo(contributors, activeContributorKeys);
         }
 
-        public static double CalculateHeatScore(ScoreBreakdown breakdown)
+        public static double CalculateHeatScore(ScoreBreakdown breakdown, HeatWeights? weights = null)
         {
-            return new HeatScoreCalculator().Calculate(breakdown);
+            var w = weights ?? new HeatWeights();
+            return Math.Round(
+                (breakdown.Touches * w.Touches +
+                 breakdown.Churn * w.Churn +
+                 breakdown.Recency * w.Recency) * 100.0
+            );
         }
 
         public static double CalculateAttentionScore(ScoreBreakdown breakdown, AttentionWeights weights)
         {
-            return new AttentionScoreCalculator(weights).Calculate(breakdown);
+            return Math.Round(
+                (breakdown.Churn * weights.Churn +
+                 breakdown.Recency * weights.Recency +
+                 breakdown.ContributorSpread * weights.ContributorSpread +
+                 breakdown.LowFamiliarityConcentration * weights.LowFamiliarityConcentration) * 100.0
+            );
         }
-    }
-
-    public interface IScoreCalculator
-    {
-        double Calculate(ScoreBreakdown breakdown);
     }
 
     public class HeatWeights
@@ -209,64 +214,6 @@ namespace Gitic
         public double Touches { get; set; } = 0.45;
         public double Churn { get; set; } = 0.45;
         public double Recency { get; set; } = 0.10;
-    }
-
-    public class HeatScoreCalculator : IScoreCalculator
-    {
-        private readonly HeatWeights _weights;
-
-        public HeatScoreCalculator(HeatWeights? weights = null)
-        {
-            _weights = weights ?? new HeatWeights();
-        }
-
-        public double Calculate(ScoreBreakdown breakdown)
-        {
-            return Math.Round(
-                (breakdown.Touches * _weights.Touches +
-                 breakdown.Churn * _weights.Churn +
-                 breakdown.Recency * _weights.Recency) * 100.0
-            );
-        }
-    }
-
-    public class AttentionScoreCalculator : IScoreCalculator
-    {
-        private readonly AttentionWeights _weights;
-
-        public AttentionScoreCalculator(AttentionWeights weights)
-        {
-            _weights = weights;
-        }
-
-        public double Calculate(ScoreBreakdown breakdown)
-        {
-            return Math.Round(
-                (breakdown.Churn * _weights.Churn +
-                 breakdown.Recency * _weights.Recency +
-                 breakdown.ContributorSpread * _weights.ContributorSpread +
-                 breakdown.LowFamiliarityConcentration * _weights.LowFamiliarityConcentration) * 100.0
-            );
-        }
-    }
-
-    public interface IScoreCalculatorProvider
-    {
-        IScoreCalculator GetHeatScoreCalculator();
-        IScoreCalculator GetAttentionScoreCalculator(AttentionWeights weights);
-    }
-
-    public class DefaultScoreCalculatorProvider : IScoreCalculatorProvider
-    {
-        public IScoreCalculator GetHeatScoreCalculator()
-        {
-            return new HeatScoreCalculator();
-        }
-
-        public IScoreCalculator GetAttentionScoreCalculator(AttentionWeights weights)
-        {
-            return new AttentionScoreCalculator(weights);
-        }
     }
 
     public interface IFamiliarityScoringEngine
@@ -281,7 +228,6 @@ namespace Gitic
         private readonly HashSet<string> _activeContributorKeys;
         private readonly int _depth;
         private readonly IKnowledgeSiloCalculator _siloCalculator;
-        private readonly IScoreCalculatorProvider _scoreCalculatorProvider;
         private readonly IAreaMapper _areaMapper;
         private readonly IScoringUtilityService _scoringUtilityService;
 
@@ -290,7 +236,6 @@ namespace Gitic
             HashSet<string>? activeContributorKeys = null,
             int depth = 2,
             IKnowledgeSiloCalculator? siloCalculator = null,
-            IScoreCalculatorProvider? scoreCalculatorProvider = null,
             IAreaMapper? areaMapper = null,
             IScoringUtilityService? scoringUtilityService = null)
         {
@@ -298,7 +243,6 @@ namespace Gitic
             _activeContributorKeys = activeContributorKeys ?? new HashSet<string>();
             _depth = depth;
             _siloCalculator = siloCalculator ?? new KnowledgeSiloCalculator();
-            _scoreCalculatorProvider = scoreCalculatorProvider ?? new DefaultScoreCalculatorProvider();
             _areaMapper = areaMapper ?? new AreaMapper();
             _scoringUtilityService = scoringUtilityService ?? new ScoringUtilityService();
         }
@@ -394,8 +338,8 @@ namespace Gitic
                     LowFamiliarityConcentration = knowledgeSilo.IsSilo ? knowledgeSilo.TopOwnerShare : 0.0
                 };
 
-                double heatScore = _scoreCalculatorProvider.GetHeatScoreCalculator().Calculate(breakdown);
-                double attentionScore = _scoreCalculatorProvider.GetAttentionScoreCalculator(_config.Scoring.Attention).Calculate(breakdown);
+                double heatScore = ScoringUtils.CalculateHeatScore(breakdown);
+                double attentionScore = ScoringUtils.CalculateAttentionScore(breakdown, _config.Scoring.Attention);
 
                 string lastTouchedStr = DateTimeOffset.FromUnixTimeMilliseconds(item.LastTouched).UtcDateTime.ToString("yyyy-MM-dd");
 
@@ -449,8 +393,8 @@ namespace Gitic
                     LowFamiliarityConcentration = 0.0
                 };
 
-                double heatScore = _scoreCalculatorProvider.GetHeatScoreCalculator().Calculate(breakdown);
-                double attentionScore = _scoreCalculatorProvider.GetAttentionScoreCalculator(_config.Scoring.Attention).Calculate(breakdown);
+                double heatScore = ScoringUtils.CalculateHeatScore(breakdown);
+                double attentionScore = ScoringUtils.CalculateAttentionScore(breakdown, _config.Scoring.Attention);
 
                 string lastTouchedStr = DateTimeOffset.FromUnixTimeMilliseconds(item.LastTouched).UtcDateTime.ToString("yyyy-MM-dd");
 

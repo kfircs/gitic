@@ -795,8 +795,7 @@ __GITIZER_NUMSTAT__
         [Fact]
         public void TestScoring_HeatScoreCalculator()
         {
-            var calculator = new HeatScoreCalculator();
-            var breakdown = new ScoreBreakdown
+                        var breakdown = new ScoreBreakdown
             {
                 Touches = 0.5,
                 Churn = 0.3,
@@ -806,7 +805,7 @@ __GITIZER_NUMSTAT__
             };
             // Expected math: (0.5 * 0.45 + 0.3 * 0.45 + 0.8 * 0.1) * 100
             // = (0.225 + 0.135 + 0.08) * 100 = 0.44 * 100 = 44
-            Assert.Equal(44, calculator.Calculate(breakdown));
+            Assert.Equal(44, ScoringUtils.CalculateHeatScore(breakdown));
         }
 
         [Fact]
@@ -819,8 +818,7 @@ __GITIZER_NUMSTAT__
                 ContributorSpread = 0.25,
                 LowFamiliarityConcentration = 0.25
             };
-            var calculator = new AttentionScoreCalculator(weights);
-            var breakdown = new ScoreBreakdown
+                        var breakdown = new ScoreBreakdown
             {
                 Touches = 0,
                 Churn = 0.8,
@@ -830,7 +828,7 @@ __GITIZER_NUMSTAT__
             };
             // Expected math: (0.8 * 0.25 + 0.4 * 0.25 + 0.6 * 0.25 + 0.2 * 0.25) * 100
             // = (0.2 + 0.1 + 0.15 + 0.05) * 100 = 0.50 * 100 = 50
-            Assert.Equal(50, calculator.Calculate(breakdown));
+            Assert.Equal(50, ScoringUtils.CalculateAttentionScore(breakdown, weights));
         }
 
         [Fact]
@@ -1243,30 +1241,6 @@ __GITIZER_NUMSTAT__
                 Assert.Equal("/fake/root", result.Analysis.RepoRoot);
             }
 
-            private class FakeConfigurationResolver : IConfigurationResolver
-            {
-                public bool ResolveCalled { get; set; }
-                public ResolvedConfiguration Resolve(AnalyzeInput input)
-                {
-                    ResolveCalled = true;
-                    return new ResolvedConfiguration
-                    {
-                        Settings = new AnalysisSettings
-                        {
-                            Depth = 99,
-                            Json = input.Settings.Json,
-                            AllTime = input.Settings.AllTime,
-                            Since = input.Settings.Since,
-                            IncludeMerges = input.Settings.IncludeMerges,
-                            IncludeDeleted = input.Settings.IncludeDeleted,
-                            MergeByEmail = input.Settings.MergeByEmail,
-                            Path = input.Settings.Path,
-                            Anonymize = input.Settings.Anonymize
-                        },
-                        Config = input.Config ?? GitizerConfig.Default
-                    };
-                }
-            }
 
             [Fact]
             public void TestAnalysisSettingsNormalizer_DefaultNormalization()
@@ -1341,27 +1315,6 @@ __GITIZER_NUMSTAT__
                 Assert.Equal(original.Anonymize, cloned.Anonymize);
             }
 
-            [Fact]
-            public async Task TestRepositoryAnalyzer_UsesInjectedResolver()
-            {
-                var fakeProvider = new FakeFileStatsProvider();
-                var resolver = new FakeConfigurationResolver();
-                var input = new AnalyzeInput
-                {
-                    RepoRoot = "/fake/root",
-                    Command = AnalysisCommand.Hotspots,
-                    Settings = new AnalysisSettings { Depth = 1 },
-                    FileStatsProvider = fakeProvider,
-                    GitClient = new FakeGitClient(),
-                    ConfigurationResolver = resolver
-                };
-
-                var result = await RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
-
-                Assert.NotNull(result);
-                Assert.True(resolver.ResolveCalled);
-                Assert.Equal(99, result.Settings.Depth);
-            }
 
             [Fact]
             public async Task TestDiskFileStatsProvider_ComputesStats()
@@ -1806,76 +1759,6 @@ __GITIZER_NUMSTAT__
                 Assert.Equal(77.0, fileMetric.CoordinationOverlap);
             }
 
-            private class MockScoreCalculator : IScoreCalculator
-            {
-                private readonly double _value;
-                public MockScoreCalculator(double value) => _value = value;
-                public double Calculate(ScoreBreakdown breakdown) => _value;
-            }
-
-            private class MockScoreCalculatorProvider : IScoreCalculatorProvider
-            {
-                public bool GetHeatCalled { get; private set; }
-                public bool GetAttentionCalled { get; private set; }
-
-                public IScoreCalculator GetHeatScoreCalculator()
-                {
-                    GetHeatCalled = true;
-                    return new MockScoreCalculator(42.0);
-                }
-
-                public IScoreCalculator GetAttentionScoreCalculator(AttentionWeights weights)
-                {
-                    GetAttentionCalled = true;
-                    return new MockScoreCalculator(84.0);
-                }
-            }
-
-            [Fact]
-            public void TestFamiliarityScoringEngine_UsesInjectedScoreCalculatorProvider()
-            {
-                var config = new GitizerConfig();
-                var mockProvider = new MockScoreCalculatorProvider();
-                IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(
-                    config,
-                    scoreCalculatorProvider: mockProvider);
-
-                var items = new List<ItemAccumulator>
-                {
-                    new ItemAccumulator
-                    {
-                        Key = "test.txt",
-                        Touches = 1,
-                        Added = 10,
-                        Deleted = 5,
-                        Churn = 15,
-                        LastTouched = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                        ContributorCredits = new Dictionary<string, ContributorCredit>
-                        {
-                            { "contributor1", new ContributorCredit { Identity = new GitIdentity { Name = "User1", Email = "user1@example.com" }, Activity = 10.0 } }
-                        }
-                    }
-                };
-
-                var files = engine.ScoreFiles(items, 2);
-
-                Assert.True(mockProvider.GetHeatCalled);
-                Assert.True(mockProvider.GetAttentionCalled);
-                Assert.Single(files);
-                Assert.Equal(42.0, files[0].HeatScore);
-                Assert.Equal(84.0, files[0].AttentionScore);
-
-                // Reset provider call tracking
-                var mockProviderAreas = new MockScoreCalculatorProvider();
-                engine = new FamiliarityScoringEngine(config, scoreCalculatorProvider: mockProviderAreas);
-                var areas = engine.ScoreAreas(items);
-
-                Assert.True(mockProviderAreas.GetHeatCalled);
-                Assert.True(mockProviderAreas.GetAttentionCalled);
-                Assert.Single(areas);
-                Assert.Equal(42.0, areas[0].HeatScore);
-                Assert.Equal(84.0, areas[0].AttentionScore);
-            }
 
             public class MockFileSystem : IFileSystem
             {

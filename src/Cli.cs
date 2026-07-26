@@ -102,7 +102,7 @@ Options:
                 return CliFailure("config requires an action. Try: gitizer config init\n");
             }
 
-            return CliSuccess(ConfigLoader.RenderStarterConfig());
+            return CliSuccess(new ConfigurationEngine().RenderStarterConfig());
         }
 
         private static AnalysisCommand ParseCommand(string cmd)

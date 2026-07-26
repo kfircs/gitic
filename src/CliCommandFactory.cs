@@ -110,7 +110,8 @@ Options:
                 return Task.FromResult(Cli.CliFailure(errMsg));
             }
 
-            string stdout = ConfigLoader.RenderStarterConfig();
+            var engine = new ConfigurationEngine();
+            string stdout = engine.RenderStarterConfig();
             reporter?.Write(stdout);
             return Task.FromResult(Cli.CliSuccess(stdout));
         }
@@ -139,11 +140,19 @@ Options:
                 return Cli.CliFailure(errMsg);
             }
 
-            IConfigManager configManager = new ConfigManager();
-            LoadedGitizerConfig loadedConfig;
+            var input = new AnalyzeInput
+            {
+                RepoRoot = repoRoot,
+                Command = CommandType,
+                Settings = Parsed.Settings,
+                ContributorName = Parsed.ContributorName
+            };
+
+            IRepositoryAnalyzer analyzer = new RepositoryAnalyzer();
+            AnalysisResult result;
             try
             {
-                loadedConfig = await configManager.LoadGitizerConfigAsync(new LoadGitizerConfigOptions { RepoRoot = repoRoot });
+                result = await analyzer.AnalyzeAsync(input);
             }
             catch (ConfigValidationError error)
             {
@@ -151,18 +160,6 @@ Options:
                 reporter?.WriteError(errMsg);
                 return Cli.CliFailure(errMsg);
             }
-
-            var input = new AnalyzeInput
-            {
-                RepoRoot = repoRoot,
-                Command = CommandType,
-                Settings = Parsed.Settings,
-                Config = loadedConfig.Config,
-                ContributorName = Parsed.ContributorName
-            };
-
-            IRepositoryAnalyzer analyzer = new RepositoryAnalyzer();
-            AnalysisResult result = await analyzer.AnalyzeAsync(input);
 
             return await ProcessResultAsync(result, reporter);
         }

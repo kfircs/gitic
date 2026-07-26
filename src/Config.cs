@@ -183,26 +183,5 @@ namespace Gitic
         public string? RepoConfigPath { get; set; }
     }
 
-    public static class ConfigLoader
-    {
-        private static readonly IConfigManager _manager = new ConfigManager();
 
-        public static string RenderStarterConfig() => _manager.RenderStarterConfig();
-
-        public static Task<LoadedGitizerConfig> LoadGitizerConfigAsync(LoadGitizerConfigOptions? options = null) =>
-            _manager.LoadGitizerConfigAsync(options);
-
-        public static GitizerConfig ApplyConfigOverrides(
-            GitizerConfig baseConfig,
-            GitizerConfigOverrides overrides) =>
-            _manager.ApplyConfigOverrides(baseConfig, overrides);
-
-        public static GitizerConfig CloneConfig(GitizerConfig config) =>
-            _manager.CloneConfig(config);
-
-        public static GitizerConfig MergeConfig(
-            GitizerConfig baseConfig,
-            GitizerConfigOverrides? overrideConfig = null) =>
-            _manager.MergeConfig(baseConfig, overrideConfig);
-    }
 }

@@ -14,7 +14,6 @@ namespace Gitic
         public string? ContributorName { get; set; }
         public IFileStatsProvider? FileStatsProvider { get; set; } = null;
         public IGitClient? GitClient { get; set; } = null;
-        public IConfigurationResolver? ConfigurationResolver { get; set; } = null;
     }
 
     public interface IRepositoryAnalyzer
@@ -24,12 +23,6 @@ namespace Gitic
 
     public class RepositoryAnalyzer : IRepositoryAnalyzer
     {
-        [Obsolete("Use IConfigurationResolver instead.")]
-        public static AnalysisSettings NormalizeSettings(AnalysisSettings settings)
-        {
-            return new AnalysisSettingsNormalizer().Normalize(settings);
-        }
-
         public static async Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
         {
             IRepositoryAnalyzer analyzer = new RepositoryAnalyzer();
@@ -38,8 +31,8 @@ namespace Gitic
 
         public async Task<AnalysisResult> AnalyzeAsync(AnalyzeInput input)
         {
-            var resolver = input.ConfigurationResolver ?? new ConfigurationResolver();
-            var resolvedConfig = resolver.Resolve(input);
+            var configEngine = new ConfigurationEngine();
+            var resolvedConfig = await configEngine.LoadAndResolveAsync(input);
             var settings = resolvedConfig.Settings;
             var config = resolvedConfig.Config;
             var gitClient = input.GitClient ?? new GitClient(input.RepoRoot);
