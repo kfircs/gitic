@@ -22,12 +22,14 @@ namespace Gitic
         private readonly ConfigValidator _validator;
         private readonly IYamlParser _yamlParser;
         private readonly AnalysisSettingsNormalizer _normalizer;
+        private readonly IConfigMerger _configMerger;
 
-        public ConfigurationEngine(IYamlParser? yamlParser = null)
+        public ConfigurationEngine(IYamlParser? yamlParser = null, IConfigMerger? configMerger = null)
         {
             _validator = new ConfigValidator();
             _yamlParser = yamlParser ?? new YamlSubsetParserImpl();
             _normalizer = new AnalysisSettingsNormalizer();
+            _configMerger = configMerger ?? new ConfigMerger();
         }
 
         public string RenderStarterConfig()
@@ -60,7 +62,7 @@ namespace Gitic
             
             var loadedConfig = await LoadGitizerConfigInternalAsync(options);
             var mergedConfig = input.Config != null 
-                ? MergeConfig(loadedConfig.Config, ConvertToOverrides(input.Config)) 
+                ? _configMerger.MergeConfig(loadedConfig.Config, _configMerger.ConvertToOverrides(input.Config)) 
                 : loadedConfig.Config;
 
             var settings = _normalizer.Normalize(input.Settings ?? new AnalysisSettings());
@@ -89,8 +91,8 @@ namespace Gitic
                 ? null
                 : ParseAndValidateOverride(repoConfigRaw, $"repo config ({repoConfigPath})");
 
-            var merged = MergeConfig(
-                MergeConfig(CloneDefaultConfig(), userOverride),
+            var merged = _configMerger.MergeConfig(
+                _configMerger.MergeConfig(_configMerger.CloneDefaultConfig(), userOverride),
                 repoOverride
             );
 
@@ -127,119 +129,6 @@ namespace Gitic
         {
             var parsed = _yamlParser.Parse(content, source);
             return _validator.NormalizeOverride(parsed, source);
-        }
-
-        private GitizerConfig CloneDefaultConfig()
-        {
-            return CloneConfig(GitizerConfig.Default);
-        }
-
-        private GitizerConfigOverrides ConvertToOverrides(GitizerConfig config)
-        {
-            return new GitizerConfigOverrides
-            {
-                Aliases = config.Aliases,
-                Bots = config.Bots,
-                Excludes = config.Excludes,
-                Areas = config.Areas,
-                Scoring = new ScoringConfigOverrides
-                {
-                    Attention = new AttentionWeightsOverrides
-                    {
-                        Churn = config.Scoring.Attention.Churn,
-                        Recency = config.Scoring.Attention.Recency,
-                        ContributorSpread = config.Scoring.Attention.ContributorSpread,
-                        LowFamiliarityConcentration = config.Scoring.Attention.LowFamiliarityConcentration
-                    }
-                },
-                Identity = new IdentityConfigOverrides { MergeOnEmail = config.Identity.MergeOnEmail },
-                Metrics = new MetricsConfigOverrides { TemporalCouplingMaxCommitFileCount = config.Metrics.TemporalCouplingMaxCommitFileCount }
-            };
-        }
-
-        private GitizerConfig CloneConfig(GitizerConfig config)
-        {
-            return new GitizerConfig
-            {
-                Aliases = config.Aliases.Select(alias => new AliasRule
-                {
-                    Canonical = new GitIdentity { Name = alias.Canonical.Name, Email = alias.Canonical.Email },
-                    Identities = alias.Identities.Select(id => new GitIdentity { Name = id.Name, Email = id.Email }).ToList()
-                }).ToList(),
-                Bots = config.Bots.Select(bot => new BotRule { Name = bot.Name, Email = bot.Email, Pattern = bot.Pattern }).ToList(),
-                Excludes = config.Excludes.Select(ex => new ExcludeRule { Pattern = ex.Pattern, Category = ex.Category }).ToList(),
-                Areas = config.Areas.Select(area => new NamedArea { Name = area.Name, Paths = area.Paths.ToList() }).ToList(),
-                Scoring = new ScoringConfig
-                {
-                    Attention = new AttentionWeights
-                    {
-                        Churn = config.Scoring.Attention.Churn,
-                        Recency = config.Scoring.Attention.Recency,
-                        ContributorSpread = config.Scoring.Attention.ContributorSpread,
-                        LowFamiliarityConcentration = config.Scoring.Attention.LowFamiliarityConcentration
-                    }
-                },
-                Identity = new IdentityConfig { MergeOnEmail = config.Identity.MergeOnEmail },
-                Metrics = new MetricsConfig { TemporalCouplingMaxCommitFileCount = config.Metrics.TemporalCouplingMaxCommitFileCount }
-            };
-        }
-
-        private GitizerConfig MergeConfig(GitizerConfig baseConfig, GitizerConfigOverrides? overrideConfig = null)
-        {
-            var cloned = CloneConfig(baseConfig);
-            if (overrideConfig == null)
-            {
-                return cloned;
-            }
-
-            if (overrideConfig.Aliases != null)
-            {
-                cloned.Aliases.AddRange(overrideConfig.Aliases);
-            }
-            if (overrideConfig.Bots != null)
-            {
-                cloned.Bots.AddRange(overrideConfig.Bots);
-            }
-            if (overrideConfig.Excludes != null)
-            {
-                cloned.Excludes.AddRange(overrideConfig.Excludes);
-            }
-            if (overrideConfig.Areas != null)
-            {
-                cloned.Areas.AddRange(overrideConfig.Areas);
-            }
-
-            if (overrideConfig.Scoring?.Attention != null)
-            {
-                if (overrideConfig.Scoring.Attention.Churn.HasValue)
-                {
-                    cloned.Scoring.Attention.Churn = overrideConfig.Scoring.Attention.Churn.Value;
-                }
-                if (overrideConfig.Scoring.Attention.Recency.HasValue)
-                {
-                    cloned.Scoring.Attention.Recency = overrideConfig.Scoring.Attention.Recency.Value;
-                }
-                if (overrideConfig.Scoring.Attention.ContributorSpread.HasValue)
-                {
-                    cloned.Scoring.Attention.ContributorSpread = overrideConfig.Scoring.Attention.ContributorSpread.Value;
-                }
-                if (overrideConfig.Scoring.Attention.LowFamiliarityConcentration.HasValue)
-                {
-                    cloned.Scoring.Attention.LowFamiliarityConcentration = overrideConfig.Scoring.Attention.LowFamiliarityConcentration.Value;
-                }
-            }
-
-            if (overrideConfig.Identity?.MergeOnEmail.HasValue == true)
-            {
-                cloned.Identity.MergeOnEmail = overrideConfig.Identity.MergeOnEmail.Value;
-            }
-
-            if (overrideConfig.Metrics?.TemporalCouplingMaxCommitFileCount != null)
-            {
-                cloned.Metrics.TemporalCouplingMaxCommitFileCount = overrideConfig.Metrics.TemporalCouplingMaxCommitFileCount.Value;
-            }
-
-            return cloned;
         }
     }
 }

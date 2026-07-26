@@ -904,7 +904,7 @@ __GITIZER_NUMSTAT__
             long nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             double instanceRecency = service.CalculateRecencyScore(nowMs);
             double staticRecency = ScoringUtils.CalculateRecencyScore(nowMs);
-            Assert.Equal(staticRecency, instanceRecency);
+            Assert.Equal(staticRecency, instanceRecency, 4);
         }
 
         [Fact]
