@@ -82,9 +82,7 @@ namespace Gitic
             string numstatText = record.Substring(markerIndex + NumstatMarker.Length);
             var files = ParseNumstatAndPatches(numstatText);
 
-            var parents = string.IsNullOrWhiteSpace(parentsLine)
-                ? new List<string>()
-                : parentsLine.Trim().Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            var parents = ParseParents(parentsLine);
 
             long timestamp = 0;
             if (DateTimeOffset.TryParse(date.Trim(), out var parsedDate))
@@ -306,5 +304,10 @@ namespace Gitic
         {
             return value == "-" ? 0 : (int.TryParse(value, out var parsedVal) ? parsedVal : 0);
         }
+
+        private static List<string> ParseParents(string parentsLine) =>
+            string.IsNullOrWhiteSpace(parentsLine)
+                ? []
+                : parentsLine.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries).ToList();
     }
 }
