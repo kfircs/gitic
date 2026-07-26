@@ -201,6 +201,27 @@ namespace Gitic
         }
 
         private static bool ValidateWeightValue(
+            double value,
+            string key,
+            string source,
+            List<string> errors)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                errors.Add($"{source}: scoring.attention.{key} must be a finite number.");
+                return false;
+            }
+
+            if (value < 0.0 || value > 1.0)
+            {
+                errors.Add($"{source}: scoring.attention.{key} must be between 0 and 1.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool ValidateWeightValue(
             object? value,
             string key,
             string source,
@@ -225,19 +246,7 @@ namespace Gitic
                 return false;
             }
 
-            if (double.IsNaN(numVal) || double.IsInfinity(numVal))
-            {
-                errors.Add($"{source}: scoring.attention.{key} must be a finite number.");
-                return false;
-            }
-
-            if (numVal < 0.0 || numVal > 1.0)
-            {
-                errors.Add($"{source}: scoring.attention.{key} must be between 0 and 1.");
-                return false;
-            }
-
-            return true;
+            return ValidateWeightValue(numVal, key, source, errors);
         }
 
         private static List<AliasRule> NormalizeAliases(object? value, string source, List<string> errors)
