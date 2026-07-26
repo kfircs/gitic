@@ -60,59 +60,5 @@ namespace Gitic
                 return CliFailure(errMsg);
             }
         }
-
-        private static CliResult RunHelpCommand()
-        {
-            string helpText = 
-@"Gitic - Gitizer C# Port (v0.1.0)
-A tool to analyze Git repositories and identify code hotspots, contributor ownership, areas, and temporal coupling.
-
-Usage:
-  gitic <command> [repo_path] [options]
-
-Commands:
-  hotspots [repo_path]                  Identify code hotspots with high complexity/churn
-  areas [repo_path]                     Analyze code ownership and changes across directories
-  contributors [repo_path]              Show contributor metrics and profiles
-  contributor <name> [repo_path]        Analyze a specific contributor's details
-  report [repo_path] [options]          Generate reports (visual HTML and/or Markdown summary)
-  config init                           Generate a starter config file (.gitizer.yml)
-
-Options:
-  -h, --help                            Show this help menu
-  --html <path>                         Output visual HTML report to path (for report command)
-  --md <path>                           Output Markdown summary report to path (for report command)
-  --json                                Output results in raw JSON format
-  --all-time                            Analyze all history (ignoring time window settings)
-  --since <date>                        Filter commits since date (YYYY-MM-DD)
-  --path <pattern>                      Filter analysis to files matching glob pattern (e.g. 'src/**')
-  --depth <num>                         Directory depth for areas analysis (1-10, default: 2)
-  --include-merges                      Include merge commits in the analysis
-  --include-deleted                     Include deleted files in stats
-  --merge-by-email                      Merge contributor identities by email
-  --anonymize                           Anonymize contributor names/emails in output
-";
-            return CliSuccess(helpText);
-        }
-
-        private static CliResult RunConfigCommand(ParsedArgs parsed)
-        {
-            if (parsed.ConfigAction != "init")
-            {
-                return CliFailure("config requires an action. Try: gitizer config init\n");
-            }
-
-            return CliSuccess(new ConfigurationEngine().RenderStarterConfig());
-        }
-
-        private static AnalysisCommand ParseCommand(string cmd)
-        {
-            if (string.Equals(cmd, "hotspots", StringComparison.OrdinalIgnoreCase)) return AnalysisCommand.Hotspots;
-            if (string.Equals(cmd, "areas", StringComparison.OrdinalIgnoreCase)) return AnalysisCommand.Areas;
-            if (string.Equals(cmd, "contributors", StringComparison.OrdinalIgnoreCase)) return AnalysisCommand.Contributors;
-            if (string.Equals(cmd, "contributor", StringComparison.OrdinalIgnoreCase)) return AnalysisCommand.Contributor;
-            if (string.Equals(cmd, "report", StringComparison.OrdinalIgnoreCase)) return AnalysisCommand.Report;
-            throw new CommandLineParseError($"Unknown command: {cmd}");
-        }
     }
 }
