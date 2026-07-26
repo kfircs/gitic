@@ -1729,6 +1729,31 @@ __GITIZER_NUMSTAT__
                     }
                     return Task.FromResult(results);
                 }
+
+                public async Task<List<FileMetric>> EnrichFileMetricsAsync(
+                    string repoRoot,
+                    List<FileMetric> metrics,
+                    int concurrency = 20)
+                {
+                    var files = metrics.Select(m => m.Path).ToList();
+                    var fileStats = await ComputeFileStatsAsync(repoRoot, files, concurrency);
+                    foreach (var f in metrics)
+                    {
+                        if (fileStats.TryGetValue(f.Path, out var stats))
+                        {
+                            f.Size = stats.Size;
+                            f.Width = stats.Width;
+                            f.Lines = stats.Lines;
+                        }
+                        else
+                        {
+                            f.Size = 0;
+                            f.Width = 0;
+                            f.Lines = 0;
+                        }
+                    }
+                    return metrics;
+                }
             }
 
             private class FakeGitClient : IGitClient

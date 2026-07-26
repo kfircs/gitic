@@ -71,26 +71,8 @@ namespace Gitic
 
             var pipelineResult = _pipeline.Run(commits, headFiles, config, settings, input.Command);
 
-            var filePaths = pipelineResult.Files.Select(f => f.Path).ToList();
-
             var provider = input.FileStatsProvider ?? new DiskFileStatsProvider();
-            var fileStats = await provider.ComputeFileStatsAsync(input.RepoRoot, filePaths);
-            var fileMetrics = pipelineResult.Files.Select(f =>
-            {
-                if (fileStats.TryGetValue(f.Path, out var stats))
-                {
-                    f.Size = stats.Size;
-                    f.Width = stats.Width;
-                    f.Lines = stats.Lines;
-                }
-                else
-                {
-                    f.Size = 0;
-                    f.Width = 0;
-                    f.Lines = 0;
-                }
-                return f;
-            }).ToList();
+            var fileMetrics = await provider.EnrichFileMetricsAsync(input.RepoRoot, pipelineResult.Files);
 
             var result = new AnalysisResult
             {

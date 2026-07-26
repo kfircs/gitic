@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,11 @@ namespace Gitic
         Task<Dictionary<string, FileStatResult>> ComputeFileStatsAsync(
             string repoRoot,
             List<string> files,
+            int concurrency = 20);
+
+        Task<List<FileMetric>> EnrichFileMetricsAsync(
+            string repoRoot,
+            List<FileMetric> metrics,
             int concurrency = 20);
     }
 
@@ -81,6 +87,31 @@ namespace Gitic
 
             await Task.WhenAll(tasks);
             return new Dictionary<string, FileStatResult>(results);
+        }
+
+        public async Task<List<FileMetric>> EnrichFileMetricsAsync(
+            string repoRoot,
+            List<FileMetric> metrics,
+            int concurrency = 20)
+        {
+            var files = metrics.Select(m => m.Path).ToList();
+            var fileStats = await ComputeFileStatsAsync(repoRoot, files, concurrency);
+            foreach (var f in metrics)
+            {
+                if (fileStats.TryGetValue(f.Path, out var stats))
+                {
+                    f.Size = stats.Size;
+                    f.Width = stats.Width;
+                    f.Lines = stats.Lines;
+                }
+                else
+                {
+                    f.Size = 0;
+                    f.Width = 0;
+                    f.Lines = 0;
+                }
+            }
+            return metrics;
         }
 
         private async Task<(int LinesCount, int Width)> AnalyzeFileContentAsync(string fullPath, long size)
