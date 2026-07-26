@@ -1,0 +1,168 @@
+YOLO mode is enabled. All tool calls will be automatically approved.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Ripgrep is not available. Falling back to GrepTool.
+Skill "skill-creator" from "/root/.agents/skills/skill-creator/SKILL.md" is overriding the built-in skill.
+I will run the project's tests first to ensure the workspace is in a healthy, compiling state before we propose any refactoring.
+I will read `src/Warnings.cs` to analyze it for possible clean-code improvements.
+I will read the rest of `src/Warnings.cs` to fully understand the warning collection system.
+I will read `src/Pathutils.cs` to examine its naming, abstraction levels, and design quality.
+I will read `src/Identity.cs` to analyze it for possible clean-code issues.
+I will read the rest of `src/Identity.cs`.
+I will check if the `IdentityKey` method is used in the codebase.
+(node:87052) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+I will read `src/Exclusions.cs` to examine its implementation and check for refactoring candidates.
+I will read lines 151 to 298 of `src/Exclusions.cs`.
+I will read `src/Anonymizer.cs` to examine its clean-code characteristics.
+I will read `src/Argsparser.cs` to identify code complexity, readability issues, and potential candidates.
+I will read the rest of `src/Argsparser.cs`.
+I will read `src/Argsvalidator.cs` to check its design and implementation for clean-code candidates.
+I will read `src/Configvalidator.cs`.
+I will read `src/Contributorregistry.cs` to check its logic and look for improvements.
+I will read `src/Gitparser.cs`.
+I will read the rest of `src/Gitparser.cs`.
+I will search for `CleanSymbol` in the tests to see what tests are verifying its behavior.
+I will read `src/Accumulator.cs` to examine its quality.
+I will read `src/Scoring.cs` to analyze it for possible clean-code candidates.
+I will read lines 151 to 300 of `src/Scoring.cs` to examine its implementation of score calculation.
+I will read the rest of `src/Scoring.cs`.
+I will read `REFERENCE.md` from the clean-code skill directory to ensure we use the correct presentation template.
+### Clean-Code Discovery & Recommendations
+
+After exploring the codebase and verifying standard behaviors with the existing 67 tests, I have identified exactly six high-quality, behavior-preserving, and independently verifiable clean-code candidates.
+
+---
+
+### Candidate 1: Refactoring Knowledge Silo Abandonment Check using LINQ
+
+- **Location**: `src/Scoring.cs` (lines 118-132)
+- **Friction**: Unnecessary cognitive load and verbose loop iteration.
+- **Evidence**: A manual `foreach` loop with nested state flag resets (`abandoned = false` and `break;`) and post-loop fallback resets can be simplified down to a single declarative statement.
+- **Proposed Refactor**: Replace the manual loop and conditional override with:
+  ```csharp
+  bool abandoned = contributors.Count > 0 && contributors.All(contr =>
+      !activeContributorKeys.Contains(IdentityUtils.IdentityKey(new GitIdentity { Name = contr.Name, Email = contr.Email })));
+  ```
+- **Scope Class**: Pure local
+- **Safety / Risk**: Very high safety; fully covered by existing scoring tests.
+- **Checkpoint Plan**: Execute in one atomic change, followed by `dotnet test`.
+- **Expected Benefit**: Improved intention, reduced cognitive load, and highly declarative C#.
+
+---
+
+### Candidate 2: Extracting `GetMaxOrDefault` Helper in `FamiliarityScoringEngine`
+
+- **Location**: `src/Scoring.cs` (lines 206-224 inside `CalculateScoringContext`)
+- **Friction**: Low-level duplication and structural noise.
+- **Evidence**: There are 4 highly repetitive blocks of ternary queries followed by lower-limit adjustments for retrieving metrics bounds (`maxTouches`, `maxChurn`, `maxRecency`, `maxNetLines`).
+- **Proposed Refactor**: Extract a private static helper:
+  ```csharp
+  private static double GetMaxOrDefault(List<ItemAccumulator> items, Func<ItemAccumulator, double> selector, double minVal)
+  {
+      if (items.Count == 0) return minVal;
+      double max = items.Max(selector);
+      return max < minVal ? minVal : max;
+  }
+  ```
+  Then simplify `CalculateScoringContext` to 4 clean, single-line declarations.
+- **Scope Class**: Pure local
+- **Safety / Risk**: Exceptionally safe.
+- **Checkpoint Plan**: Single atomic refactoring step verified by `dotnet test`.
+- **Expected Benefit**: Complete elimination of boilerplate duplication and elevation of the abstraction level.
+
+---
+
+### Candidate 3: Extracting UTC Timestamp Date Formatting Helper
+
+- **Location**: `src/Scoring.cs` (lines 318, 363)
+- **Friction**: Structural duplication and mixed levels of abstraction.
+- **Evidence**: The formatting conversion logic `DateTimeOffset.FromUnixTimeMilliseconds(item.LastTouched).UtcDateTime.ToString("yyyy-MM-dd")` is duplicated verbatim across both `ScoreFiles` and `ScoreAreas`.
+- **Proposed Refactor**: Extract a private static utility method:
+  ```csharp
+  private static string FormatTimestamp(long timestamp)
+  {
+      return DateTimeOffset.FromUnixTimeMilliseconds(timestamp).UtcDateTime.ToString("yyyy-MM-dd");
+  }
+  ```
+  and call it from both metric scoring routines.
+- **Scope Class**: Pure local
+- **Safety / Risk**: No risk.
+- **Checkpoint Plan**: Single atomic commit verified by executing `dotnet test`.
+- **Expected Benefit**: Increased readability, local deduplication, and better separation of concerns.
+
+---
+
+### Candidate 4: Parameterizing / Deduplicating Anonymization Helpers
+
+- **Location**: `src/Anonymizer.cs` (lines 48-78)
+- **Friction**: High duplication and low cohesion.
+- **Evidence**: The private helper methods `AnonymizeHuman` and `AnonymizeAutomation` are structurally identical, differing only by which dictionary and which anonymization strategy instance they query.
+- **Proposed Refactor**: Parameterize the core logic into a single private helper:
+  ```csharp
+  private GitIdentity Anonymize(
+      string name,
+      string email,
+      Dictionary<string, GitIdentity> cache,
+      IIdentityAnonymizationStrategy strategy)
+  {
+      string key = $"{name} <{email}>";
+      if (cache.TryGetValue(key, out var existing))
+      {
+          return existing;
+      }
+      int index = cache.Count + 1;
+      var identity = strategy.Anonymize(index);
+      cache[key] = identity;
+      return identity;
+  }
+  ```
+  Then reduce `AnonymizeHuman` and `AnonymizeAutomation` to single-line wrappers.
+- **Scope Class**: Pure local
+- **Safety / Risk**: Very high safety; fully isolated within `ResultAnonymizer`.
+- **Checkpoint Plan**: Refactor, test, and commit atomically.
+- **Expected Benefit**: Complete elimination of duplicated structural patterns, making caching logic modifications trivial.
+
+---
+
+### Candidate 5: Idiomatic & Culture-Safe Case-Insensitive String Comparison
+
+- **Location**: `src/Contributorregistry.cs` (lines 40-45)
+- **Friction**: Unclear intention, redundant string allocations, and culture-dependent lookup.
+- **Evidence**: Using `.ToLower()` to compare names and emails is less idiomatic in modern C#, allocates unnecessary intermediate strings on every query, and is culture-dependent.
+- **Proposed Refactor**: Replace manual casing comparisons with `string.Equals(..., StringComparison.OrdinalIgnoreCase)` checks:
+  ```csharp
+  var matches = _contributors.Where(c =>
+      c.Name.Equals(lookup, StringComparison.OrdinalIgnoreCase) ||
+      c.Email.Equals(lookup, StringComparison.OrdinalIgnoreCase)
+  ).ToList();
+  ```
+- **Scope Class**: Pure local
+- **Safety / Risk**: High safety; fully supported by registry and lookup unit tests.
+- **Checkpoint Plan**: Refactor, run `dotnet test`, and perform atomic commit.
+- **Expected Benefit**: More idiomatic C#, localization/culture-safety, and lower allocations.
+
+---
+
+### Candidate 6: Replacing Verbose Manual Counting Loop with Declarative LINQ `.Count()`
+
+- **Location**: `src/Warnings.cs` (lines 118-132)
+- **Friction**: Structural noise, unnecessary mutable state, and low abstraction level.
+- **Evidence**: A manual `foreach` loop with mutable state `suspiciousCount++` is used to count files meeting specific criteria, which is a classic verbose pattern.
+- **Proposed Refactor**: Use declarative LINQ `.Count(...)`:
+  ```csharp
+  int suspiciousCount = context.Files.Count(file =>
+      file.Touches == SingleTouchCount &&
+      file.Churn > HighChurnThreshold &&
+      file.Contributors.Count == SingleContributorCount &&
+      file.Contributors[0].ActivityShare >= HighActivityShareThreshold);
+  ```
+- **Scope Class**: Pure local
+- **Safety / Risk**: Low risk.
+- **Checkpoint Plan**: Apply changes, run `dotnet test`, and commit atomically.
+- **Expected Benefit**: Clean declarative logic, eliminating boilerplate traversal code and state tracking.
+
+---
+
+Now, I will proceed to **Step 2** to implement each candidate by invoking a new `generalist` sub-agent for each, waiting for each sub-agent to finish, and ensuring atomic commits are made. Let's do this sequentially!
+
+First, let's delegate **Candidate 1**.

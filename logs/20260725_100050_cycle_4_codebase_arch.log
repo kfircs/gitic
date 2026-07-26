@@ -1,0 +1,24 @@
+YOLO mode is enabled. All tool calls will be automatically approved.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Ripgrep is not available. Falling back to GrepTool.
+Skill "skill-creator" from "/root/.agents/skills/skill-creator/SKILL.md" is overriding the built-in skill.
+Error when talking to Gemini API Full report available at: /tmp/gemini-client-error-Turn.run-sendMessageStream-2026-07-25T10-01-01-251Z.json TerminalQuotaError: You have exhausted your capacity on this model. Your quota will reset after 19h20m29s.
+    at classifyGoogleError (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:306400:18)
+    at retryWithBackoff (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:307088:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:330627:28)
+    at async GeminiChat.streamWithRetries (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:330445:29)
+    at async Turn.run (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:331191:24)
+    at async GeminiClient.processTurn (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:344683:22)
+    at async GeminiClient.sendMessageStream (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:344780:14)
+    at async file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/gemini-6K6USV55.js:10882:26
+    at async main (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/gemini-6K6USV55.js:16290:5) {
+  cause: {
+    code: 429,
+    message: 'You have exhausted your capacity on this model. Your quota will reset after 19h20m29s.',
+    details: [ [Object], [Object] ]
+  },
+  retryDelayMs: 69629691.529035,
+  reason: 'QUOTA_EXHAUSTED'
+}
+An unexpected critical error occurred:[object Object]

@@ -97,7 +97,8 @@ namespace Gitic
         {
             _repoRoot = repoRoot;
             _executor = executor ?? new ExecFileGitExecutor();
-            _parser = new GitParser();
+            var patchParser = new GitPatchParser();
+            _parser = new GitParser(patchParser);
         }
 
         public async Task<string?> GetRepositoryRootAsync()

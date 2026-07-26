@@ -1,0 +1,35 @@
+YOLO mode is enabled. All tool calls will be automatically approved.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Ripgrep is not available. Falling back to GrepTool.
+Skill "skill-creator" from "/root/.agents/skills/skill-creator/SKILL.md" is overriding the built-in skill.
+I will now initialize the clean-code process by updating the topic and activating the `clean-code` skill to guide the exploration and identification of codebase improvement candidates.
+I will now run the project's tests to ensure the current state of the codebase is green and compile-ready.
+I will read the `Warnings.cs` file to examine its structure and check for potential clean code improvements.
+I will read the rest of `Warnings.cs` to understand all warning rules and check for clean code candidates there.
+I will read `src/Identity.cs` to examine how identity and author merging logic is handled.
+I will read the remainder of `src/Identity.cs` to check the rest of the file.
+I will read `src/Pathutils.cs` to see its file path matching utilities and check for clean code candidates.
+I will read `src/Exclusions.cs` to examine exclusion-handling rules.
+I will read `src/Anonymizer.cs` to check the logic for name and email anonymization.
+I will read `src/Yamlparser.cs` to examine the parser's logic and structure.
+I will read the next 150 lines of `src/Yamlparser.cs`.
+Error when talking to Gemini API Full report available at: /tmp/gemini-client-error-Turn.run-sendMessageStream-2026-07-25T09-58-50-502Z.json TerminalQuotaError: You have exhausted your capacity on this model. Your quota will reset after 19h22m40s.
+    at classifyGoogleError (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:306400:18)
+    at retryWithBackoff (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:307088:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:330627:28)
+    at async GeminiChat.streamWithRetries (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:330445:29)
+    at async Turn.run (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:331191:24)
+    at async GeminiClient.processTurn (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:344683:22)
+    at async GeminiClient.sendMessageStream (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/chunk-7LQRUKPT.js:344780:14)
+    at async file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/gemini-6K6USV55.js:10882:26
+    at async main (file:///root/.nvm/versions/node/v26.5.0/lib/node_modules/@google/gemini-cli/bundle/gemini-6K6USV55.js:16290:5) {
+  cause: {
+    code: 429,
+    message: 'You have exhausted your capacity on this model. Your quota will reset after 19h22m40s.',
+    details: [ [Object], [Object] ]
+  },
+  retryDelayMs: 69760476.731728,
+  reason: 'QUOTA_EXHAUSTED'
+}
+An unexpected critical error occurred:[object Object]

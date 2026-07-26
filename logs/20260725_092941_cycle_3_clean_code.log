@@ -1,0 +1,125 @@
+YOLO mode is enabled. All tool calls will be automatically approved.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Ripgrep is not available. Falling back to GrepTool.
+Skill "skill-creator" from "/root/.agents/skills/skill-creator/SKILL.md" is overriding the built-in skill.
+I will run the project's tests to establish a baseline and ensure everything compiles and passes before finding clean code candidates.
+I will read several source files in parallel to explore candidate code sections that might have design friction, naming inconsistency, or code smells.
+I will read `src/Identity.cs`, `src/Tablebuilder.cs`, and `src/Renderers.cs` in parallel to expand our search for candidates.
+I will read the clean-code REFERENCE.md to check the candidate format.
+I will search for usage of the alignment property across the codebase to see if it is a good candidate for type-safe enum refactoring.
+(node:64826) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+I will read `src/Configvalidator.cs` to check for further candidates.
+I will run `git status` to verify that our working directory is clean and ready for atomic commits.
+### Clean Code Candidates Identified
+
+Here are the exactly 6 clean code candidates selected from the Gitic codebase:
+
+#### 1. Refactor `NormalizeGitPath` loop in `src/Pathutils.cs`
+- **Location**: `src/Pathutils.cs` -> `PathUtils.NormalizeGitPath`
+- **Friction**: Noise / Low-Value Iteration.
+- **Evidence**: The method uses a custom loop `while (normalized.StartsWith("/"))` to strip leading slashes. This is a redundant custom logic that increases cognitive load.
+- **Proposed Refactor**: Replace the `while` loop with `normalized.TrimStart('/')`.
+- **Scope Class**: Pure local.
+- **Expected Benefit**: Simpler code, lower cognitive load, and uses robust built-in string capabilities.
+
+#### 2. Extract Magic Numbers in `GeneratedFileWarningRule` in `src/Warnings.cs`
+- **Location**: `src/Warnings.cs` -> `GeneratedFileWarningRule`
+- **Friction**: Unclear Intention / Magic Numbers.
+- **Evidence**: Conditions like `file.Touches == 1`, `file.Churn > 200`, `file.Contributors.Count == 1`, and `file.Contributors[0].ActivityShare >= 0.99` use hardcoded numbers that are not self-documenting.
+- **Proposed Refactor**: Introduce explanatory private constants (e.g. `SingleTouchCount`, `HighChurnThreshold`, `SingleContributorCount`, `HighActivityShareThreshold`).
+- **Scope Class**: Pure local.
+- **Expected Benefit**: Clearer logic intention and better maintainability.
+
+#### 3. Standardize String Manipulation in `IsBinaryImage` in `src/Exclusions.cs`
+- **Location**: `src/Exclusions.cs` -> `PathClassifier.IsBinaryImage`
+- **Friction**: Reinventing Wheels / High Cognitive Load.
+- **Evidence**: Custom manual extraction using `LastIndexOf('.')` and `Substring` is used to get file extensions. This is verbose and error-prone compared to standard libraries.
+- **Proposed Refactor**: Use `System.IO.Path.GetExtension(fileName)` to fetch the extension.
+- **Scope Class**: Pure local.
+- **Expected Benefit**: Improved robustness and clean usage of standard .NET conventions.
+
+#### 4. Replace Chained String Checks with `HashSet` in `CommandLineValidator` in `src/Argsvalidator.cs`
+- **Location**: `src/Argsvalidator.cs` -> `CommandLineValidator.IsCommand`
+- **Friction**: Unclear Intention / Scalability Smell.
+- **Evidence**: Chained `||` equality operators are used to validate commands, which scales poorly and increases noise.
+- **Proposed Refactor**: Define a `private static readonly HashSet<string> ValidCommands` to perform O(1) clean and type-safe validation.
+- **Scope Class**: Pure local.
+- **Expected Benefit**: Improved lookup performance, cleaner structure, and easier expandability.
+
+#### 5. Extract Magic Number Constraints in `CommandLineValidator.ValidateDepth` in `src/Argsvalidator.cs`
+- **Location**: `src/Argsvalidator.cs` -> `CommandLineValidator.ValidateDepth`
+- **Friction**: Magic Numbers / Unclear Constraints.
+- **Evidence**: Checking depth values against hardcoded `1` and `10` without named constants.
+- **Proposed Refactor**: Define `private const int MinDepth = 1;` and `private const int MaxDepth = 10;`, using them in validation and error messages.
+- **Scope Class**: Pure local.
+- **Expected Benefit**: Centralized constraint configuration and readable, self-documenting code.
+
+#### 6. Extract Suffix Constant in `IdentityUtils.IsGithubNoreply` in `src/Identity.cs`
+- **Location**: `src/Identity.cs` -> `IdentityUtils.IsGithubNoreply`
+- **Friction**: Redundant Hardcoded Suffix / Unclear Separation of Details.
+- **Evidence**: `@users.noreply.github.com` is embedded as a raw string literal.
+- **Proposed Refactor**: Extract the domain suffix into a `private const string GithubNoreplySuffix` constant.
+- **Scope Class**: Pure local.
+- **Expected Benefit**: Self-documenting suffix and centralized maintenance of GitHub domain matching rules.
+
+---
+
+### Step 2: Implementation of Candidate 1
+
+I will now delegate the implementation of Candidate 1 to a generalist sub-agent.
+I will run `git status && git log -n 1` to verify the first refactor's commit and ensure our git state is clean before proceeding.
+### Step 2: Implementation of Candidate 2
+
+I will delegate the implementation of Candidate 2 to a generalist sub-agent.
+I will run `git status && git log -n 1` to verify the second refactor's commit and ensure our git state is clean before proceeding.
+### Step 2: Implementation of Candidate 3
+
+I will delegate the implementation of Candidate 3 to a generalist sub-agent.
+I will run `git status && git log -n 1` to verify the third refactor's commit and ensure our git state is clean before proceeding.
+### Step 2: Implementation of Candidate 4
+
+I will delegate the implementation of Candidate 4 to a generalist sub-agent.
+I will run `git status && git log -n 1` to verify the fourth refactor's commit and ensure our git state is clean before proceeding.
+I will inspect the unstaged changes for Candidate 4 to ensure the refactoring is high-quality and correct.
+I will check the diff for the tests to make sure they are high quality.
+I will run `dotnet test` to verify that our new CommandLineValidator tests and implementation pass.
+I will now stage the changes and create the atomic commit for Candidate 4.
+### Step 2: Implementation of Candidate 5
+
+I will delegate the implementation of Candidate 5 to a generalist sub-agent.
+I will run `git status && git log -n 1` to verify the fifth refactor's commit and ensure our git state is clean before proceeding.
+### Step 2: Implementation of Candidate 6
+
+I will delegate the implementation of Candidate 6 to a generalist sub-agent.
+I will run `git status && git log -n 2` to verify all commits are successfully completed and our git history is atomic and pristine.
+I will run the full test suite one final time to guarantee that all 6 independent clean-code refactorings are fully validated and stable.
+I have completed the clean-code refactoring process in exactly one loop, delivering 6 atomic commits. 
+
+### Summary of Completed Refactoring Operations
+
+1. **`refactor(pathutils): replace custom leading slash removal loop with TrimStart`**
+   - **File**: `src/Pathutils.cs`
+   - **Cleanup**: Replaced a redundant custom iteration loop stripping leading slashes with a standardized call to `.TrimStart('/')`.
+
+2. **`refactor(warnings): extract magic numbers in GeneratedFileWarningRule to private constants`**
+   - **File**: `src/Warnings.cs`
+   - **Cleanup**: Extracted magic thresholds (`1`, `200`, `1`, `0.99`) in the single-touch high-churn rule into descriptive, self-documenting private class constants.
+
+3. **`refactor(exclusions): standardize string manipulation in IsBinaryImage`**
+   - **File**: `src/Exclusions.cs`
+   - **Cleanup**: Standardized extension querying by replacing manual index searching (`LastIndexOf('.')` and string slicing) with a robust call to `System.IO.Path.GetExtension(fileName)`.
+
+4. **`refactor(argsvalidator): replace chained string command validation with HashSet`**
+   - **File**: `src/Argsvalidator.cs`
+   - **Cleanup**: Replaced hardcoded chained `||` checks with a private static `HashSet<string>` command registry for clean, O(1), case-insensitive validation. Added accompanying unit tests.
+
+5. **`refactor(argsvalidator): extract magic numbers in ValidateDepth to named constants`**
+   - **File**: `src/Argsvalidator.cs`
+   - **Cleanup**: Defined `MinDepth` and `MaxDepth` class constants, replacing hardcoded depth boundaries. Added thorough parameter boundary unit tests.
+
+6. **`refactor(identity): extract suffix constant in IdentityUtils.IsGithubNoreply`**
+   - **File**: `src/Identity.cs`
+   - **Cleanup**: Extracted the hardcoded GitHub noreply domain suffix string into a private class-level constant to centralize identity matching rules.
+
+All 63 tests compiled and passed cleanly. Each refactoring step was fully isolated, verified, and committed.

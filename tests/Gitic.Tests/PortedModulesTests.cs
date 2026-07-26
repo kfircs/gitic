@@ -379,7 +379,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestGitParserImplAndInterface()
         {
-            IGitParser parser = new GitParser();
+            IGitParser parser = new GitParser(new GitPatchParser());
             Assert.Equal("__GITIZER_COMMIT__", parser.CommitMarker);
             Assert.Equal("__GITIZER_NUMSTAT__", parser.NumstatMarker);
 
@@ -514,7 +514,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestGitParser_CleanSymbol()
         {
-            var parser = new GitParser();
+            var parser = new GitPatchParser();
             Assert.Equal("", parser.CleanSymbol("@decorator"));
             Assert.Equal("", parser.CleanSymbol("import { something } from 'somewhere'"));
             Assert.Equal("", parser.CleanSymbol("using System;"));
@@ -527,7 +527,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestGitParser_ParseCoAuthors()
         {
-            var parser = new GitParser();
+            var parser = new GitParser(new GitPatchParser());
             string message = "Commit message here\n\nCo-authored-by: Alice <alice@example.com>\nCo-authored-by: Bob <bob@example.com>\nCo-authored-by: Alice <alice@example.com>";
             var coAuthors = parser.ParseCoAuthors(message);
             Assert.Equal(2, coAuthors.Count);
@@ -540,7 +540,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestGitParser_NormalizeNumstatPath()
         {
-            var parser = new GitParser();
+            var parser = new GitPatchParser();
             Assert.Equal("src/main.cs", parser.NormalizeNumstatPath("src/{utils => main}.cs"));
             Assert.Equal("src/main.cs", parser.NormalizeNumstatPath("src/main.cs"));
             Assert.Equal("new_main.cs", parser.NormalizeNumstatPath("old_main.cs => new_main.cs"));
@@ -549,7 +549,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestGitParser_ParseNumstatAndPatches_BinaryAndInvalid()
         {
-            var parser = new GitParser();
+            var parser = new GitPatchParser();
             string numstatText = "-\t-\tbin/logo.png\nxyz\t999\tsrc/weird.cs\n";
             var files = parser.ParseNumstatAndPatches(numstatText);
             Assert.Equal(2, files.Count);
@@ -568,7 +568,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestGitParser_ParseGitLog()
         {
-            var parser = new GitParser();
+            var parser = new GitParser(new GitPatchParser());
             string logOutput = $@"__GITIZER_COMMIT__
 hash1
 2026-06-01T12:00:00Z
@@ -597,7 +597,7 @@ __GITIZER_NUMSTAT__
         [Fact]
         public void TestGitParser_BuildGitLogArguments()
         {
-            var parser = new GitParser();
+            var parser = new GitParser(new GitPatchParser());
             
             // Case 1: AllTime=true, IncludeMerges=true
             var options1 = new GitHistoryExtractorOptions
@@ -1249,7 +1249,7 @@ __GITIZER_NUMSTAT__
                 "log",
                 "--numstat",
                 "-p",
-                $"--format=format:{new GitParser().CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{new GitParser().NumstatMarker}",
+                $"--format=format:{new GitParser(new GitPatchParser()).CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{new GitParser(new GitPatchParser()).NumstatMarker}",
                 "--no-merges",
                 "--since=2026-06-01T12:00:00Z"
             }, logOutput);
