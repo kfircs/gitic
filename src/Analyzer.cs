@@ -88,9 +88,9 @@ namespace Gitic
                 },
                 Settings = settings,
                 Exclusions = pipelineResult.Exclusions,
-                Areas = _metricProcessorService.SortAreasForCommand(pipelineResult.Areas, input.Command),
-                Files = _metricProcessorService.SortFilesForCommand(fileMetrics, input.Command),
-                Contributors = _metricProcessorService.SortContributorsForCommand(pipelineResult.Contributors, input.Command),
+                Areas = pipelineResult.Areas,
+                Files = fileMetrics,
+                Contributors = pipelineResult.Contributors,
                 Automation = pipelineResult.Automation,
                 TemporalCoupling = pipelineResult.TemporalCouplings,
                 LeadTimes = pipelineResult.LeadTimes,
@@ -117,6 +117,8 @@ namespace Gitic
                 },
                 Warnings = pipelineResult.Warnings
             };
+
+            _metricProcessorService.SortMetrics(result, input.Command);
 
             if (settings.Anonymize)
             {

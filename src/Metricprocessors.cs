@@ -11,6 +11,7 @@ namespace Gitic
         List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command);
         List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command);
         List<ContributorMetric> SortContributorsForCommand(List<ContributorMetric> contributors, AnalysisCommand command);
+        void SortMetrics(AnalysisResult result, AnalysisCommand command);
         HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits);
     }
 
@@ -96,6 +97,14 @@ namespace Gitic
             AnalysisCommand command)
         {
             return contributors.OrderByDescending(c => c.TotalActivity).ToList();
+        }
+
+        public void SortMetrics(AnalysisResult result, AnalysisCommand command)
+        {
+            if (result == null) return;
+            result.Areas = SortAreasForCommand(result.Areas, command);
+            result.Files = SortFilesForCommand(result.Files, command);
+            result.Contributors = SortContributorsForCommand(result.Contributors, command);
         }
 
         public HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits)
