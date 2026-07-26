@@ -72,18 +72,11 @@ namespace Gitic
 
             string metadataStr = record.Substring(0, markerIndex).TrimEnd();
             var metadata = metadataStr.Split('\n');
-            if (metadata.Length < 5)
+            if (!TryParseMetadataLines(metadata, out string hash, out string date, out string authorName, out string authorEmail, out string parentsLine, out List<string> messageLines))
             {
                 return null;
             }
 
-            string hash = metadata[0];
-            string date = metadata[1];
-            string authorName = metadata[2];
-            string authorEmail = metadata[3];
-            string parentsLine = metadata[4];
-
-            var messageLines = metadata.Skip(5).ToList();
             string message = string.Join("\n", messageLines).Trim();
             
             string numstatText = record.Substring(markerIndex + NumstatMarker.Length);
@@ -278,6 +271,35 @@ namespace Gitic
                 }
             }
             return normalized;
+        }
+
+        private bool TryParseMetadataLines(
+            string[] metadata,
+            out string hash,
+            out string date,
+            out string authorName,
+            out string authorEmail,
+            out string parentsLine,
+            out List<string> messageLines)
+        {
+            if (metadata.Length < 5)
+            {
+                hash = string.Empty;
+                date = string.Empty;
+                authorName = string.Empty;
+                authorEmail = string.Empty;
+                parentsLine = string.Empty;
+                messageLines = new List<string>();
+                return false;
+            }
+
+            hash = metadata[0];
+            date = metadata[1];
+            authorName = metadata[2];
+            authorEmail = metadata[3];
+            parentsLine = metadata[4];
+            messageLines = metadata.Skip(5).ToList();
+            return true;
         }
 
         private int ParseDiffLineCount(string value)
