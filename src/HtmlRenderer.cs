@@ -7,14 +7,11 @@ namespace Gitic
 {
     public class HtmlRenderer : IReportRenderer
     {
-        private readonly string _htmlPath;
-
-        public HtmlRenderer(string htmlPath)
+        public HtmlRenderer()
         {
-            _htmlPath = htmlPath;
         }
 
-        public async Task<string> RenderAsync(AnalysisResult result)
+        public Task<string> RenderAsync(AnalysisResult result)
         {
             var options = new JsonSerializerOptions
             {
@@ -24,14 +21,7 @@ namespace Gitic
             string data = rawJson.Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
             string html = ReportTemplateHelper.GetHtmlReportTemplate(data);
 
-            string targetPath = _htmlPath;
-            if (Directory.Exists(targetPath))
-            {
-                targetPath = Path.Combine(targetPath, "report.html");
-            }
-
-            await File.WriteAllTextAsync(targetPath, html);
-            return $"Wrote HTML report to {targetPath}\n";
+            return Task.FromResult(html);
         }
     }
 }

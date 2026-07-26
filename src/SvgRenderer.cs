@@ -283,35 +283,18 @@ namespace Gitic
 
     public class SvgRenderer : IReportRenderer
     {
-        private readonly string _svgPath;
-
-        public SvgRenderer(string svgPath)
+        public SvgRenderer()
         {
-            _svgPath = svgPath;
         }
 
-        public async Task<string> RenderAsync(AnalysisResult result)
+        public Task<string> RenderAsync(AnalysisResult result)
         {
-            string svg = SvgGeneratorHelper.GenerateSvg(result);
-            string complexitySvg = SvgGeneratorHelper.GenerateComplexityRangesSvg(result);
+            return Task.FromResult(SvgGeneratorHelper.GenerateSvg(result));
+        }
 
-            string targetPath = _svgPath;
-            string targetComplexityPath = _svgPath;
-            if (Directory.Exists(targetPath))
-            {
-                targetPath = Path.Combine(targetPath, "report.svg");
-                targetComplexityPath = Path.Combine(targetComplexityPath, "report-complexity.svg");
-            }
-            else
-            {
-                string dir = Path.GetDirectoryName(targetPath) ?? ".";
-                string name = Path.GetFileNameWithoutExtension(targetPath);
-                targetComplexityPath = Path.Combine(dir, $"{name}-complexity.svg");
-            }
-
-            await File.WriteAllTextAsync(targetPath, svg);
-            await File.WriteAllTextAsync(targetComplexityPath, complexitySvg);
-            return $"Wrote SVG report to {targetPath}\nWrote Svg Complexity report to {targetComplexityPath}\n";
+        public string RenderComplexity(AnalysisResult result)
+        {
+            return SvgGeneratorHelper.GenerateComplexityRangesSvg(result);
         }
     }
 }

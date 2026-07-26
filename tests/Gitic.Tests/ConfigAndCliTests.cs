@@ -230,27 +230,12 @@ excludes:
         [Fact]
         public async Task TestHtmlRenderer_DirectoryPathResolution()
         {
-            string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(tempDir);
-            try
-            {
-                var renderer = new HtmlRenderer(tempDir);
-                var result = new AnalysisResult();
+            var renderer = new HtmlRenderer();
+            var result = new AnalysisResult();
 
-                string msg = await renderer.RenderAsync(result);
-                string expectedFile = Path.Combine(tempDir, "report.html");
-
-                Assert.True(File.Exists(expectedFile));
-                Assert.Contains("Wrote HTML report to", msg);
-                Assert.Contains("report.html", msg);
-            }
-            finally
-            {
-                if (Directory.Exists(tempDir))
-                {
-                    Directory.Delete(tempDir, true);
-                }
-            }
+            string htmlContent = await renderer.RenderAsync(result);
+            Assert.NotNull(htmlContent);
+            Assert.Contains("<html", htmlContent);
         }
 
         [Fact]
@@ -309,145 +294,90 @@ excludes:
         [Fact]
         public async Task TestMarkdownRenderer_DirectoryPathAndContents()
         {
-            string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(tempDir);
-            try
+            var renderer = new MarkdownRenderer();
+            var result = new AnalysisResult
             {
-                var renderer = new MarkdownRenderer(tempDir);
-                var result = new AnalysisResult
+                Files = new List<FileMetric>
                 {
-                    Files = new List<FileMetric>
-                    {
-                        new() { Path = "src/Main.cs", Area = "src", Lines = 1200, Width = 120, Churn = 500, AttentionScore = 85.5, ReworkRate = 0.25 }
-                    },
-                    Contributors = new List<ContributorMetric>
-                    {
-                        new() { Name = "Alice", Email = "alice@example.com", TotalActivity = 150 }
-                    },
-                    Areas = new List<AreaMetric>
-                    {
-                        new() { Area = "src", FileCount = 1, Touches = 150, Churn = 500 }
-                    }
-                };
-
-                string msg = await renderer.RenderAsync(result);
-                string expectedFile = Path.Combine(tempDir, "report.md");
-
-                Assert.True(File.Exists(expectedFile));
-                Assert.Contains("Wrote Markdown report to", msg);
-                Assert.Contains("report.md", msg);
-
-                string content = await File.ReadAllTextAsync(expectedFile);
-                Assert.Contains("# 📊 Gitic Analysis Report", content);
-                Assert.Contains("Overview", content);
-                Assert.Contains("Hotspots", content);
-                Assert.Contains("Rework Alert:", content);
-                Assert.Contains("File Length Alert:", content);
-                Assert.Contains("Complexity Distribution (Min / Max / Avg)", content);
-                Assert.Contains("Min: 1200", content);
-                Assert.Contains("Min: 120", content);
-            }
-            finally
-            {
-                if (Directory.Exists(tempDir))
+                    new() { Path = "src/Main.cs", Area = "src", Lines = 1200, Width = 120, Churn = 500, AttentionScore = 85.5, ReworkRate = 0.25 }
+                },
+                Contributors = new List<ContributorMetric>
                 {
-                    Directory.Delete(tempDir, true);
+                    new() { Name = "Alice", Email = "alice@example.com", TotalActivity = 150 }
+                },
+                Areas = new List<AreaMetric>
+                {
+                    new() { Area = "src", FileCount = 1, Touches = 150, Churn = 500 }
                 }
-            }
+            };
+
+            string content = await renderer.RenderAsync(result);
+
+            Assert.Contains("# 📊 Gitic Analysis Report", content);
+            Assert.Contains("Overview", content);
+            Assert.Contains("Hotspots", content);
+            Assert.Contains("Rework Alert:", content);
+            Assert.Contains("File Length Alert:", content);
+            Assert.Contains("Complexity Distribution (Min / Max / Avg)", content);
+            Assert.Contains("Min: 1200", content);
+            Assert.Contains("Min: 120", content);
         }
 
         [Fact]
         public async Task TestMarkdownRenderer_DeterministicTimestamp()
         {
-            string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(tempDir);
-            try
+            var renderer = new MarkdownRenderer();
+            var resultWithValidTimestamp = new AnalysisResult
             {
-                var renderer = new MarkdownRenderer(tempDir);
-                var resultWithValidTimestamp = new AnalysisResult
+                Analysis = new AnalysisMetadata
                 {
-                    Analysis = new AnalysisMetadata
-                    {
-                        GeneratedAt = "2026-07-25T12:34:56.000Z"
-                    }
-                };
-
-                await renderer.RenderAsync(resultWithValidTimestamp);
-                string expectedFile = Path.Combine(tempDir, "report.md");
-                string content = await File.ReadAllTextAsync(expectedFile);
-                Assert.Contains("Generated on: 2026-07-25 12:34:56 UTC", content);
-
-                var resultWithInvalidTimestamp = new AnalysisResult
-                {
-                    Analysis = new AnalysisMetadata
-                    {
-                        GeneratedAt = "Not a date string"
-                    }
-                };
-
-                await renderer.RenderAsync(resultWithInvalidTimestamp);
-                content = await File.ReadAllTextAsync(expectedFile);
-                Assert.Contains("Generated on: Not a date string", content);
-            }
-            finally
-            {
-                if (Directory.Exists(tempDir))
-                {
-                    Directory.Delete(tempDir, true);
+                    GeneratedAt = "2026-07-25T12:34:56.000Z"
                 }
-            }
+            };
+
+            string content = await renderer.RenderAsync(resultWithValidTimestamp);
+            Assert.Contains("Generated on: 2026-07-25 12:34:56 UTC", content);
+
+            var resultWithInvalidTimestamp = new AnalysisResult
+            {
+                Analysis = new AnalysisMetadata
+                {
+                    GeneratedAt = "Not a date string"
+                }
+            };
+
+            content = await renderer.RenderAsync(resultWithInvalidTimestamp);
+            Assert.Contains("Generated on: Not a date string", content);
         }
 
         [Fact]
         public async Task TestSvgRenderer_DirectoryPathAndContents()
         {
-            string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(tempDir);
-            try
+            var renderer = new SvgRenderer();
+            var result = new AnalysisResult
             {
-                var renderer = new SvgRenderer(tempDir);
-                var result = new AnalysisResult
+                Files = new List<FileMetric>
                 {
-                    Files = new List<FileMetric>
-                    {
-                        new() { Path = "src/Main.cs", Area = "src", Lines = 1200, Width = 120, Churn = 500, AttentionScore = 85.5, ReworkRate = 0.25 }
-                    },
-                    Areas = new List<AreaMetric>
-                    {
-                        new() { Area = "src", FileCount = 1, Touches = 150, Churn = 500 }
-                    }
-                };
-
-                string msg = await renderer.RenderAsync(result);
-                string expectedFile = Path.Combine(tempDir, "report.svg");
-                string expectedComplexityFile = Path.Combine(tempDir, "report-complexity.svg");
-
-                Assert.True(File.Exists(expectedFile));
-                Assert.True(File.Exists(expectedComplexityFile));
-                Assert.Contains("Wrote SVG report to", msg);
-                Assert.Contains("report.svg", msg);
-                Assert.Contains("Wrote Svg Complexity report to", msg);
-                Assert.Contains("report-complexity.svg", msg);
-
-                string content = await File.ReadAllTextAsync(expectedFile);
-                Assert.Contains("<svg viewBox=\"0 0 800 450\"", content);
-                Assert.Contains("<circle cx=", content);
-                Assert.Contains("Volatile Hotspots", content);
-                Assert.Contains("src/Main.cs", content);
-
-                string complexityContent = await File.ReadAllTextAsync(expectedComplexityFile);
-                Assert.Contains("<svg viewBox=\"0 0 800 150\"", complexityContent);
-                Assert.Contains("Complexity Distribution by App Module", complexityContent);
-                Assert.Contains("FILE LENGTH (LINES)", complexityContent);
-                Assert.Contains("MAX LINE WIDTH (CHARS)", complexityContent);
-            }
-            finally
-            {
-                if (Directory.Exists(tempDir))
+                    new() { Path = "src/Main.cs", Area = "src", Lines = 1200, Width = 120, Churn = 500, AttentionScore = 85.5, ReworkRate = 0.25 }
+                },
+                Areas = new List<AreaMetric>
                 {
-                    Directory.Delete(tempDir, true);
+                    new() { Area = "src", FileCount = 1, Touches = 150, Churn = 500 }
                 }
-            }
+            };
+
+            string content = await renderer.RenderAsync(result);
+            string complexityContent = renderer.RenderComplexity(result);
+
+            Assert.Contains("<svg viewBox=\"0 0 800 450\"", content);
+            Assert.Contains("<circle cx=", content);
+            Assert.Contains("Volatile Hotspots", content);
+            Assert.Contains("src/Main.cs", content);
+
+            Assert.Contains("<svg viewBox=\"0 0 800 150\"", complexityContent);
+            Assert.Contains("Complexity Distribution by App Module", complexityContent);
+            Assert.Contains("FILE LENGTH (LINES)", complexityContent);
+            Assert.Contains("MAX LINE WIDTH (CHARS)", complexityContent);
         }
 
         [Fact]

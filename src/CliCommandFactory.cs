@@ -247,21 +247,51 @@ Options:
             var outputSb = new StringBuilder();
             if (Parsed.HtmlPath != null)
             {
-                var htmlRenderer = new HtmlRenderer(Parsed.HtmlPath);
-                string htmlResult = await htmlRenderer.RenderAsync(result);
-                outputSb.Append(htmlResult);
+                var htmlRenderer = new HtmlRenderer();
+                string htmlContent = await htmlRenderer.RenderAsync(result);
+                string targetPath = Parsed.HtmlPath;
+                if (Directory.Exists(targetPath))
+                {
+                    targetPath = Path.Combine(targetPath, "report.html");
+                }
+                await File.WriteAllTextAsync(targetPath, htmlContent);
+                outputSb.Append($"Wrote HTML report to {targetPath}\n");
             }
             if (Parsed.MdPath != null)
             {
-                var mdRenderer = new MarkdownRenderer(Parsed.MdPath);
-                string mdResult = await mdRenderer.RenderAsync(result);
-                outputSb.Append(mdResult);
+                var mdRenderer = new MarkdownRenderer();
+                string mdContent = await mdRenderer.RenderAsync(result);
+                string targetPath = Parsed.MdPath;
+                if (Directory.Exists(targetPath))
+                {
+                    targetPath = Path.Combine(targetPath, "report.md");
+                }
+                await File.WriteAllTextAsync(targetPath, mdContent);
+                outputSb.Append($"Wrote Markdown report to {targetPath}\n");
             }
             if (Parsed.SvgPath != null)
             {
-                var svgRenderer = new SvgRenderer(Parsed.SvgPath);
-                string svgResult = await svgRenderer.RenderAsync(result);
-                outputSb.Append(svgResult);
+                var svgRenderer = new SvgRenderer();
+                string svgContent = await svgRenderer.RenderAsync(result);
+                string complexitySvgContent = svgRenderer.RenderComplexity(result);
+                
+                string targetPath = Parsed.SvgPath;
+                string targetComplexityPath = Parsed.SvgPath;
+                if (Directory.Exists(targetPath))
+                {
+                    targetPath = Path.Combine(targetPath, "report.svg");
+                    targetComplexityPath = Path.Combine(targetComplexityPath, "report-complexity.svg");
+                }
+                else
+                {
+                    string dir = Path.GetDirectoryName(targetPath) ?? ".";
+                    string name = Path.GetFileNameWithoutExtension(targetPath);
+                    targetComplexityPath = Path.Combine(dir, $"{name}-complexity.svg");
+                }
+                
+                await File.WriteAllTextAsync(targetPath, svgContent);
+                await File.WriteAllTextAsync(targetComplexityPath, complexitySvgContent);
+                outputSb.Append($"Wrote SVG report to {targetPath}\nWrote Svg Complexity report to {targetComplexityPath}\n");
             }
 
             string reportOutput = outputSb.ToString();
