@@ -19,10 +19,11 @@ namespace Gitic
 
     public class ConfigurationEngine : IConfigurationEngine
     {
-        private readonly ConfigValidator _validator;
+        private readonly IConfigValidator _validator;
         private readonly IYamlParser _yamlParser;
         private readonly AnalysisSettingsNormalizer _normalizer;
         private readonly IConfigMerger _configMerger;
+        private readonly IConfigOverridesNormalizer _overridesNormalizer;
 
         public ConfigurationEngine(IYamlParser? yamlParser = null, IConfigMerger? configMerger = null)
         {
@@ -30,6 +31,7 @@ namespace Gitic
             _yamlParser = yamlParser ?? new YamlSubsetParserImpl();
             _normalizer = new AnalysisSettingsNormalizer();
             _configMerger = configMerger ?? new ConfigMerger();
+            _overridesNormalizer = new ConfigOverridesNormalizer(_validator);
         }
 
         public string RenderStarterConfig()
@@ -128,7 +130,7 @@ namespace Gitic
         private GitizerConfigOverrides ParseAndValidateOverride(string content, string source)
         {
             var parsed = _yamlParser.Parse(content, source);
-            return _validator.NormalizeOverride(parsed, source);
+            return _overridesNormalizer.NormalizeOverride(parsed, source);
         }
     }
 }
