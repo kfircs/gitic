@@ -60,54 +60,7 @@ namespace Gitic
                         if (_fileSystem.FileExists(fullPath))
                         {
                             long size = _fileSystem.GetFileSize(fullPath);
-                            int width = 0;
-                            int linesCount = 0;
-
-                            if (size > 0)
-                            {
-                                using (var stream = _fileSystem.OpenRead(fullPath))
-                                {
-                                    byte[] headerBuffer = new byte[Math.Min(8000, (int)Math.Min(size, int.MaxValue))];
-                                    int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length);
-                                    byte[] actualHeader = new byte[bytesRead];
-                                    Array.Copy(headerBuffer, actualHeader, bytesRead);
-
-                                    if (!FileStats.IsBinaryFile(actualHeader))
-                                    {
-                                        bool endsWithNewline = false;
-                                        stream.Seek(size - 1, SeekOrigin.Begin);
-                                        byte[] lastByteBuf = new byte[1];
-                                        int read = await stream.ReadAsync(lastByteBuf, 0, 1);
-                                        if (read > 0 && lastByteBuf[0] == 10) // '\n'
-                                        {
-                                            endsWithNewline = true;
-                                        }
-
-                                        stream.Seek(0, SeekOrigin.Begin);
-                                        using (var reader = new StreamReader(stream, Encoding.UTF8))
-                                        {
-                                            string? line;
-                                            while ((line = await reader.ReadLineAsync()) != null)
-                                            {
-                                                linesCount++;
-                                                if (line.Length > width)
-                                                {
-                                                    width = line.Length;
-                                                }
-                                            }
-                                        }
-
-                                        if (endsWithNewline)
-                                        {
-                                            linesCount++;
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                linesCount = 1;
-                            }
+                            var (linesCount, width) = await AnalyzeFileContentAsync(fullPath, size);
                             results[currentFile] = new FileStatResult { Size = size, Width = width, Lines = linesCount };
                         }
                         else
@@ -128,6 +81,58 @@ namespace Gitic
 
             await Task.WhenAll(tasks);
             return new Dictionary<string, FileStatResult>(results);
+        }
+
+        private async Task<(int LinesCount, int Width)> AnalyzeFileContentAsync(string fullPath, long size)
+        {
+            if (size == 0)
+            {
+                return (1, 0);
+            }
+
+            int linesCount = 0;
+            int width = 0;
+
+            using (var stream = _fileSystem.OpenRead(fullPath))
+            {
+                byte[] headerBuffer = new byte[Math.Min(8000, (int)Math.Min(size, int.MaxValue))];
+                int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length);
+                byte[] actualHeader = new byte[bytesRead];
+                Array.Copy(headerBuffer, actualHeader, bytesRead);
+
+                if (!FileStats.IsBinaryFile(actualHeader))
+                {
+                    bool endsWithNewline = false;
+                    stream.Seek(size - 1, SeekOrigin.Begin);
+                    byte[] lastByteBuf = new byte[1];
+                    int read = await stream.ReadAsync(lastByteBuf, 0, 1);
+                    if (read > 0 && lastByteBuf[0] == 10) // '\n'
+                    {
+                        endsWithNewline = true;
+                    }
+
+                    stream.Seek(0, SeekOrigin.Begin);
+                    using (var reader = new StreamReader(stream, Encoding.UTF8))
+                    {
+                        string? line;
+                        while ((line = await reader.ReadLineAsync()) != null)
+                        {
+                            linesCount++;
+                            if (line.Length > width)
+                            {
+                                width = line.Length;
+                            }
+                        }
+                    }
+
+                    if (endsWithNewline)
+                    {
+                        linesCount++;
+                    }
+                }
+            }
+
+            return (linesCount, width);
         }
     }
 
