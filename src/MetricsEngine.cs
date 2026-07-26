@@ -134,7 +134,12 @@ namespace Gitic
         }
     }
 
-    public class LeadTimeEngine : ILeadTimeEngine
+    public interface IMergeLeadTimeCalculator
+    {
+        MergeLeadTimeRecord? CalculateMergeLeadTime(GitCommitRecord mergeCommit, Dictionary<string, GitCommitRecord> commitMap);
+    }
+
+    public class MergeLeadTimeCalculator : IMergeLeadTimeCalculator
     {
         private const double MsPerHour = 3600000.0;
         private const int LeadTimeMainAncestorsMaxDepth = 150;
@@ -143,9 +148,63 @@ namespace Gitic
 
         private readonly IGitGraph _gitGraph;
 
-        public LeadTimeEngine(IGitGraph? gitGraph = null)
+        public MergeLeadTimeCalculator(IGitGraph? gitGraph = null)
         {
             _gitGraph = gitGraph ?? new GitGraphCalculator();
+        }
+
+        public MergeLeadTimeRecord? CalculateMergeLeadTime(GitCommitRecord m, Dictionary<string, GitCommitRecord> commitMap)
+        {
+            if (m.Parents == null || m.Parents.Count <= 1)
+            {
+                return null;
+            }
+
+            string p1 = m.Parents[0];
+            string p2 = m.Parents[1];
+
+            var mainAncestors = _gitGraph.GetAncestors(p1, commitMap, LeadTimeMainAncestorsMaxDepth);
+            var branchCommits = _gitGraph.GetBranchCommits(p2, mainAncestors, commitMap, LeadTimeBranchCommitsMaxDepth);
+
+            if (branchCommits.Count > 0)
+            {
+                var earliest = branchCommits.Aggregate(branchCommits[0], (oldest, curr) =>
+                    curr.Timestamp < oldest.Timestamp ? curr : oldest);
+
+                double leadTimeMs = m.Timestamp - earliest.Timestamp;
+                double leadTimeHours = ScoringUtils.RoundRatio(Math.Max(LeadTimeMinHours, leadTimeMs / MsPerHour));
+
+                var filesSet = new HashSet<string>();
+                foreach (var bc in branchCommits)
+                {
+                    foreach (var f in bc.Files)
+                    {
+                        filesSet.Add(f.Path);
+                    }
+                }
+
+                return new MergeLeadTimeRecord
+                {
+                    Hash = m.Hash,
+                    Message = m.Message.Split('\n')[0].Trim(),
+                    Author = m.Author.Name,
+                    Date = m.Date,
+                    LeadTimeHours = leadTimeHours,
+                    FileCount = filesSet.Count
+                };
+            }
+
+            return null;
+        }
+    }
+
+    public class LeadTimeEngine : ILeadTimeEngine
+    {
+        private readonly IMergeLeadTimeCalculator _calculator;
+
+        public LeadTimeEngine(IMergeLeadTimeCalculator? calculator = null)
+        {
+            _calculator = calculator ?? new MergeLeadTimeCalculator();
         }
 
         public LeadTimesInfo CalculateLeadTimes(List<GitCommitRecord> commits)
@@ -155,41 +214,10 @@ namespace Gitic
 
             foreach (var m in commits)
             {
-                if (m.Parents != null && m.Parents.Count > 1)
+                var record = _calculator.CalculateMergeLeadTime(m, commitMap);
+                if (record != null)
                 {
-                    string p1 = m.Parents[0];
-                    string p2 = m.Parents[1];
-
-                    var mainAncestors = _gitGraph.GetAncestors(p1, commitMap, LeadTimeMainAncestorsMaxDepth);
-                    var branchCommits = _gitGraph.GetBranchCommits(p2, mainAncestors, commitMap, LeadTimeBranchCommitsMaxDepth);
-
-                    if (branchCommits.Count > 0)
-                    {
-                        var earliest = branchCommits.Aggregate(branchCommits[0], (oldest, curr) =>
-                            curr.Timestamp < oldest.Timestamp ? curr : oldest);
-
-                        double leadTimeMs = m.Timestamp - earliest.Timestamp;
-                        double leadTimeHours = ScoringUtils.RoundRatio(Math.Max(LeadTimeMinHours, leadTimeMs / MsPerHour));
-
-                        var filesSet = new HashSet<string>();
-                        foreach (var bc in branchCommits)
-                        {
-                            foreach (var f in bc.Files)
-                            {
-                                filesSet.Add(f.Path);
-                            }
-                        }
-
-                        merges.Add(new MergeLeadTimeRecord
-                        {
-                            Hash = m.Hash,
-                            Message = m.Message.Split('\n')[0].Trim(),
-                            Author = m.Author.Name,
-                            Date = m.Date,
-                            LeadTimeHours = leadTimeHours,
-                            FileCount = filesSet.Count
-                        });
-                    }
+                    merges.Add(record);
                 }
             }
 
