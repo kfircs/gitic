@@ -9,6 +9,8 @@ namespace Gitic
 
     public class AnalysisSettingsNormalizer : IAnalysisSettingsNormalizer
     {
+        private const int UninitializedDepth = 0;
+
         public AnalysisSettings Normalize(AnalysisSettings settings)
         {
             var defaults = DefaultAnalysisSettings.Create();
@@ -22,7 +24,7 @@ namespace Gitic
                 MergeByEmail = settings.MergeByEmail ?? defaults.MergeByEmail,
                 Path = settings.Path ?? defaults.Path,
                 Anonymize = settings.Anonymize,
-                Depth = settings.Depth != 0 ? settings.Depth : defaults.Depth
+                Depth = settings.Depth > UninitializedDepth ? settings.Depth : defaults.Depth
             };
         }
     }
