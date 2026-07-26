@@ -91,13 +91,13 @@ namespace Gitic
     {
         private readonly string _repoRoot;
         private readonly IGitExecutor _executor;
-        private readonly IGitParser _parser;
+        private readonly GitParser _parser;
 
-        public GitClient(string repoRoot, IGitExecutor? executor = null, IGitParser? parser = null)
+        public GitClient(string repoRoot, IGitExecutor? executor = null)
         {
             _repoRoot = repoRoot;
             _executor = executor ?? new ExecFileGitExecutor();
-            _parser = parser ?? new GitParser();
+            _parser = new GitParser();
         }
 
         public async Task<string?> GetRepositoryRootAsync()

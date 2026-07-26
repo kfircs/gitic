@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+
+[assembly: InternalsVisibleTo("Gitic.Tests")]
 
 namespace Gitic
 {
-    public interface IGitParser
+    internal interface IGitParser
     {
         string CommitMarker { get; }
         string NumstatMarker { get; }
@@ -15,7 +18,7 @@ namespace Gitic
         List<string> BuildGitLogArguments(GitHistoryExtractorOptions options);
     }
 
-    public class GitParser : IGitParser
+    internal class GitParser : IGitParser
     {
         private const int MaxSymbolLength = 60;
 
