@@ -1352,7 +1352,8 @@ __GITIZER_NUMSTAT__
                     IMetricProcessorService? metricProcessorService = null,
                     IFamiliarityScoringEngine? scoringEngine = null,
                     IWarningCollector? warningCollector = null,
-                    IIdentityRegistry? identityRegistry = null)
+                    IIdentityRegistry? identityRegistry = null,
+                    IChangeAccumulator? accumulator = null)
                 {
                     RunCalled = true;
                     ReceivedCommits = commits;
@@ -1392,6 +1393,67 @@ __GITIZER_NUMSTAT__
                 Assert.Equal("hash1", mockPipeline.ReceivedCommits[0].Hash);
                 Assert.Contains("mock-pipeline-warning", result.Warnings);
                 Assert.Equal(42, result.Analysis.IncludedFileChangeCount);
+            }
+
+            private class MockChangeAccumulator : IChangeAccumulator
+            {
+                public bool PrepareIdentityMergingCalled { get; set; }
+                public bool AddCommitCalled { get; set; }
+                public bool GetFilesCalled { get; set; }
+                public bool GetAreasCalled { get; set; }
+                public bool GetContributorsCalled { get; set; }
+                public bool GetAutomationCalled { get; set; }
+
+                public void PrepareIdentityMerging(List<GitCommitRecord> commits) => PrepareIdentityMergingCalled = true;
+                public List<EmailCollision> GetEmailCollisions() => new();
+                public void AddCommit(GitCommitRecord commit, List<string> filesInCommit) => AddCommitCalled = true;
+                public IReadOnlyDictionary<string, ItemAccumulator> GetFiles() { GetFilesCalled = true; return new Dictionary<string, ItemAccumulator>(); }
+                public IReadOnlyDictionary<string, ItemAccumulator> GetAreas() { GetAreasCalled = true; return new Dictionary<string, ItemAccumulator>(); }
+                public IReadOnlyDictionary<string, ContributorAccumulator> GetContributors() { GetContributorsCalled = true; return new Dictionary<string, ContributorAccumulator>(); }
+                public IReadOnlyDictionary<string, ContributorAccumulator> GetAutomation() { GetAutomationCalled = true; return new Dictionary<string, ContributorAccumulator>(); }
+                public List<ExclusionSummary> GetExclusions() => new();
+                public HashSet<string> GetWarnings() => new();
+                public int GetIncludedFileChangeCount() => 0;
+            }
+
+            [Fact]
+            public void TestAnalysisPipeline_UsesInjectedAccumulator()
+            {
+                var commits = new List<GitCommitRecord>
+                {
+                    new GitCommitRecord
+                    {
+                        Hash = "123456",
+                        Author = new GitIdentity { Name = "John", Email = "john@example.com" },
+                        Files = new List<GitFileChange>()
+                    }
+                };
+                var headFiles = new HashSet<string>();
+                var config = GitizerConfig.Default;
+                var settings = new AnalysisSettings();
+                var command = AnalysisCommand.Hotspots;
+                var repoRoot = "/fake/root";
+
+                var pipeline = new AnalysisPipeline();
+                var mockAccumulator = new MockChangeAccumulator();
+
+                var result = pipeline.Run(
+                    commits,
+                    headFiles,
+                    config,
+                    settings,
+                    command,
+                    repoRoot,
+                    accumulator: mockAccumulator
+                );
+
+                Assert.NotNull(result);
+                Assert.True(mockAccumulator.PrepareIdentityMergingCalled);
+                Assert.True(mockAccumulator.AddCommitCalled);
+                Assert.True(mockAccumulator.GetFilesCalled);
+                Assert.True(mockAccumulator.GetAreasCalled);
+                Assert.True(mockAccumulator.GetContributorsCalled);
+                Assert.True(mockAccumulator.GetAutomationCalled);
             }
 
 

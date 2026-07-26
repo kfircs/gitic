@@ -18,7 +18,8 @@ namespace Gitic
             IMetricProcessorService? metricProcessorService = null,
             IFamiliarityScoringEngine? scoringEngine = null,
             IWarningCollector? warningCollector = null,
-            IIdentityRegistry? identityRegistry = null);
+            IIdentityRegistry? identityRegistry = null,
+            IChangeAccumulator? accumulator = null);
     }
 
     public class AnalysisPipelineResult
@@ -48,7 +49,8 @@ namespace Gitic
             IMetricProcessorService? metricProcessorService = null,
             IFamiliarityScoringEngine? scoringEngine = null,
             IWarningCollector? warningCollector = null,
-            IIdentityRegistry? identityRegistry = null)
+            IIdentityRegistry? identityRegistry = null,
+            IChangeAccumulator? accumulator = null)
         {
             var gitignoreRules = PathClassifier.LoadGitignoreRules(repoRoot);
             config.Excludes.AddRange(gitignoreRules);
@@ -56,8 +58,8 @@ namespace Gitic
             var pathClassifier = new PathClassifier(headFiles, config.Excludes, settings.IncludeDeleted, settings.Path);
             bool mergeByEmail = (config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
             var actualIdentityRegistry = identityRegistry ?? new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
-            IChangeAccumulator accumulator = new ChangeAccumulator(config, settings, pathClassifier, actualIdentityRegistry);
-            accumulator.PrepareIdentityMerging(commits);
+            IChangeAccumulator actualAccumulator = accumulator ?? new ChangeAccumulator(config, settings, pathClassifier, actualIdentityRegistry);
+            actualAccumulator.PrepareIdentityMerging(commits);
 
             int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
             ITemporalCouplingEngine actualTemporalCouplingEngine = temporalCouplingEngine ?? new TemporalCouplingEngine(temporalCouplingLimit);
@@ -68,18 +70,18 @@ namespace Gitic
             foreach (var commit in commits)
             {
                 var includedFilesInCommit = new List<string>();
-                accumulator.AddCommit(commit, includedFilesInCommit);
+                actualAccumulator.AddCommit(commit, includedFilesInCommit);
                 allIncludedCommits.Add(includedFilesInCommit);
             }
 
             var activeContributorKeys = actualMetricProcessorService.GetActiveContributorKeys(commits);
             IFamiliarityScoringEngine actualScoringEngine = scoringEngine ?? new FamiliarityScoringEngine(config, activeContributorKeys, settings.Depth);
 
-            var rawFileMetrics = actualScoringEngine.ScoreFiles(accumulator.GetFiles().Values.ToList(), settings.Depth);
-            var areaMetrics = actualScoringEngine.ScoreAreas(accumulator.GetAreas().Values.ToList());
+            var rawFileMetrics = actualScoringEngine.ScoreFiles(actualAccumulator.GetFiles().Values.ToList(), settings.Depth);
+            var areaMetrics = actualScoringEngine.ScoreAreas(actualAccumulator.GetAreas().Values.ToList());
 
-            var contributorMetrics = actualMetricProcessorService.RenderContributors(accumulator.GetContributors().Values.ToList());
-            var automationMetrics = actualMetricProcessorService.RenderAutomation(accumulator.GetAutomation().Values.ToList());
+            var contributorMetrics = actualMetricProcessorService.RenderContributors(actualAccumulator.GetContributors().Values.ToList());
+            var automationMetrics = actualMetricProcessorService.RenderAutomation(actualAccumulator.GetAutomation().Values.ToList());
 
             var topCouplings = actualTemporalCouplingEngine.CalculateTemporalCoupling(allIncludedCommits);
             var leadTimes = actualLeadTimeEngine.CalculateLeadTimes(commits);
@@ -88,7 +90,7 @@ namespace Gitic
             var warnings = actualWarningCollector.Collect(
                 new WarningContext
                 {
-                    EmailCollisions = accumulator.GetEmailCollisions(),
+                    EmailCollisions = actualAccumulator.GetEmailCollisions(),
                     AliasCount = config.Aliases.Count,
                     ConfiguredBotCount = config.Bots.Count,
                     AutomationMetrics = automationMetrics,
@@ -96,7 +98,7 @@ namespace Gitic
                     TemporalCouplingEngine = actualTemporalCouplingEngine,
                     Files = rawFileMetrics
                 },
-                accumulator.GetWarnings().ToList()
+                actualAccumulator.GetWarnings().ToList()
             );
 
             return new AnalysisPipelineResult
@@ -107,9 +109,9 @@ namespace Gitic
                 Automation = automationMetrics,
                 TemporalCouplings = topCouplings,
                 LeadTimes = leadTimes,
-                Exclusions = accumulator.GetExclusions(),
+                Exclusions = actualAccumulator.GetExclusions(),
                 Warnings = warnings,
-                IncludedFileChangeCount = accumulator.GetIncludedFileChangeCount()
+                IncludedFileChangeCount = actualAccumulator.GetIncludedFileChangeCount()
             };
         }
     }
