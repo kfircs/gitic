@@ -13,6 +13,9 @@ namespace Gitic
         public LeadTimesInfo? LeadTimes { get; set; }
         public ITemporalCouplingEngine? TemporalCouplingEngine { get; set; }
         public List<FileMetric>? Files { get; set; }
+
+        public int SafeConfiguredBotCount => ConfiguredBotCount ?? 0;
+        public List<AutomationMetric> SafeAutomationMetrics => AutomationMetrics ?? new List<AutomationMetric>();
     }
 
     public interface IWarningRule
@@ -42,13 +45,11 @@ namespace Gitic
     {
         public List<string> Collect(WarningContext context)
         {
-            int configuredBotCount = context.ConfiguredBotCount ?? 0;
-            var automationMetrics = context.AutomationMetrics ?? new List<AutomationMetric>();
-            if (configuredBotCount == 0 && automationMetrics.Count > 0)
+            if (context.SafeConfiguredBotCount == 0 && context.SafeAutomationMetrics.Count > 0)
             {
                 return new List<string>
                 {
-                    $"No bots are explicitly configured; {automationMetrics.Count} automation identities were detected using default heuristics. Configure bots in .gitizer.yml to control automation detection (e.g. workspace-specific agents like test harnesses)."
+                    $"No bots are explicitly configured; {context.SafeAutomationMetrics.Count} automation identities were detected using default heuristics. Configure bots in .gitizer.yml to control automation detection (e.g. workspace-specific agents like test harnesses)."
                 };
             }
             return new List<string>();
@@ -74,9 +75,7 @@ namespace Gitic
     {
         public List<string> Collect(WarningContext context)
         {
-            int configuredBotCount = context.ConfiguredBotCount ?? 0;
-            var automationMetrics = context.AutomationMetrics ?? new List<AutomationMetric>();
-            if (configuredBotCount == 0 && automationMetrics.Count == 0)
+            if (context.SafeConfiguredBotCount == 0 && context.SafeAutomationMetrics.Count == 0)
             {
                 return new List<string>
                 {
