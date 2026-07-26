@@ -90,7 +90,7 @@ namespace Gitic
             var contributorMetrics = actualMetricProcessorService.RenderContributors(actualAccumulator.GetContributors().Values.ToList());
             var automationMetrics = actualMetricProcessorService.RenderAutomation(actualAccumulator.GetAutomation().Values.ToList());
 
-            var topCouplings = actualTemporalCouplingEngine.CalculateTemporalCoupling(allIncludedCommits);
+            var couplingResult = actualTemporalCouplingEngine.CalculateTemporalCoupling(allIncludedCommits);
             var leadTimes = actualLeadTimeEngine.CalculateLeadTimes(commits);
 
             IWarningCollector actualWarningCollector = _warningCollector;
@@ -102,7 +102,7 @@ namespace Gitic
                     ConfiguredBotCount = config.Bots.Count,
                     AutomationMetrics = automationMetrics,
                     LeadTimes = leadTimes,
-                    TemporalCouplingEngine = actualTemporalCouplingEngine,
+                    TemporalCoupling = couplingResult,
                     Files = rawFileMetrics
                 },
                 actualAccumulator.GetWarnings().ToList()
@@ -114,7 +114,7 @@ namespace Gitic
                 Areas = areaMetrics,
                 Contributors = contributorMetrics,
                 Automation = automationMetrics,
-                TemporalCouplings = topCouplings,
+                TemporalCouplings = couplingResult.Couplings,
                 LeadTimes = leadTimes,
                 Exclusions = actualAccumulator.GetExclusions(),
                 Warnings = warnings,

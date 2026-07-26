@@ -670,19 +670,18 @@ __GITIZER_NUMSTAT__
         {
             var engine = new TemporalCouplingEngine(10);
 
-            var couplings = engine.CalculateTemporalCoupling(new List<List<string>> {
+            var result = engine.CalculateTemporalCoupling(new List<List<string>> {
                 new List<string> { "fileA.ts", "fileB.ts" },
                 new List<string> { "fileA.ts", "fileB.ts" },
                 new List<string> { "fileA.ts", "fileB.ts" }
             });
-            Assert.Single(couplings);
-            Assert.Equal("fileA.ts", couplings[0].FileA);
-            Assert.Equal("fileB.ts", couplings[0].FileB);
-            Assert.Equal(3, couplings[0].SharedCommits);
-            Assert.Equal(1.0, couplings[0].CouplingDegree);
+            Assert.Single(result.Couplings);
+            Assert.Equal("fileA.ts", result.Couplings[0].FileA);
+            Assert.Equal("fileB.ts", result.Couplings[0].FileB);
+            Assert.Equal(3, result.Couplings[0].SharedCommits);
+            Assert.Equal(1.0, result.Couplings[0].CouplingDegree);
 
-            var info = engine.GetOversizedCommitInfo();
-            Assert.Equal(0, info.count);
+            Assert.Equal(0, result.OversizedCommitCount);
         }
 
         [Fact]
@@ -690,20 +689,16 @@ __GITIZER_NUMSTAT__
         {
             var engine = new TemporalCouplingEngine(2);
 
-            // too few shared commits
-            var couplings = engine.CalculateTemporalCoupling(new List<List<string>> {
+            // too few shared commits, plus an oversized commit in a single calculation
+            var result = engine.CalculateTemporalCoupling(new List<List<string>> {
                 new List<string> { "fileA.ts", "fileB.ts" },
-                new List<string> { "fileA.ts", "fileB.ts" }
+                new List<string> { "fileA.ts", "fileB.ts" },
+                new List<string> { "fileA.ts", "fileB.ts", "fileC.ts" }
             });
-            Assert.Empty(couplings);
-
-            // Track an oversized commit
-            engine.CalculateTemporalCoupling(new List<List<string>> { new List<string> { "fileA.ts", "fileB.ts", "fileC.ts" } });
-
-            var info = engine.GetOversizedCommitInfo();
-            Assert.Equal(1, info.count);
-            Assert.Equal(3, info.maxObserved);
-            Assert.Equal(2, info.limit);
+            Assert.Empty(result.Couplings);
+            Assert.Equal(1, result.OversizedCommitCount);
+            Assert.Equal(3, result.MaxObservedFiles);
+            Assert.Equal(2, result.Limit);
         }
 
         [Fact]
@@ -1040,25 +1035,34 @@ __GITIZER_NUMSTAT__
             Assert.Empty(warnings4HasDetected);
 
             // TemporalCouplingWarning
-            var engine = new TemporalCouplingEngine(1);
-            engine.CalculateTemporalCoupling(new List<List<string>> { new List<string> { "file1.ts", "file2.ts" } });
             var rule5 = new TemporalCouplingWarningRule();
-            var warnings5 = rule5.Collect(new WarningContext { TemporalCouplingEngine = engine });
+            var warnings5 = rule5.Collect(new WarningContext
+            {
+                TemporalCoupling = new TemporalCouplingResult
+                {
+                    OversizedCommitCount = 1,
+                    Limit = 1,
+                    MaxObservedFiles = 2
+                }
+            });
             Assert.Single(warnings5);
             Assert.Contains("1 commit(s) changed more than 1 files", warnings5[0]);
 
-            var normalEngine = new TemporalCouplingEngine(5);
-            normalEngine.CalculateTemporalCoupling(new List<List<string>> { new List<string> { "file1.ts", "file2.ts" } });
-            var warnings5Empty = rule5.Collect(new WarningContext { TemporalCouplingEngine = normalEngine });
+            var warnings5Empty = rule5.Collect(new WarningContext
+            {
+                TemporalCoupling = new TemporalCouplingResult
+                {
+                    OversizedCommitCount = 0,
+                    Limit = 5,
+                    MaxObservedFiles = 2
+                }
+            });
             Assert.Empty(warnings5Empty);
         }
 
         [Fact]
         public void TestWarningCollector_CollectAndAggregate()
         {
-            var engine = new TemporalCouplingEngine(1);
-            engine.CalculateTemporalCoupling(new List<List<string>> { new List<string> { "file1.ts", "file2.ts" } });
-
             var context = new WarningContext
             {
                 EmailCollisions = new List<EmailCollision>
@@ -1069,7 +1073,12 @@ __GITIZER_NUMSTAT__
                 ConfiguredBotCount = 0,
                 AutomationMetrics = new(),
                 LeadTimes = null,
-                TemporalCouplingEngine = engine
+                TemporalCoupling = new TemporalCouplingResult
+                {
+                    OversizedCommitCount = 1,
+                    Limit = 1,
+                    MaxObservedFiles = 2
+                }
             };
 
             var collector = new WarningCollector();

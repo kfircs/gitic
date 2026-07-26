@@ -4,10 +4,17 @@ using System.Linq;
 
 namespace Gitic
 {
+    public class TemporalCouplingResult
+    {
+        public List<TemporalCoupling> Couplings { get; set; } = new();
+        public int OversizedCommitCount { get; set; }
+        public int MaxObservedFiles { get; set; }
+        public int Limit { get; set; }
+    }
+
     public interface ITemporalCouplingEngine
     {
-        List<TemporalCoupling> CalculateTemporalCoupling(List<List<string>> allIncludedCommits);
-        (int count, int maxObserved, int limit) GetOversizedCommitInfo();
+        TemporalCouplingResult CalculateTemporalCoupling(List<List<string>> allIncludedCommits);
     }
 
     public interface ILeadTimeEngine
@@ -21,71 +28,62 @@ namespace Gitic
         private const double TemporalCouplingMinCouplingDegree = 0.25;
         private const int TemporalCouplingMaxResults = 15;
 
-        private readonly Dictionary<string, int> _fileCommitCount = new();
-        private readonly Dictionary<string, int> _sharedCommitCounts = new();
         private readonly int _maxCommitFileCount;
-        private int _oversizedCommitCount = 0;
-        private int _maxObservedFiles = 0;
 
         public TemporalCouplingEngine(int maxCommitFileCount = 20)
         {
             _maxCommitFileCount = maxCommitFileCount;
         }
 
-        private void TrackCommitFiles(List<string> filePaths)
+        public TemporalCouplingResult CalculateTemporalCoupling(List<List<string>> allIncludedCommits)
         {
-            if (filePaths.Count == 0)
-            {
-                return;
-            }
+            var fileCommitCount = new Dictionary<string, int>();
+            var sharedCommitCounts = new Dictionary<string, int>();
+            int oversizedCommitCount = 0;
+            int maxObservedFiles = 0;
 
-            if (filePaths.Count > _maxObservedFiles)
+            foreach (var filePaths in allIncludedCommits)
             {
-                _maxObservedFiles = filePaths.Count;
-            }
-
-            if (filePaths.Count > _maxCommitFileCount)
-            {
-                _oversizedCommitCount++;
-                return;
-            }
-
-            foreach (var file in filePaths)
-            {
-                _fileCommitCount.TryGetValue(file, out int count);
-                _fileCommitCount[file] = count + 1;
-            }
-
-            for (int i = 0; i < filePaths.Count; i++)
-            {
-                for (int j = i + 1; j < filePaths.Count; j++)
+                if (filePaths.Count == 0)
                 {
-                    string file1 = filePaths[i];
-                    string file2 = filePaths[j];
-                    string fileA = string.CompareOrdinal(file1, file2) < 0 ? file1 : file2;
-                    string fileB = string.CompareOrdinal(file1, file2) < 0 ? file2 : file1;
-                    string pairKey = $"{fileA}|{fileB}";
+                    continue;
+                }
 
-                    _sharedCommitCounts.TryGetValue(pairKey, out int shared);
-                    _sharedCommitCounts[pairKey] = shared + 1;
+                if (filePaths.Count > maxObservedFiles)
+                {
+                    maxObservedFiles = filePaths.Count;
+                }
+
+                if (filePaths.Count > _maxCommitFileCount)
+                {
+                    oversizedCommitCount++;
+                    continue;
+                }
+
+                foreach (var file in filePaths)
+                {
+                    fileCommitCount.TryGetValue(file, out int count);
+                    fileCommitCount[file] = count + 1;
+                }
+
+                for (int i = 0; i < filePaths.Count; i++)
+                {
+                    for (int j = i + 1; j < filePaths.Count; j++)
+                    {
+                        string file1 = filePaths[i];
+                        string file2 = filePaths[j];
+                        string fileA = string.CompareOrdinal(file1, file2) < 0 ? file1 : file2;
+                        string fileB = string.CompareOrdinal(file1, file2) < 0 ? file2 : file1;
+                        string pairKey = $"{fileA}|{fileB}";
+
+                        sharedCommitCounts.TryGetValue(pairKey, out int shared);
+                        sharedCommitCounts[pairKey] = shared + 1;
+                    }
                 }
             }
-        }
 
-        public (int count, int maxObserved, int limit) GetOversizedCommitInfo()
-        {
-            return (_oversizedCommitCount, _maxObservedFiles, _maxCommitFileCount);
-        }
-
-        public List<TemporalCoupling> CalculateTemporalCoupling(List<List<string>> allIncludedCommits)
-        {
-            foreach (var files in allIncludedCommits)
-            {
-                TrackCommitFiles(files);
-            }
-            
             var temporalCouplings = new List<TemporalCoupling>();
-            foreach (var kvp in _sharedCommitCounts)
+            foreach (var kvp in sharedCommitCounts)
             {
                 string pairKey = kvp.Key;
                 int sharedCommits = kvp.Value;
@@ -99,8 +97,8 @@ namespace Gitic
                 string fileA = parts[0];
                 string fileB = parts[1];
 
-                _fileCommitCount.TryGetValue(fileA, out int totalA);
-                _fileCommitCount.TryGetValue(fileB, out int totalB);
+                fileCommitCount.TryGetValue(fileA, out int totalA);
+                fileCommitCount.TryGetValue(fileB, out int totalB);
 
                 if (totalA == 0 || totalB == 0)
                 {
@@ -120,11 +118,19 @@ namespace Gitic
                 }
             }
 
-            return temporalCouplings
+            var couplings = temporalCouplings
                 .OrderByDescending(tc => tc.CouplingDegree)
                 .ThenByDescending(tc => tc.SharedCommits)
                 .Take(TemporalCouplingMaxResults)
                 .ToList();
+
+            return new TemporalCouplingResult
+            {
+                Couplings = couplings,
+                OversizedCommitCount = oversizedCommitCount,
+                MaxObservedFiles = maxObservedFiles,
+                Limit = _maxCommitFileCount
+            };
         }
     }
 

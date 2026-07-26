@@ -11,7 +11,7 @@ namespace Gitic
         public int? ConfiguredBotCount { get; set; }
         public List<AutomationMetric>? AutomationMetrics { get; set; }
         public LeadTimesInfo? LeadTimes { get; set; }
-        public ITemporalCouplingEngine? TemporalCouplingEngine { get; set; }
+        public TemporalCouplingResult? TemporalCoupling { get; set; }
         public List<FileMetric>? Files { get; set; }
 
         public int SafeConfiguredBotCount => ConfiguredBotCount ?? 0;
@@ -90,16 +90,15 @@ namespace Gitic
     {
         public List<string> Collect(WarningContext context)
         {
-            if (context.TemporalCouplingEngine == null)
+            if (context.TemporalCoupling == null)
             {
                 return new List<string>();
             }
-            var info = context.TemporalCouplingEngine.GetOversizedCommitInfo();
-            if (info.count > 0)
+            if (context.TemporalCoupling.OversizedCommitCount > 0)
             {
                 return new List<string>
                 {
-                    $"{info.count} commit(s) changed more than {info.limit} files (max observed: {info.maxObserved}) and were excluded from temporal coupling analysis. Configure metrics.temporal_coupling_max_commit_file_count in .gitizer.yml to adjust."
+                    $"{context.TemporalCoupling.OversizedCommitCount} commit(s) changed more than {context.TemporalCoupling.Limit} files (max observed: {context.TemporalCoupling.MaxObservedFiles}) and were excluded from temporal coupling analysis. Configure metrics.temporal_coupling_max_commit_file_count in .gitizer.yml to adjust."
                 };
             }
             return new List<string>();
