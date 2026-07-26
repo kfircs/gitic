@@ -9,10 +9,10 @@ namespace Gitic
         AnalysisResult Anonymize(AnalysisResult result);
     }
 
-    public class AnonymizationSession
+    internal class AnonymizationSession
     {
-        public Dictionary<string, GitIdentity> HumanIdentities { get; } = new();
-        public Dictionary<string, GitIdentity> AutomationIdentities { get; } = new();
+        internal Dictionary<string, GitIdentity> HumanIdentities { get; } = new();
+        internal Dictionary<string, GitIdentity> AutomationIdentities { get; } = new();
     }
 
     public class ResultAnonymizer : IResultAnonymizer
