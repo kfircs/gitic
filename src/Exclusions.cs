@@ -20,13 +20,13 @@ namespace Gitic
 
         public static readonly HashSet<string> BinaryImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            "jpeg",
-            "jpg",
-            "png",
-            "gif",
-            "webp",
-            "ico",
-            "bmp"
+            ".jpeg",
+            ".jpg",
+            ".png",
+            ".gif",
+            ".webp",
+            ".ico",
+            ".bmp"
         };
 
         public static readonly Dictionary<string, string> DirectoryExcludes = new(StringComparer.OrdinalIgnoreCase)
@@ -230,12 +230,7 @@ namespace Gitic
 
         private bool IsBinaryImage(string fileName)
         {
-            string ext = Path.GetExtension(fileName);
-            if (ext.StartsWith('.'))
-            {
-                ext = ext.TrimStart('.');
-            }
-            return Exclusions.BinaryImageExtensions.Contains(ext);
+            return Exclusions.BinaryImageExtensions.Contains(Path.GetExtension(fileName));
         }
 
         private ExclusionCategory? ClassifyConfiguredExclusion(string path)
