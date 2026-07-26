@@ -13,7 +13,10 @@ namespace Gitic
     {
         public string IdentityKey(GitIdentity identity)
         {
-            return $"{identity.Name.ToLowerInvariant()} <{identity.Email.ToLowerInvariant()}>";
+            if (identity == null) return string.Empty;
+            string name = identity.Name?.ToLowerInvariant() ?? string.Empty;
+            string email = identity.Email?.ToLowerInvariant() ?? string.Empty;
+            return $"{name} <{email}>";
         }
     }
 

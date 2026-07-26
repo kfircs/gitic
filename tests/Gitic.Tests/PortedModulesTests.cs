@@ -319,6 +319,21 @@ namespace Gitic.Tests
             Assert.Equal("alice smith <alice@example.com>", IdentityUtils.IdentityKey(identity));
         }
 
+        [Fact]
+        public void TestIdentity_IdentityKey_Defensive()
+        {
+            Assert.Equal(string.Empty, IdentityUtils.IdentityKey(null!));
+
+            var identityNullName = new GitIdentity { Name = null!, Email = "Alice@Example.com" };
+            Assert.Equal(" <alice@example.com>", IdentityUtils.IdentityKey(identityNullName));
+
+            var identityNullEmail = new GitIdentity { Name = "Alice Smith", Email = null! };
+            Assert.Equal("alice smith <>", IdentityUtils.IdentityKey(identityNullEmail));
+
+            var identityBothNull = new GitIdentity { Name = null!, Email = null! };
+            Assert.Equal(" <>", IdentityUtils.IdentityKey(identityBothNull));
+        }
+
         private class CustomKeyGenerator : IIdentityKeyGenerator
         {
             public string IdentityKey(GitIdentity identity)
