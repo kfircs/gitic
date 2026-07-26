@@ -94,77 +94,12 @@ namespace Gitic
             string? mdPath = null;
             string? svgPath = null;
 
-            string ConsumeValue(string argName, int currentIndex)
-            {
-                if (currentIndex + 1 >= _args.Count)
-                {
-                    throw new CommandLineParseError($"{argName} requires a value.");
-                }
-                string rawValue = _args[currentIndex + 1];
-                return ValidateNextValue(argName, rawValue);
-            }
-
             for (int index = 1; index < _args.Count; index += 1)
             {
                 string arg = _args[index];
-                if (arg == "--json")
+                if (arg.StartsWith("--"))
                 {
-                    settings.Json = true;
-                }
-                else if (arg == "--all-time")
-                {
-                    settings.AllTime = true;
-                }
-                else if (arg == "--include-merges")
-                {
-                    settings.IncludeMerges = true;
-                }
-                else if (arg == "--merge-by-email")
-                {
-                    settings.MergeByEmail = true;
-                }
-                else if (arg == "--include-deleted")
-                {
-                    settings.IncludeDeleted = true;
-                }
-                else if (arg == "--anonymize")
-                {
-                    settings.Anonymize = true;
-                }
-                else if (arg == "--since")
-                {
-                    settings.Since = ConsumeValue(arg, index);
-                    index += 1;
-                }
-                else if (arg == "--path")
-                {
-                    settings.Path = ConsumeValue(arg, index);
-                    index += 1;
-                }
-                else if (arg == "--depth")
-                {
-                    string rawDepth = ConsumeValue(arg, index);
-                    settings.Depth = ValidateDepth(rawDepth);
-                    index += 1;
-                }
-                else if (arg == "--html")
-                {
-                    htmlPath = ConsumeValue(arg, index);
-                    index += 1;
-                }
-                else if (arg == "--md")
-                {
-                    mdPath = ConsumeValue(arg, index);
-                    index += 1;
-                }
-                else if (arg == "--svg")
-                {
-                    svgPath = ConsumeValue(arg, index);
-                    index += 1;
-                }
-                else if (arg.StartsWith("--"))
-                {
-                    ValidateUnknownFlag(arg);
+                    ProcessFlag(arg, ref index, settings, ref htmlPath, ref mdPath, ref svgPath);
                 }
                 else
                 {
@@ -263,6 +198,75 @@ namespace Gitic
             {
                 throw new CommandLineParseError("contributor requires a contributor name.");
             }
+        }
+
+        private void ProcessFlag(
+            string arg,
+            ref int index,
+            AnalysisSettings settings,
+            ref string? htmlPath,
+            ref string? mdPath,
+            ref string? svgPath)
+        {
+            switch (arg)
+            {
+                case "--json":
+                    settings.Json = true;
+                    break;
+                case "--all-time":
+                    settings.AllTime = true;
+                    break;
+                case "--include-merges":
+                    settings.IncludeMerges = true;
+                    break;
+                case "--merge-by-email":
+                    settings.MergeByEmail = true;
+                    break;
+                case "--include-deleted":
+                    settings.IncludeDeleted = true;
+                    break;
+                case "--anonymize":
+                    settings.Anonymize = true;
+                    break;
+                case "--since":
+                    settings.Since = ConsumeValue(arg, index);
+                    index += 1;
+                    break;
+                case "--path":
+                    settings.Path = ConsumeValue(arg, index);
+                    index += 1;
+                    break;
+                case "--depth":
+                    string rawDepth = ConsumeValue(arg, index);
+                    settings.Depth = ValidateDepth(rawDepth);
+                    index += 1;
+                    break;
+                case "--html":
+                    htmlPath = ConsumeValue(arg, index);
+                    index += 1;
+                    break;
+                case "--md":
+                    mdPath = ConsumeValue(arg, index);
+                    index += 1;
+                    break;
+                case "--svg":
+                    svgPath = ConsumeValue(arg, index);
+                    index += 1;
+                    break;
+                default:
+                    ValidateUnknownFlag(arg);
+                    break;
+            }
+        }
+
+        private string ConsumeValue(string argName, int currentIndex)
+        {
+            if (currentIndex + 1 >= _args.Count)
+            {
+                throw new CommandLineParseError($"{argName} requires a value.");
+            }
+            string rawValue = _args[currentIndex + 1];
+            return ValidateNextValue(argName, rawValue);
         }
 
         private bool IsCommand(string command)
