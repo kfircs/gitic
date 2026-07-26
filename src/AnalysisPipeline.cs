@@ -15,7 +15,8 @@ namespace Gitic
             string repoRoot,
             ITemporalCouplingEngine? temporalCouplingEngine = null,
             ILeadTimeEngine? leadTimeEngine = null,
-            IMetricProcessorService? metricProcessorService = null);
+            IMetricProcessorService? metricProcessorService = null,
+            IFamiliarityScoringEngine? scoringEngine = null);
     }
 
     public class AnalysisPipelineResult
@@ -42,7 +43,8 @@ namespace Gitic
             string repoRoot,
             ITemporalCouplingEngine? temporalCouplingEngine = null,
             ILeadTimeEngine? leadTimeEngine = null,
-            IMetricProcessorService? metricProcessorService = null)
+            IMetricProcessorService? metricProcessorService = null,
+            IFamiliarityScoringEngine? scoringEngine = null)
         {
             var gitignoreRules = PathClassifier.LoadGitignoreRules(repoRoot);
             config.Excludes.AddRange(gitignoreRules);
@@ -67,10 +69,10 @@ namespace Gitic
             }
 
             var activeContributorKeys = actualMetricProcessorService.GetActiveContributorKeys(commits);
-            IFamiliarityScoringEngine scoringEngine = new FamiliarityScoringEngine(config, activeContributorKeys, settings.Depth);
+            IFamiliarityScoringEngine actualScoringEngine = scoringEngine ?? new FamiliarityScoringEngine(config, activeContributorKeys, settings.Depth);
 
-            var rawFileMetrics = scoringEngine.ScoreFiles(accumulator.GetFiles().Values.ToList(), settings.Depth);
-            var areaMetrics = scoringEngine.ScoreAreas(accumulator.GetAreas().Values.ToList());
+            var rawFileMetrics = actualScoringEngine.ScoreFiles(accumulator.GetFiles().Values.ToList(), settings.Depth);
+            var areaMetrics = actualScoringEngine.ScoreAreas(accumulator.GetAreas().Values.ToList());
 
             var contributorMetrics = actualMetricProcessorService.RenderContributors(accumulator.GetContributors().Values.ToList());
             var automationMetrics = actualMetricProcessorService.RenderAutomation(accumulator.GetAutomation().Values.ToList());

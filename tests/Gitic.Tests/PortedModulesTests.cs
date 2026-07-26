@@ -1349,7 +1349,8 @@ __GITIZER_NUMSTAT__
                     string repoRoot,
                     ITemporalCouplingEngine? temporalCouplingEngine = null,
                     ILeadTimeEngine? leadTimeEngine = null,
-                    IMetricProcessorService? metricProcessorService = null)
+                    IMetricProcessorService? metricProcessorService = null,
+                    IFamiliarityScoringEngine? scoringEngine = null)
                 {
                     RunCalled = true;
                     ReceivedCommits = commits;
@@ -1985,6 +1986,53 @@ __GITIZER_NUMSTAT__
                 Assert.Equal(0, stats[nonexistentRelPath].Size);
                 Assert.Equal(0, stats[nonexistentRelPath].Lines);
                 Assert.Equal(0, stats[nonexistentRelPath].Width);
+            }
+
+            private class MockFamiliarityScoringEngine : IFamiliarityScoringEngine
+            {
+                public bool ScoreFilesCalled { get; set; }
+                public bool ScoreAreasCalled { get; set; }
+
+                public List<FileMetric> ScoreFiles(List<ItemAccumulator> items, int depth)
+                {
+                    ScoreFilesCalled = true;
+                    return new List<FileMetric> { new FileMetric { Path = "mockfile.cs", HeatScore = 99 } };
+                }
+
+                public List<AreaMetric> ScoreAreas(List<ItemAccumulator> items)
+                {
+                    ScoreAreasCalled = true;
+                    return new List<AreaMetric> { new AreaMetric { Area = "mockarea", HeatScore = 88 } };
+                }
+            }
+
+            [Fact]
+            public void TestAnalysisPipeline_UsesInjectedScoringEngine()
+            {
+                var pipeline = new AnalysisPipeline();
+                var mockScoring = new MockFamiliarityScoringEngine();
+                
+                var commits = new List<GitCommitRecord>
+                {
+                    new GitCommitRecord
+                    {
+                        Hash = "123",
+                        Author = new GitIdentity { Name = "test", Email = "test@example.com" },
+                        Files = new List<GitFileChange> { new GitFileChange { Path = "mockfile.cs", Added = 10, Deleted = 5 } }
+                    }
+                };
+                var headFiles = new HashSet<string> { "mockfile.cs" };
+                var config = new GitizerConfig();
+                var settings = new AnalysisSettings();
+
+                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root", scoringEngine: mockScoring);
+
+                Assert.True(mockScoring.ScoreFilesCalled);
+                Assert.True(mockScoring.ScoreAreasCalled);
+                Assert.Single(result.Files);
+                Assert.Equal("mockfile.cs", result.Files[0].Path);
+                Assert.Single(result.Areas);
+                Assert.Equal("mockarea", result.Areas[0].Area);
             }
 
         }
