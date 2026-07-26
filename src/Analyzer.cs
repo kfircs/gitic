@@ -26,15 +26,18 @@ namespace Gitic
         private readonly IConfigurationEngine _configEngine;
         private readonly IAnalysisPipeline _pipeline;
         private readonly IMetricProcessorService _metricProcessorService;
+        private readonly IResultAnonymizer _anonymizer;
 
         public RepositoryAnalyzer(
             IConfigurationEngine? configEngine = null,
             IAnalysisPipeline? pipeline = null,
-            IMetricProcessorService? metricProcessorService = null)
+            IMetricProcessorService? metricProcessorService = null,
+            IResultAnonymizer? anonymizer = null)
         {
             _configEngine = configEngine ?? new ConfigurationEngine();
             _pipeline = pipeline ?? new AnalysisPipeline();
             _metricProcessorService = metricProcessorService ?? new MetricProcessorService();
+            _anonymizer = anonymizer ?? new ResultAnonymizer();
         }
 
         public static async Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
@@ -132,6 +135,11 @@ namespace Gitic
                 },
                 Warnings = pipelineResult.Warnings
             };
+
+            if (settings.Anonymize)
+            {
+                result = _anonymizer.Anonymize(result);
+            }
 
             return result;
         }

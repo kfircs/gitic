@@ -1419,6 +1419,55 @@ __GITIZER_NUMSTAT__
                 Assert.Equal(42, result.Analysis.IncludedFileChangeCount);
             }
 
+            private class MockResultAnonymizer : IResultAnonymizer
+            {
+                public bool AnonymizeCalled { get; set; }
+                public AnalysisResult Anonymize(AnalysisResult result)
+                {
+                    AnonymizeCalled = true;
+                    return result;
+                }
+            }
+
+            [Fact]
+            public async Task TestRepositoryAnalyzer_WithResultAnonymizer()
+            {
+                var fakeProvider = new FakeFileStatsProvider();
+                var mockAnonymizer = new MockResultAnonymizer();
+
+                var input = new AnalyzeInput
+                {
+                    RepoRoot = "/fake/root",
+                    Command = AnalysisCommand.Hotspots,
+                    Settings = new AnalysisSettings { Depth = 1, Anonymize = true },
+                    FileStatsProvider = fakeProvider,
+                    GitClient = new FakeGitClient()
+                };
+
+                var analyzer = new RepositoryAnalyzer(anonymizer: mockAnonymizer);
+                var result = await analyzer.AnalyzeAsync(input);
+
+                Assert.NotNull(result);
+                Assert.True(mockAnonymizer.AnonymizeCalled);
+
+                // Now test when Anonymize is false
+                var mockAnonymizerFalse = new MockResultAnonymizer();
+                var inputFalse = new AnalyzeInput
+                {
+                    RepoRoot = "/fake/root",
+                    Command = AnalysisCommand.Hotspots,
+                    Settings = new AnalysisSettings { Depth = 1, Anonymize = false },
+                    FileStatsProvider = fakeProvider,
+                    GitClient = new FakeGitClient()
+                };
+
+                var analyzerFalse = new RepositoryAnalyzer(anonymizer: mockAnonymizerFalse);
+                var resultFalse = await analyzerFalse.AnalyzeAsync(inputFalse);
+
+                Assert.NotNull(resultFalse);
+                Assert.False(mockAnonymizerFalse.AnonymizeCalled);
+            }
+
             private class MockChangeAccumulator : IChangeAccumulator
             {
                 public bool PrepareIdentityMergingCalled { get; set; }

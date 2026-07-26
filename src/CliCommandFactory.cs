@@ -173,12 +173,6 @@ Options:
 
         protected override async Task<CliResult> ProcessResultAsync(AnalysisResult result, IConsoleReporter? reporter)
         {
-            if (Parsed.Settings.Anonymize)
-            {
-                IResultAnonymizer anonymizer = new ResultAnonymizer();
-                result = anonymizer.Anonymize(result);
-            }
-
             IReportRenderer renderer;
             if (Parsed.Settings.Json)
             {
@@ -248,12 +242,6 @@ Options:
                 string errMsg = "report requires --html <path>, --md <path>, or --svg <path>.\n";
                 reporter?.WriteError(errMsg);
                 return Cli.CliFailure(errMsg);
-            }
-
-            if (Parsed.Settings.Anonymize)
-            {
-                IResultAnonymizer anonymizer = new ResultAnonymizer();
-                result = anonymizer.Anonymize(result);
             }
 
             var outputSb = new StringBuilder();
