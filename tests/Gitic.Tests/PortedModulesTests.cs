@@ -1345,8 +1345,7 @@ __GITIZER_NUMSTAT__
                     HashSet<string> headFiles,
                     GitizerConfig config,
                     AnalysisSettings settings,
-                    AnalysisCommand command,
-                    string repoRoot)
+                    AnalysisCommand command)
                 {
                     RunCalled = true;
                     ReceivedCommits = commits;
@@ -1425,7 +1424,6 @@ __GITIZER_NUMSTAT__
                 var config = GitizerConfig.Default;
                 var settings = new AnalysisSettings();
                 var command = AnalysisCommand.Hotspots;
-                var repoRoot = "/fake/root";
 
                 var mockAccumulator = new MockChangeAccumulator();
                 var pipeline = new AnalysisPipeline(accumulator: mockAccumulator);
@@ -1435,8 +1433,7 @@ __GITIZER_NUMSTAT__
                     headFiles,
                     config,
                     settings,
-                    command,
-                    repoRoot
+                    command
                 );
 
                 Assert.NotNull(result);
@@ -2081,7 +2078,7 @@ __GITIZER_NUMSTAT__
                 var config = new GitizerConfig();
                 var settings = new AnalysisSettings();
 
-                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root");
+                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
 
                 Assert.True(mockScoring.ScoreFilesCalled);
                 Assert.True(mockScoring.ScoreAreasCalled);
@@ -2110,7 +2107,7 @@ __GITIZER_NUMSTAT__
                 var config = new GitizerConfig();
                 var settings = new AnalysisSettings();
 
-                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root");
+                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
 
                 Assert.True(mockWarningCollector.CollectCalled);
                 Assert.Contains("mock_warning", result.Warnings);
@@ -2135,7 +2132,7 @@ __GITIZER_NUMSTAT__
                 var config = new GitizerConfig();
                 var settings = new AnalysisSettings();
 
-                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots, "/fake/root");
+                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
 
                 Assert.True(mockRegistry.RegisterRealIdentityCalled);
             }

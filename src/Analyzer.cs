@@ -58,7 +58,10 @@ namespace Gitic
             var commits = await commitsTask;
             var headFiles = await headFilesTask;
 
-            var pipelineResult = _pipeline.Run(commits, headFiles, config, settings, input.Command, input.RepoRoot);
+            var gitignoreRules = PathClassifier.LoadGitignoreRules(input.RepoRoot);
+            config.Excludes.AddRange(gitignoreRules);
+
+            var pipelineResult = _pipeline.Run(commits, headFiles, config, settings, input.Command);
 
             var filePaths = pipelineResult.Files.Select(f => f.Path).ToList();
 

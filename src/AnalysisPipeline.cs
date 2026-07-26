@@ -11,8 +11,7 @@ namespace Gitic
             HashSet<string> headFiles,
             GitizerConfig config,
             AnalysisSettings settings,
-            AnalysisCommand command,
-            string repoRoot);
+            AnalysisCommand command);
     }
 
     public class AnalysisPipelineResult
@@ -61,12 +60,8 @@ namespace Gitic
             HashSet<string> headFiles,
             GitizerConfig config,
             AnalysisSettings settings,
-            AnalysisCommand command,
-            string repoRoot)
+            AnalysisCommand command)
         {
-            var gitignoreRules = PathClassifier.LoadGitignoreRules(repoRoot);
-            config.Excludes.AddRange(gitignoreRules);
-
             var pathClassifier = new PathClassifier(headFiles, config.Excludes, settings.IncludeDeleted, settings.Path);
             bool mergeByEmail = (config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
             var actualIdentityRegistry = _identityRegistry ?? new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
