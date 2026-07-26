@@ -8,8 +8,13 @@ namespace Gitic
     {
         private static readonly ConcurrentDictionary<string, Regex> _regexCache = new ConcurrentDictionary<string, Regex>();
 
-        public static string NormalizeGitPath(string path)
+        public static string NormalizeGitPath(string? path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                return string.Empty;
+            }
+
             string normalized = path.Replace('\\', '/');
             if (normalized.StartsWith("./", StringComparison.Ordinal))
             {

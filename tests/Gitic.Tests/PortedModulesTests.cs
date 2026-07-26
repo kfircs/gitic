@@ -290,6 +290,8 @@ namespace Gitic.Tests
             Assert.Equal("src/main.cs", PathUtils.NormalizeGitPath("./src/main.cs"));
             Assert.Equal("src/main.cs", PathUtils.NormalizeGitPath("/src/main.cs"));
             Assert.Equal("src/main.cs", PathUtils.NormalizeGitPath("src/main.cs"));
+            Assert.Equal(string.Empty, PathUtils.NormalizeGitPath(null));
+            Assert.Equal(string.Empty, PathUtils.NormalizeGitPath(string.Empty));
         }
 
         [Fact]
