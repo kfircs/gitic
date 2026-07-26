@@ -107,6 +107,67 @@ namespace Gitic
             }).ToList();
         }
 
+        private FileMetric AnonymizeFileMetric(FileMetric file, AnonymizationSession session)
+        {
+            return new FileMetric
+            {
+                Path = file.Path,
+                Area = file.Area,
+                Touches = file.Touches,
+                Added = file.Added,
+                Deleted = file.Deleted,
+                Churn = file.Churn,
+                LastTouched = file.LastTouched,
+                ContributorCount = file.ContributorCount,
+                Contributors = file.Contributors.Select(contributor =>
+                    AnonymizeHumanContributorShare(contributor, session)
+                ).ToList(),
+                HeatScore = file.HeatScore,
+                AttentionScore = file.AttentionScore,
+                ScoreBreakdown = file.ScoreBreakdown.Clone(),
+                InnerSymbols = file.InnerSymbols?.Select(s => new InnerSymbolMetric
+                {
+                    Name = s.Name,
+                    Touches = s.Touches
+                }).ToList(),
+                DebtVolatility = file.DebtVolatility,
+                ReworkRate = file.ReworkRate,
+                CoordinationOverlap = file.CoordinationOverlap,
+                KnowledgeSilo = file.KnowledgeSilo == null ? null : new KnowledgeSiloMetric
+                {
+                    TruckFactor = file.KnowledgeSilo.TruckFactor,
+                    TopOwnerShare = file.KnowledgeSilo.TopOwnerShare,
+                    IsSilo = file.KnowledgeSilo.IsSilo,
+                    Abandoned = file.KnowledgeSilo.Abandoned
+                },
+                Size = file.Size,
+                Width = file.Width,
+                Lines = file.Lines
+            };
+        }
+
+        private AreaMetric AnonymizeAreaMetric(AreaMetric area, AnonymizationSession session)
+        {
+            return new AreaMetric
+            {
+                Area = area.Area,
+                Touches = area.Touches,
+                Added = area.Added,
+                Deleted = area.Deleted,
+                Churn = area.Churn,
+                FileCount = area.FileCount,
+                LastTouched = area.LastTouched,
+                ContributorCount = area.ContributorCount,
+                Contributors = area.Contributors.Select(contributor =>
+                    AnonymizeHumanContributorShare(contributor, session)
+                ).ToList(),
+                HeatScore = area.HeatScore,
+                AttentionScore = area.AttentionScore,
+                ScoreBreakdown = area.ScoreBreakdown.Clone(),
+                ReworkRate = area.ReworkRate
+            };
+        }
+
         private AnalysisResult CloneResultMetadata(AnalysisResult result)
         {
             return new AnalysisResult
@@ -184,61 +245,14 @@ namespace Gitic
             ).ToList();
 
             // Map and clone files
-            clonedResult.Files = result.Files.Select(file => new FileMetric
-            {
-                Path = file.Path,
-                Area = file.Area,
-                Touches = file.Touches,
-                Added = file.Added,
-                Deleted = file.Deleted,
-                Churn = file.Churn,
-                LastTouched = file.LastTouched,
-                ContributorCount = file.ContributorCount,
-                Contributors = file.Contributors.Select(contributor =>
-                    AnonymizeHumanContributorShare(contributor, session)
-                ).ToList(),
-                HeatScore = file.HeatScore,
-                AttentionScore = file.AttentionScore,
-                ScoreBreakdown = file.ScoreBreakdown.Clone(),
-                InnerSymbols = file.InnerSymbols?.Select(s => new InnerSymbolMetric
-                {
-                    Name = s.Name,
-                    Touches = s.Touches
-                }).ToList(),
-                DebtVolatility = file.DebtVolatility,
-                ReworkRate = file.ReworkRate,
-                CoordinationOverlap = file.CoordinationOverlap,
-                KnowledgeSilo = file.KnowledgeSilo == null ? null : new KnowledgeSiloMetric
-                {
-                    TruckFactor = file.KnowledgeSilo.TruckFactor,
-                    TopOwnerShare = file.KnowledgeSilo.TopOwnerShare,
-                    IsSilo = file.KnowledgeSilo.IsSilo,
-                    Abandoned = file.KnowledgeSilo.Abandoned
-                },
-                Size = file.Size,
-                Width = file.Width,
-                Lines = file.Lines
-            }).ToList();
+            clonedResult.Files = result.Files.Select(file =>
+                AnonymizeFileMetric(file, session)
+            ).ToList();
 
             // Map and clone areas
-            clonedResult.Areas = result.Areas.Select(area => new AreaMetric
-            {
-                Area = area.Area,
-                Touches = area.Touches,
-                Added = area.Added,
-                Deleted = area.Deleted,
-                Churn = area.Churn,
-                FileCount = area.FileCount,
-                LastTouched = area.LastTouched,
-                ContributorCount = area.ContributorCount,
-                Contributors = area.Contributors.Select(contributor =>
-                    AnonymizeHumanContributorShare(contributor, session)
-                ).ToList(),
-                HeatScore = area.HeatScore,
-                AttentionScore = area.AttentionScore,
-                ScoreBreakdown = area.ScoreBreakdown.Clone(),
-                ReworkRate = area.ReworkRate
-            }).ToList();
+            clonedResult.Areas = result.Areas.Select(area =>
+                AnonymizeAreaMetric(area, session)
+            ).ToList();
 
             // Map and clone automation
             clonedResult.Automation = result.Automation.Select(automation =>
