@@ -6,8 +6,7 @@ namespace Gitic
 {
     public interface ITemporalCouplingEngine
     {
-        void TrackCommitFiles(List<string> filePaths);
-        List<TemporalCoupling> CalculateTemporalCoupling();
+        List<TemporalCoupling> CalculateTemporalCoupling(List<List<string>> allIncludedCommits);
         (int count, int maxObserved, int limit) GetOversizedCommitInfo();
     }
 
@@ -33,7 +32,7 @@ namespace Gitic
             _maxCommitFileCount = maxCommitFileCount;
         }
 
-        public void TrackCommitFiles(List<string> filePaths)
+        private void TrackCommitFiles(List<string> filePaths)
         {
             if (filePaths.Count == 0)
             {
@@ -78,8 +77,13 @@ namespace Gitic
             return (_oversizedCommitCount, _maxObservedFiles, _maxCommitFileCount);
         }
 
-        public List<TemporalCoupling> CalculateTemporalCoupling()
+        public List<TemporalCoupling> CalculateTemporalCoupling(List<List<string>> allIncludedCommits)
         {
+            foreach (var files in allIncludedCommits)
+            {
+                TrackCommitFiles(files);
+            }
+            
             var temporalCouplings = new List<TemporalCoupling>();
             foreach (var kvp in _sharedCommitCounts)
             {

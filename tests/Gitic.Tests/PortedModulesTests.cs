@@ -641,11 +641,11 @@ __GITIZER_NUMSTAT__
         {
             var engine = new TemporalCouplingEngine(10);
 
-            engine.TrackCommitFiles(new List<string> { "fileA.ts", "fileB.ts" });
-            engine.TrackCommitFiles(new List<string> { "fileA.ts", "fileB.ts" });
-            engine.TrackCommitFiles(new List<string> { "fileA.ts", "fileB.ts" });
-
-            var couplings = engine.CalculateTemporalCoupling();
+            var couplings = engine.CalculateTemporalCoupling(new List<List<string>> {
+                new List<string> { "fileA.ts", "fileB.ts" },
+                new List<string> { "fileA.ts", "fileB.ts" },
+                new List<string> { "fileA.ts", "fileB.ts" }
+            });
             Assert.Single(couplings);
             Assert.Equal("fileA.ts", couplings[0].FileA);
             Assert.Equal("fileB.ts", couplings[0].FileB);
@@ -662,14 +662,14 @@ __GITIZER_NUMSTAT__
             var engine = new TemporalCouplingEngine(2);
 
             // too few shared commits
-            engine.TrackCommitFiles(new List<string> { "fileA.ts", "fileB.ts" });
-            engine.TrackCommitFiles(new List<string> { "fileA.ts", "fileB.ts" });
-
-            var couplings = engine.CalculateTemporalCoupling();
+            var couplings = engine.CalculateTemporalCoupling(new List<List<string>> {
+                new List<string> { "fileA.ts", "fileB.ts" },
+                new List<string> { "fileA.ts", "fileB.ts" }
+            });
             Assert.Empty(couplings);
 
             // Track an oversized commit
-            engine.TrackCommitFiles(new List<string> { "fileA.ts", "fileB.ts", "fileC.ts" });
+            engine.CalculateTemporalCoupling(new List<List<string>> { new List<string> { "fileA.ts", "fileB.ts", "fileC.ts" } });
 
             var info = engine.GetOversizedCommitInfo();
             Assert.Equal(1, info.count);
@@ -960,14 +960,14 @@ __GITIZER_NUMSTAT__
 
             // TemporalCouplingWarning
             var engine = new TemporalCouplingEngine(1);
-            engine.TrackCommitFiles(new List<string> { "file1.ts", "file2.ts" });
+            engine.CalculateTemporalCoupling(new List<List<string>> { new List<string> { "file1.ts", "file2.ts" } });
             var rule5 = new TemporalCouplingWarningRule();
             var warnings5 = rule5.Collect(new WarningContext { TemporalCouplingEngine = engine });
             Assert.Single(warnings5);
             Assert.Contains("1 commit(s) changed more than 1 files", warnings5[0]);
 
             var normalEngine = new TemporalCouplingEngine(5);
-            normalEngine.TrackCommitFiles(new List<string> { "file1.ts", "file2.ts" });
+            normalEngine.CalculateTemporalCoupling(new List<List<string>> { new List<string> { "file1.ts", "file2.ts" } });
             var warnings5Empty = rule5.Collect(new WarningContext { TemporalCouplingEngine = normalEngine });
             Assert.Empty(warnings5Empty);
         }
@@ -976,7 +976,7 @@ __GITIZER_NUMSTAT__
         public void TestWarningCollector_CollectAndAggregate()
         {
             var engine = new TemporalCouplingEngine(1);
-            engine.TrackCommitFiles(new List<string> { "file1.ts", "file2.ts" });
+            engine.CalculateTemporalCoupling(new List<List<string>> { new List<string> { "file1.ts", "file2.ts" } });
 
             var context = new WarningContext
             {

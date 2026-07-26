@@ -44,11 +44,12 @@ namespace Gitic
             ILeadTimeEngine actualLeadTimeEngine = leadTimeEngine ?? new LeadTimeEngine();
             IMetricProcessorService actualMetricProcessorService = metricProcessorService ?? new MetricProcessorService();
 
+            var allIncludedCommits = new List<List<string>>();
             foreach (var commit in commits)
             {
                 var includedFilesInCommit = new List<string>();
                 accumulator.AddCommit(commit, includedFilesInCommit);
-                actualTemporalCouplingEngine.TrackCommitFiles(includedFilesInCommit);
+                allIncludedCommits.Add(includedFilesInCommit);
             }
 
             var activeContributorKeys = actualMetricProcessorService.GetActiveContributorKeys(commits);
@@ -60,7 +61,7 @@ namespace Gitic
             var contributorMetrics = actualMetricProcessorService.RenderContributors(accumulator.GetContributors().Values.ToList());
             var automationMetrics = actualMetricProcessorService.RenderAutomation(accumulator.GetAutomation().Values.ToList());
 
-            var topCouplings = actualTemporalCouplingEngine.CalculateTemporalCoupling();
+            var topCouplings = actualTemporalCouplingEngine.CalculateTemporalCoupling(allIncludedCommits);
             var leadTimes = actualLeadTimeEngine.CalculateLeadTimes(commits);
 
             IWarningCollector warningCollector = new WarningCollector();
