@@ -881,6 +881,37 @@ __GITIZER_NUMSTAT__
         }
 
         [Fact]
+        public void TestScoringUtilityService_DirectInstanceMethods()
+        {
+            IScoringUtilityService service = new ScoringUtilityService();
+            var item = new ItemAccumulator
+            {
+                Added = 100,
+                Deleted = 20,
+                Churn = 120
+            };
+
+            double instanceDebtVolatility = service.CalculateDebtVolatility(item, 200.0, 100.0);
+            double staticDebtVolatility = ScoringUtils.CalculateDebtVolatility(item, 200.0, 100.0);
+            Assert.Equal(staticDebtVolatility, instanceDebtVolatility);
+            Assert.True(instanceDebtVolatility > 0.0);
+
+            var contributors = new List<ContributorShare>
+            {
+                new ContributorShare { Name = "Alice", ActivityShare = 0.6 },
+                new ContributorShare { Name = "Bob", ActivityShare = 0.4 }
+            };
+            double instanceOverlap = service.CalculateCoordinationOverlap(contributors, 5);
+            double staticOverlap = ScoringUtils.CalculateCoordinationOverlap(contributors, 5);
+            Assert.Equal(staticOverlap, instanceOverlap);
+
+            long nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            double instanceRecency = service.CalculateRecencyScore(nowMs);
+            double staticRecency = ScoringUtils.CalculateRecencyScore(nowMs);
+            Assert.Equal(staticRecency, instanceRecency);
+        }
+
+        [Fact]
         public void TestScoreBreakdown_Clone()
         {
             var breakdown = new ScoreBreakdown

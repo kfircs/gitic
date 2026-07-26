@@ -63,64 +63,16 @@ namespace Gitic
 
     public class ScoringUtilityService : IScoringUtilityService
     {
-        public double CalculateRecencyScore(long timestamp)
-        {
-            return ScoringUtils.CalculateRecencyScore(timestamp);
-        }
-
-        public double CalculateDebtVolatility(
-            ItemAccumulator item,
-            double maxChurn,
-            double maxNetLines)
-        {
-            return ScoringUtils.CalculateDebtVolatility(item, maxChurn, maxNetLines);
-        }
-
-        public double CalculateCoordinationOverlap(
-            List<ContributorShare> contributors,
-            int itemTouches)
-        {
-            return ScoringUtils.CalculateCoordinationOverlap(contributors, itemTouches);
-        }
-    }
-
-    public static class ScoringUtils
-    {
         private const double MsPerDay = 86400000.0;
-        public const double ConcentrationHealthyMax = 0.50;
-        public const double ConcentrationWatchMax = 0.70;
-
         private const double RecencyDecayHalfLifeDays = 30.0;
         private const double DebtVolatilityMultiplier = 100.0;
-        private const double ScoreScaleMultiplier = 100.0;
         private const double MaxCoordinationScore = 100.0;
         private const double MinCoordinationScore = 0.0;
         private const int CoordinationMaxContributors = 5;
         private const int CoordinationMaxTouches = 10;
         private const double CoordinationMultiplier = 2.0;
 
-        private const double HeatScoreTouchesWeight = 0.45;
-        private const double HeatScoreChurnWeight = 0.45;
-        private const double HeatScoreRecencyWeight = 0.1;
-
-        public static string ConcentrationTier(double share)
-        {
-            if (share < ConcentrationHealthyMax) return "healthy";
-            if (share < ConcentrationWatchMax) return "watch";
-            return "silo";
-        }
-
-        public static double RoundRatio(double value)
-        {
-            return Math.Round(value * 100.0) / 100.0;
-        }
-
-        public static double RoundActivity(double value)
-        {
-            return RoundRatio(value);
-        }
-
-        public static double CalculateRecencyScore(long timestamp)
+        public double CalculateRecencyScore(long timestamp)
         {
             if (timestamp == 0)
             {
@@ -131,7 +83,7 @@ namespace Gitic
             return Math.Exp(-ageDays * (Math.Log(2.0) / RecencyDecayHalfLifeDays));
         }
 
-        public static double CalculateDebtVolatility(
+        public double CalculateDebtVolatility(
             ItemAccumulator item,
             double maxChurn,
             double maxNetLines)
@@ -147,7 +99,7 @@ namespace Gitic
             );
         }
 
-        public static double CalculateCoordinationOverlap(
+        public double CalculateCoordinationOverlap(
             List<ContributorShare> contributors,
             int itemTouches)
         {
@@ -172,6 +124,57 @@ namespace Gitic
                     )
                 )
             );
+        }
+    }
+
+    public static class ScoringUtils
+    {
+        private static readonly IScoringUtilityService _defaultService = new ScoringUtilityService();
+
+        public const double ConcentrationHealthyMax = 0.50;
+        public const double ConcentrationWatchMax = 0.70;
+
+        private const double ScoreScaleMultiplier = 100.0;
+
+        private const double HeatScoreTouchesWeight = 0.45;
+        private const double HeatScoreChurnWeight = 0.45;
+        private const double HeatScoreRecencyWeight = 0.1;
+
+        public static string ConcentrationTier(double share)
+        {
+            if (share < ConcentrationHealthyMax) return "healthy";
+            if (share < ConcentrationWatchMax) return "watch";
+            return "silo";
+        }
+
+        public static double RoundRatio(double value)
+        {
+            return Math.Round(value * 100.0) / 100.0;
+        }
+
+        public static double RoundActivity(double value)
+        {
+            return RoundRatio(value);
+        }
+
+        public static double CalculateRecencyScore(long timestamp)
+        {
+            return _defaultService.CalculateRecencyScore(timestamp);
+        }
+
+        public static double CalculateDebtVolatility(
+            ItemAccumulator item,
+            double maxChurn,
+            double maxNetLines)
+        {
+            return _defaultService.CalculateDebtVolatility(item, maxChurn, maxNetLines);
+        }
+
+        public static double CalculateCoordinationOverlap(
+            List<ContributorShare> contributors,
+            int itemTouches)
+        {
+            return _defaultService.CalculateCoordinationOverlap(contributors, itemTouches);
         }
 
         public static KnowledgeSiloMetric CalculateKnowledgeSilo(
