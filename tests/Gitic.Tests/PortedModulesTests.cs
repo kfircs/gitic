@@ -117,6 +117,13 @@ namespace Gitic.Tests
                 IsBotCalled = true;
                 return false;
             }
+
+            public string IdentityKey(GitIdentity identity) => IdentityUtils.IdentityKey(identity);
+            public string IdentityKey(string name, string email) => IdentityUtils.IdentityKey(name, email);
+            public GitIdentity ResolveAlias(GitIdentity identity) => identity;
+            public bool IsGithubNoreply(string email) => IdentityUtils.IsGithubNoreply(email);
+            public string ParseNoreplyUsername(string email) => IdentityUtils.ParseNoreplyUsername(email);
+            public bool SameIdentity(GitIdentity left, GitIdentity right) => IdentityUtils.SameIdentity(left, right);
         }
 
         [Fact]

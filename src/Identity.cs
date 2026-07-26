@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("Gitic.Tests")]
 
 namespace Gitic
 {
-    public interface IIdentityKeyGenerator
+    internal interface IIdentityKeyGenerator
     {
         string IdentityKey(GitIdentity identity);
     }
 
-    public class DefaultIdentityKeyGenerator : IIdentityKeyGenerator
+    internal class DefaultIdentityKeyGenerator : IIdentityKeyGenerator
     {
         public string IdentityKey(GitIdentity identity)
         {
@@ -20,12 +23,12 @@ namespace Gitic
         }
     }
 
-    public static class IdentityKeyGenerator
+    internal static class IdentityKeyGenerator
     {
         public static IIdentityKeyGenerator Default { get; } = new DefaultIdentityKeyGenerator();
     }
 
-    public static class IdentityUtils
+    internal static class IdentityUtils
     {
         public static string IdentityKey(GitIdentity identity)
         {
@@ -140,6 +143,12 @@ namespace Gitic
         GitIdentity Resolve(GitIdentity identity);
         List<EmailCollision> GetEmailCollisions();
         bool IsBot(GitIdentity identity);
+        string IdentityKey(GitIdentity identity);
+        string IdentityKey(string name, string email);
+        GitIdentity ResolveAlias(GitIdentity identity);
+        bool IsGithubNoreply(string email);
+        string ParseNoreplyUsername(string email);
+        bool SameIdentity(GitIdentity left, GitIdentity right);
     }
 
     public class IdentityRegistry : IIdentityRegistry
@@ -152,7 +161,7 @@ namespace Gitic
         private readonly Dictionary<string, Dictionary<string, string>> _rawEmailNames = new();
         private readonly Dictionary<string, GitIdentity> _nameToRealCanonical = new();
 
-        public IdentityRegistry(List<AliasRule>? aliases = null, List<BotRule>? bots = null, bool mergeOnEmail = false, IIdentityKeyGenerator? keyGenerator = null)
+        internal IdentityRegistry(List<AliasRule>? aliases = null, List<BotRule>? bots = null, bool mergeOnEmail = false, IIdentityKeyGenerator? keyGenerator = null)
         {
             _aliases = aliases ?? new List<AliasRule>();
             _bots = bots ?? new List<BotRule>();
@@ -162,7 +171,7 @@ namespace Gitic
 
         public void RegisterRealIdentity(GitIdentity identity)
         {
-            if (!IdentityUtils.IsGithubNoreply(identity.Email))
+            if (!IsGithubNoreply(identity.Email))
             {
                 string key = identity.Name.ToLowerInvariant();
                 if (!_nameToRealCanonical.ContainsKey(key))
@@ -187,8 +196,8 @@ namespace Gitic
                 nameMap[nameLower] = identity.Name;
             }
 
-            var aliased = IdentityUtils.ResolveAlias(identity, _aliases);
-            if (!IdentityUtils.SameIdentity(aliased, identity))
+            var aliased = ResolveAlias(identity);
+            if (!SameIdentity(aliased, identity))
             {
                 return aliased;
             }
@@ -196,9 +205,9 @@ namespace Gitic
             if (_mergeOnEmail)
             {
                 string mergeKey;
-                if (IdentityUtils.IsGithubNoreply(identity.Email))
+                if (IsGithubNoreply(identity.Email))
                 {
-                    string username = IdentityUtils.ParseNoreplyUsername(identity.Email);
+                    string username = ParseNoreplyUsername(identity.Email);
                     if (_nameToRealCanonical.TryGetValue(username, out var real))
                     {
                         mergeKey = real.Email.ToLowerInvariant();
@@ -247,6 +256,36 @@ namespace Gitic
         public bool IsBot(GitIdentity identity)
         {
             return IdentityUtils.IsBotIdentity(identity, _bots);
+        }
+
+        public string IdentityKey(GitIdentity identity)
+        {
+            return _keyGenerator.IdentityKey(identity);
+        }
+
+        public string IdentityKey(string name, string email)
+        {
+            return _keyGenerator.IdentityKey(new GitIdentity { Name = name, Email = email });
+        }
+
+        public GitIdentity ResolveAlias(GitIdentity identity)
+        {
+            return IdentityUtils.ResolveAlias(identity, _aliases);
+        }
+
+        public bool IsGithubNoreply(string email)
+        {
+            return IdentityUtils.IsGithubNoreply(email);
+        }
+
+        public string ParseNoreplyUsername(string email)
+        {
+            return IdentityUtils.ParseNoreplyUsername(email);
+        }
+
+        public bool SameIdentity(GitIdentity left, GitIdentity right)
+        {
+            return IdentityUtils.SameIdentity(left, right);
         }
     }
 
