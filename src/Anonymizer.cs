@@ -9,15 +9,18 @@ namespace Gitic
         AnalysisResult Anonymize(AnalysisResult result);
     }
 
+    public class AnonymizationSession
+    {
+        public Dictionary<string, GitIdentity> HumanIdentities { get; } = new();
+        public Dictionary<string, GitIdentity> AutomationIdentities { get; } = new();
+    }
+
     public class ResultAnonymizer : IResultAnonymizer
     {
         private const string ContributorNamePrefix = "Contributor";
         private const string ContributorEmailPrefix = "contributor";
         private const string AutomationNamePrefix = "Automation";
         private const string AutomationEmailPrefix = "automation";
-
-        private readonly Dictionary<string, GitIdentity> _humanIdentities = new();
-        private readonly Dictionary<string, GitIdentity> _automationIdentities = new();
 
         public ResultAnonymizer()
         {
@@ -40,24 +43,24 @@ namespace Gitic
             return identity;
         }
 
-        private GitIdentity AnonymizeHuman(string name, string email)
+        private GitIdentity AnonymizeHuman(string name, string email, AnonymizationSession session)
         {
-            return GetOrAnonymize(name, email, _humanIdentities, ContributorNamePrefix, ContributorEmailPrefix);
+            return GetOrAnonymize(name, email, session.HumanIdentities, ContributorNamePrefix, ContributorEmailPrefix);
         }
 
-        private GitIdentity AnonymizeAutomation(string name, string email)
+        private GitIdentity AnonymizeAutomation(string name, string email, AnonymizationSession session)
         {
-            return GetOrAnonymize(name, email, _automationIdentities, AutomationNamePrefix, AutomationEmailPrefix);
+            return GetOrAnonymize(name, email, session.AutomationIdentities, AutomationNamePrefix, AutomationEmailPrefix);
         }
 
-        private ContributorShare AnonymizeHumanContributorShare(ContributorShare contributor)
+        private ContributorShare AnonymizeHumanContributorShare(ContributorShare contributor, AnonymizationSession session)
         {
-            return MapToContributorShare(contributor, AnonymizeHuman(contributor.Name, contributor.Email));
+            return MapToContributorShare(contributor, AnonymizeHuman(contributor.Name, contributor.Email, session));
         }
 
-        private ContributorMetric AnonymizeHumanContributorMetric(ContributorMetric contributor)
+        private ContributorMetric AnonymizeHumanContributorMetric(ContributorMetric contributor, AnonymizationSession session)
         {
-            return MapToContributorMetric(contributor, AnonymizeHuman(contributor.Name, contributor.Email));
+            return MapToContributorMetric(contributor, AnonymizeHuman(contributor.Name, contributor.Email, session));
         }
 
         private ContributorShare MapToContributorShare(ContributorShare source, GitIdentity identity)
@@ -172,11 +175,12 @@ namespace Gitic
 
         public AnalysisResult Anonymize(AnalysisResult result)
         {
+            var session = new AnonymizationSession();
             var clonedResult = CloneResultMetadata(result);
 
             // Map and clone contributors
             clonedResult.Contributors = result.Contributors.Select(contributor =>
-                AnonymizeHumanContributorMetric(contributor)
+                AnonymizeHumanContributorMetric(contributor, session)
             ).ToList();
 
             // Map and clone files
@@ -191,7 +195,7 @@ namespace Gitic
                 LastTouched = file.LastTouched,
                 ContributorCount = file.ContributorCount,
                 Contributors = file.Contributors.Select(contributor =>
-                    AnonymizeHumanContributorShare(contributor)
+                    AnonymizeHumanContributorShare(contributor, session)
                 ).ToList(),
                 HeatScore = file.HeatScore,
                 AttentionScore = file.AttentionScore,
@@ -228,7 +232,7 @@ namespace Gitic
                 LastTouched = area.LastTouched,
                 ContributorCount = area.ContributorCount,
                 Contributors = area.Contributors.Select(contributor =>
-                    AnonymizeHumanContributorShare(contributor)
+                    AnonymizeHumanContributorShare(contributor, session)
                 ).ToList(),
                 HeatScore = area.HeatScore,
                 AttentionScore = area.AttentionScore,
@@ -238,7 +242,7 @@ namespace Gitic
 
             // Map and clone automation
             clonedResult.Automation = result.Automation.Select(automation =>
-                MapToAutomationMetric(automation, AnonymizeAutomation(automation.Name, automation.Email))
+                MapToAutomationMetric(automation, AnonymizeAutomation(automation.Name, automation.Email, session))
             ).ToList();
 
             return clonedResult;

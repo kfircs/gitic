@@ -1881,6 +1881,51 @@ __GITIZER_NUMSTAT__
             }
 
             [Fact]
+            public void TestResultAnonymizerIsStatelessAndThreadSafe()
+            {
+                var original1 = new AnalysisResult
+                {
+                    Contributors = new List<ContributorMetric>
+                    {
+                        new ContributorMetric { Name = "Alice Smith", Email = "alice@example.com", TotalActivity = 10, Areas = new List<ContributorAreaMetric>() }
+                    },
+                    Automation = new List<AutomationMetric>
+                    {
+                        new AutomationMetric { Name = "BuildBot", Email = "bot@example.com", TotalActivity = 100, Areas = new List<ContributorAreaMetric>() }
+                    }
+                };
+
+                var original2 = new AnalysisResult
+                {
+                    Contributors = new List<ContributorMetric>
+                    {
+                        new ContributorMetric { Name = "Charlie Brown", Email = "charlie@example.com", TotalActivity = 10, Areas = new List<ContributorAreaMetric>() }
+                    },
+                    Automation = new List<AutomationMetric>
+                    {
+                        new AutomationMetric { Name = "DeployBot", Email = "deploy@example.com", TotalActivity = 100, Areas = new List<ContributorAreaMetric>() }
+                    }
+                };
+
+                var anonymizer = new ResultAnonymizer();
+
+                // Run anonymizer on the first result
+                var result1 = anonymizer.Anonymize(original1);
+                Assert.Equal("Contributor 1", result1.Contributors[0].Name);
+                Assert.Equal("contributor-1@anonymous.local", result1.Contributors[0].Email);
+                Assert.Equal("Automation 1", result1.Automation[0].Name);
+                Assert.Equal("automation-1@anonymous.local", result1.Automation[0].Email);
+
+                // Run anonymizer on the second result, using the exact SAME anonymizer instance.
+                // Since the anonymizer is stateless, it must reset mappings for this new run and map to Contributor 1 and Automation 1 again.
+                var result2 = anonymizer.Anonymize(original2);
+                Assert.Equal("Contributor 1", result2.Contributors[0].Name);
+                Assert.Equal("contributor-1@anonymous.local", result2.Contributors[0].Email);
+                Assert.Equal("Automation 1", result2.Automation[0].Name);
+                Assert.Equal("automation-1@anonymous.local", result2.Automation[0].Email);
+            }
+
+            [Fact]
             public void TestICommandLineParser_InterfaceAndImplementation()
             {
                 string[] args = new[] { "hotspots", "--json", "--since", "2026-01-01" };
