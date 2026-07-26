@@ -59,6 +59,10 @@ namespace Gitic
         };
 
         private readonly List<string> _args;
+        private int _index;
+        private string? _htmlPath;
+        private string? _mdPath;
+        private string? _svgPath;
 
         public CommandLineParser(string[] args)
         {
@@ -90,16 +94,16 @@ namespace Gitic
 
             var settings = DefaultAnalysisSettings.Create();
             var positionals = new List<string>();
-            string? htmlPath = null;
-            string? mdPath = null;
-            string? svgPath = null;
+            _htmlPath = null;
+            _mdPath = null;
+            _svgPath = null;
 
-            for (int index = 1; index < _args.Count; index += 1)
+            for (_index = 1; _index < _args.Count; _index += 1)
             {
-                string arg = _args[index];
+                string arg = _args[_index];
                 if (arg.StartsWith("--"))
                 {
-                    ProcessFlag(arg, ref index, settings, ref htmlPath, ref mdPath, ref svgPath);
+                    ProcessFlag(arg, settings);
                 }
                 else
                 {
@@ -120,9 +124,9 @@ namespace Gitic
                     RepoPath = ".",
                     Settings = settings,
                     ContributorName = null,
-                    HtmlPath = htmlPath,
-                    MdPath = mdPath,
-                    SvgPath = svgPath,
+                    HtmlPath = _htmlPath,
+                    MdPath = _mdPath,
+                    SvgPath = _svgPath,
                     ConfigAction = positionals.Count > 0 ? positionals[0] : null
                 };
             }
@@ -137,9 +141,9 @@ namespace Gitic
                     RepoPath = positionals.Count > 1 ? positionals[1] : ".",
                     Settings = settings,
                     ContributorName = contributorName,
-                    HtmlPath = htmlPath,
-                    MdPath = mdPath,
-                    SvgPath = svgPath,
+                    HtmlPath = _htmlPath,
+                    MdPath = _mdPath,
+                    SvgPath = _svgPath,
                     ConfigAction = null
                 };
             }
@@ -150,9 +154,9 @@ namespace Gitic
                 RepoPath = positionals.Count > 0 ? positionals[0] : ".",
                 Settings = settings,
                 ContributorName = null,
-                HtmlPath = htmlPath,
-                MdPath = mdPath,
-                SvgPath = svgPath,
+                HtmlPath = _htmlPath,
+                MdPath = _mdPath,
+                SvgPath = _svgPath,
                 ConfigAction = null
             };
         }
@@ -202,11 +206,7 @@ namespace Gitic
 
         private void ProcessFlag(
             string arg,
-            ref int index,
-            AnalysisSettings settings,
-            ref string? htmlPath,
-            ref string? mdPath,
-            ref string? svgPath)
+            AnalysisSettings settings)
         {
             switch (arg)
             {
@@ -229,29 +229,29 @@ namespace Gitic
                     settings.Anonymize = true;
                     break;
                 case "--since":
-                    settings.Since = ConsumeValue(arg, index);
-                    index += 1;
+                    settings.Since = ConsumeValue(arg);
+                    _index += 1;
                     break;
                 case "--path":
-                    settings.Path = ConsumeValue(arg, index);
-                    index += 1;
+                    settings.Path = ConsumeValue(arg);
+                    _index += 1;
                     break;
                 case "--depth":
-                    string rawDepth = ConsumeValue(arg, index);
+                    string rawDepth = ConsumeValue(arg);
                     settings.Depth = ValidateDepth(rawDepth);
-                    index += 1;
+                    _index += 1;
                     break;
                 case "--html":
-                    htmlPath = ConsumeValue(arg, index);
-                    index += 1;
+                    _htmlPath = ConsumeValue(arg);
+                    _index += 1;
                     break;
                 case "--md":
-                    mdPath = ConsumeValue(arg, index);
-                    index += 1;
+                    _mdPath = ConsumeValue(arg);
+                    _index += 1;
                     break;
                 case "--svg":
-                    svgPath = ConsumeValue(arg, index);
-                    index += 1;
+                    _svgPath = ConsumeValue(arg);
+                    _index += 1;
                     break;
                 default:
                     ValidateUnknownFlag(arg);
@@ -259,13 +259,13 @@ namespace Gitic
             }
         }
 
-        private string ConsumeValue(string argName, int currentIndex)
+        private string ConsumeValue(string argName)
         {
-            if (currentIndex + 1 >= _args.Count)
+            if (_index + 1 >= _args.Count)
             {
                 throw new CommandLineParseError($"{argName} requires a value.");
             }
-            string rawValue = _args[currentIndex + 1];
+            string rawValue = _args[_index + 1];
             return ValidateNextValue(argName, rawValue);
         }
 
