@@ -52,32 +52,56 @@ namespace Gitic
 
         private ContributorShare AnonymizeHumanContributorShare(ContributorShare contributor)
         {
-            var identity = AnonymizeHuman(contributor.Name, contributor.Email);
-            return new ContributorShare
-            {
-                Name = identity.Name,
-                Email = identity.Email,
-                Activity = contributor.Activity,
-                ActivityShare = contributor.ActivityShare
-            };
+            return MapToContributorShare(contributor, AnonymizeHuman(contributor.Name, contributor.Email));
         }
 
         private ContributorMetric AnonymizeHumanContributorMetric(ContributorMetric contributor)
         {
-            var identity = AnonymizeHuman(contributor.Name, contributor.Email);
+            return MapToContributorMetric(contributor, AnonymizeHuman(contributor.Name, contributor.Email));
+        }
+
+        private ContributorShare MapToContributorShare(ContributorShare source, GitIdentity identity)
+        {
+            return new ContributorShare
+            {
+                Name = identity.Name,
+                Email = identity.Email,
+                Activity = source.Activity,
+                ActivityShare = source.ActivityShare
+            };
+        }
+
+        private ContributorMetric MapToContributorMetric(ContributorMetric source, GitIdentity identity)
+        {
             return new ContributorMetric
             {
                 Name = identity.Name,
                 Email = identity.Email,
-                TotalActivity = contributor.TotalActivity,
-                Areas = contributor.Areas.Select(area => new ContributorAreaMetric
-                {
-                    Area = area.Area,
-                    Activity = area.Activity,
-                    ActivityShare = area.ActivityShare,
-                    FamiliarityScore = area.FamiliarityScore
-                }).ToList()
+                TotalActivity = source.TotalActivity,
+                Areas = CloneAreas(source.Areas)
             };
+        }
+
+        private AutomationMetric MapToAutomationMetric(AutomationMetric source, GitIdentity identity)
+        {
+            return new AutomationMetric
+            {
+                Name = identity.Name,
+                Email = identity.Email,
+                TotalActivity = source.TotalActivity,
+                Areas = CloneAreas(source.Areas)
+            };
+        }
+
+        private List<ContributorAreaMetric> CloneAreas(IEnumerable<ContributorAreaMetric> areas)
+        {
+            return areas.Select(area => new ContributorAreaMetric
+            {
+                Area = area.Area,
+                Activity = area.Activity,
+                ActivityShare = area.ActivityShare,
+                FamiliarityScore = area.FamiliarityScore
+            }).ToList();
         }
 
         private AnalysisResult CloneResultMetadata(AnalysisResult result)
@@ -214,22 +238,8 @@ namespace Gitic
 
             // Map and clone automation
             clonedResult.Automation = result.Automation.Select(automation =>
-            {
-                var identity = AnonymizeAutomation(automation.Name, automation.Email);
-                return new AutomationMetric
-                {
-                    Name = identity.Name,
-                    Email = identity.Email,
-                    TotalActivity = automation.TotalActivity,
-                    Areas = automation.Areas.Select(area => new ContributorAreaMetric
-                    {
-                        Area = area.Area,
-                        Activity = area.Activity,
-                        ActivityShare = area.ActivityShare,
-                        FamiliarityScore = area.FamiliarityScore
-                    }).ToList()
-                };
-            }).ToList();
+                MapToAutomationMetric(automation, AnonymizeAutomation(automation.Name, automation.Email))
+            ).ToList();
 
             return clonedResult;
         }
