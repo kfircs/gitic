@@ -148,6 +148,11 @@ namespace Gitic
             double maxChurn,
             double maxNetLines)
         {
+            if (maxChurn <= 0 || maxNetLines <= 0)
+            {
+                return 0.0;
+            }
+
             double netLines = Math.Max(0.0, item.Added - item.Deleted);
             return Math.Round(
                 (item.Churn / maxChurn) * (netLines / maxNetLines) * DebtVolatilityMultiplier

@@ -860,6 +860,27 @@ __GITIZER_NUMSTAT__
         }
 
         [Fact]
+        public void TestScoring_CalculateDebtVolatility()
+        {
+            var item = new ItemAccumulator
+            {
+                Added = 100,
+                Deleted = 20,
+                Churn = 120
+            };
+
+            // Non-zero max values should work as expected
+            double score = ScoringUtils.CalculateDebtVolatility(item, 200.0, 100.0);
+            Assert.True(score > 0.0);
+
+            // Zero or negative maxChurn or maxNetLines should return 0.0
+            Assert.Equal(0.0, ScoringUtils.CalculateDebtVolatility(item, 0.0, 100.0));
+            Assert.Equal(0.0, ScoringUtils.CalculateDebtVolatility(item, 200.0, 0.0));
+            Assert.Equal(0.0, ScoringUtils.CalculateDebtVolatility(item, -10.0, 100.0));
+            Assert.Equal(0.0, ScoringUtils.CalculateDebtVolatility(item, 200.0, -5.0));
+        }
+
+        [Fact]
         public void TestScoreBreakdown_Clone()
         {
             var breakdown = new ScoreBreakdown
