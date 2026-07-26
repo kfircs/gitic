@@ -590,15 +590,15 @@ namespace Gitic
             return result;
         }
 
-        private static double ConvertToDouble(object? val)
+        private static double ConvertToDouble(object? val) => val switch
         {
-            if (val == null) return 0.0;
-            if (val is double d) return d;
-            if (val is float f) return f;
-            if (val is long l) return l;
-            if (val is int i) return i;
-            return Convert.ToDouble(val);
-        }
+            null => 0.0,
+            double d => d,
+            float f => f,
+            long l => l,
+            int i => i,
+            _ => Convert.ToDouble(val)
+        };
 
         private static string? NormalizeOptionalString(
             object? value,
