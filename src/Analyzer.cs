@@ -25,11 +25,16 @@ namespace Gitic
     {
         private readonly IConfigurationEngine _configEngine;
         private readonly IAnalysisPipeline _pipeline;
+        private readonly IMetricProcessorService _metricProcessorService;
 
-        public RepositoryAnalyzer(IConfigurationEngine? configEngine = null, IAnalysisPipeline? pipeline = null)
+        public RepositoryAnalyzer(
+            IConfigurationEngine? configEngine = null,
+            IAnalysisPipeline? pipeline = null,
+            IMetricProcessorService? metricProcessorService = null)
         {
             _configEngine = configEngine ?? new ConfigurationEngine();
             _pipeline = pipeline ?? new AnalysisPipeline();
+            _metricProcessorService = metricProcessorService ?? new MetricProcessorService();
         }
 
         public static async Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
@@ -98,9 +103,9 @@ namespace Gitic
                 },
                 Settings = settings,
                 Exclusions = pipelineResult.Exclusions,
-                Areas = MetricProcessors.SortAreasForCommand(pipelineResult.Areas, input.Command),
-                Files = MetricProcessors.SortFilesForCommand(fileMetrics, input.Command),
-                Contributors = MetricProcessors.SortContributorsForCommand(pipelineResult.Contributors, input.Command),
+                Areas = _metricProcessorService.SortAreasForCommand(pipelineResult.Areas, input.Command),
+                Files = _metricProcessorService.SortFilesForCommand(fileMetrics, input.Command),
+                Contributors = _metricProcessorService.SortContributorsForCommand(pipelineResult.Contributors, input.Command),
                 Automation = pipelineResult.Automation,
                 TemporalCoupling = pipelineResult.TemporalCouplings,
                 LeadTimes = pipelineResult.LeadTimes,

@@ -127,27 +127,4 @@ namespace Gitic
             return activeKeys;
         }
     }
-
-    public static class MetricProcessors
-    {
-        private static readonly IMetricProcessorService _instance = new MetricProcessorService();
-
-        public static List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items)
-            => _instance.RenderContributors(items);
-
-        public static List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items)
-            => _instance.RenderAutomation(items);
-
-        public static List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command)
-            => _instance.SortFilesForCommand(files, command);
-
-        public static List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command)
-            => _instance.SortAreasForCommand(areas, command);
-
-        public static List<ContributorMetric> SortContributorsForCommand(List<ContributorMetric> contributors, AnalysisCommand command)
-            => _instance.SortContributorsForCommand(contributors, command);
-
-        public static HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits)
-            => _instance.GetActiveContributorKeys(commits);
-    }
 }

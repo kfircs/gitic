@@ -622,6 +622,7 @@ __GITIZER_NUMSTAT__
         [Fact]
         public void TestMetricProcessors()
         {
+            var service = new MetricProcessorService();
             var accums = new List<ContributorAccumulator>
             {
                 new()
@@ -638,7 +639,7 @@ __GITIZER_NUMSTAT__
                 }
             };
 
-            var contributors = MetricProcessors.RenderContributors(accums);
+            var contributors = service.RenderContributors(accums);
             Assert.Equal(2, contributors.Count);
             Assert.Equal("Alice", contributors[0].Name);
             Assert.Equal(100.0, contributors[0].TotalActivity);
@@ -647,7 +648,7 @@ __GITIZER_NUMSTAT__
             Assert.Equal(80.0, contributors[0].Areas[0].Activity);
             Assert.Equal(0.8, contributors[0].Areas[0].ActivityShare);
 
-            var automation = MetricProcessors.RenderAutomation(accums);
+            var automation = service.RenderAutomation(accums);
             Assert.Equal(2, automation.Count);
             Assert.Equal("Alice", automation[0].Name);
 
@@ -657,10 +658,10 @@ __GITIZER_NUMSTAT__
                 new() { Path = "f2", HeatScore = 5, AttentionScore = 20 }
             };
 
-            var sortedFilesAreas = MetricProcessors.SortFilesForCommand(files, AnalysisCommand.Areas);
+            var sortedFilesAreas = service.SortFilesForCommand(files, AnalysisCommand.Areas);
             Assert.Equal("f1", sortedFilesAreas[0].Path);
 
-            var sortedFilesHotspots = MetricProcessors.SortFilesForCommand(files, AnalysisCommand.Hotspots);
+            var sortedFilesHotspots = service.SortFilesForCommand(files, AnalysisCommand.Hotspots);
             Assert.Equal("f2", sortedFilesHotspots[0].Path);
         }
 
