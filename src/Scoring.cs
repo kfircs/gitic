@@ -41,20 +41,8 @@ namespace Gitic
             double topOwnerShare = contributors.Count > 0 ? contributors[0].ActivityShare : 0.0;
             bool isSilo = topOwnerShare >= SiloThreshold;
 
-            bool abandoned = true;
-            foreach (var contr in contributors)
-            {
-                string key = IdentityUtils.IdentityKey(new GitIdentity { Name = contr.Name, Email = contr.Email });
-                if (activeContributorKeys.Contains(key))
-                {
-                    abandoned = false;
-                    break;
-                }
-            }
-            if (contributors.Count == 0)
-            {
-                abandoned = false;
-            }
+            bool abandoned = contributors.Count > 0 && !contributors.Any(contr =>
+                activeContributorKeys.Contains(IdentityUtils.IdentityKey(new GitIdentity { Name = contr.Name, Email = contr.Email })));
 
             return new KnowledgeSiloMetric
             {
