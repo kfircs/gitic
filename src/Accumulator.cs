@@ -228,20 +228,16 @@ namespace Gitic
 
         private List<ParticipantInfo> ParticipantsForCommit(GitCommitRecord commit)
         {
-            var author = _identityRegistry.Resolve(commit.Author);
-            var coAuthors = commit.CoAuthors.Select(co => _identityRegistry.Resolve(co)).ToList();
+            var uniqueIdentities = new[] { _identityRegistry.Resolve(commit.Author) }
+                .Concat(commit.CoAuthors.Select(co => _identityRegistry.Resolve(co)))
+                .GroupBy(identity => IdentityUtils.IdentityKey(identity))
+                .Select(group => group.Last())
+                .ToList();
 
-            var identities = new List<GitIdentity> { author };
-            identities.AddRange(coAuthors);
-
-            var unique = new Dictionary<string, GitIdentity>();
-            foreach (var identity in identities)
-            {
-                unique[IdentityUtils.IdentityKey(identity)] = identity;
-            }
-
-            double credit = ScoringUtils.RoundRatio(1.0 / unique.Count);
-            return unique.Values.Select(identity => new ParticipantInfo { Identity = identity, Credit = credit }).ToList();
+            double credit = ScoringUtils.RoundRatio(1.0 / uniqueIdentities.Count);
+            return uniqueIdentities
+                .Select(identity => new ParticipantInfo { Identity = identity, Credit = credit })
+                .ToList();
         }
 
         private void AddContributorActivity(
