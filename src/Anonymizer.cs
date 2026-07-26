@@ -80,9 +80,9 @@ namespace Gitic
             };
         }
 
-        public AnalysisResult Anonymize(AnalysisResult result)
+        private AnalysisResult CloneResultMetadata(AnalysisResult result)
         {
-            var clonedResult = new AnalysisResult
+            return new AnalysisResult
             {
                 SchemaVersion = result.SchemaVersion,
                 Tool = result.Tool,
@@ -144,6 +144,11 @@ namespace Gitic
                     }).ToList()
                 }
             };
+        }
+
+        public AnalysisResult Anonymize(AnalysisResult result)
+        {
+            var clonedResult = CloneResultMetadata(result);
 
             // Map and clone contributors
             clonedResult.Contributors = result.Contributors.Select(contributor =>
