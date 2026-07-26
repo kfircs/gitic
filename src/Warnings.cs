@@ -15,7 +15,6 @@ namespace Gitic
         public List<FileMetric>? Files { get; set; }
 
         public int SafeConfiguredBotCount => ConfiguredBotCount ?? 0;
-        public List<AutomationMetric> SafeAutomationMetrics => AutomationMetrics ?? new List<AutomationMetric>();
     }
 
     public interface IWarningRule
@@ -32,8 +31,12 @@ namespace Gitic
                 return new List<string>();
             }
 
-            var list = context.EmailCollisions ?? new List<EmailCollision>();
-            return list.Select(collision =>
+            if (context.EmailCollisions == null || context.EmailCollisions.Count == 0)
+            {
+                return new List<string>();
+            }
+
+            return context.EmailCollisions.Select(collision =>
             {
                 string nameList = string.Join(", ", collision.Names);
                 return $"Contributors {nameList} share email {collision.Email} but no alias is configured; they may be the same person. Add an alias in .gitizer.yml or enable identity.merge_on_email to merge them.";
@@ -45,11 +48,11 @@ namespace Gitic
     {
         public List<string> Collect(WarningContext context)
         {
-            if (context.SafeConfiguredBotCount == 0 && context.SafeAutomationMetrics.Count > 0)
+            if (context.SafeConfiguredBotCount == 0 && (context.AutomationMetrics?.Count ?? 0) > 0)
             {
                 return new List<string>
                 {
-                    $"No bots are explicitly configured; {context.SafeAutomationMetrics.Count} automation identities were detected using default heuristics. Configure bots in .gitizer.yml to control automation detection (e.g. workspace-specific agents like test harnesses)."
+                    $"No bots are explicitly configured; {context.AutomationMetrics?.Count ?? 0} automation identities were detected using default heuristics. Configure bots in .gitizer.yml to control automation detection (e.g. workspace-specific agents like test harnesses)."
                 };
             }
             return new List<string>();
@@ -75,7 +78,7 @@ namespace Gitic
     {
         public List<string> Collect(WarningContext context)
         {
-            if (context.SafeConfiguredBotCount == 0 && context.SafeAutomationMetrics.Count == 0)
+            if (context.SafeConfiguredBotCount == 0 && (context.AutomationMetrics?.Count ?? 0) == 0)
             {
                 return new List<string>
                 {

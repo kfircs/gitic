@@ -991,6 +991,9 @@ __GITIZER_NUMSTAT__
             var warnings1Empty = rule1.Collect(new WarningContext { EmailCollisions = collisions, AliasCount = 1 });
             Assert.Empty(warnings1Empty);
 
+            var warnings1Null = rule1.Collect(new WarningContext { EmailCollisions = null, AliasCount = 0 });
+            Assert.Empty(warnings1Null);
+
             // BotConfigWarning
             var automationMetrics = new List<AutomationMetric>
             {
@@ -1003,6 +1006,9 @@ __GITIZER_NUMSTAT__
 
             var warnings2Empty = rule2.Collect(new WarningContext { ConfiguredBotCount = 1, AutomationMetrics = automationMetrics });
             Assert.Empty(warnings2Empty);
+
+            var warnings2Null = rule2.Collect(new WarningContext { ConfiguredBotCount = 0, AutomationMetrics = null });
+            Assert.Empty(warnings2Null);
 
             // LeadTimeWarning
             var rule3 = new LeadTimeWarningRule();
@@ -1033,6 +1039,10 @@ __GITIZER_NUMSTAT__
 
             var warnings4HasDetected = rule4.Collect(new WarningContext { ConfiguredBotCount = 0, AutomationMetrics = automationMetrics });
             Assert.Empty(warnings4HasDetected);
+
+            var warnings4Null = rule4.Collect(new WarningContext { ConfiguredBotCount = 0, AutomationMetrics = null });
+            Assert.Single(warnings4Null);
+            Assert.Contains("No bots are configured and no automation identities were detected", warnings4Null[0]);
 
             // TemporalCouplingWarning
             var rule5 = new TemporalCouplingWarningRule();
