@@ -168,40 +168,79 @@ namespace Gitic
             };
         }
 
+        private AnalysisMetadata CloneAnalysisMetadata(AnalysisMetadata source)
+        {
+            return new AnalysisMetadata
+            {
+                RepoRoot = source.RepoRoot,
+                Command = source.Command,
+                GeneratedAt = source.GeneratedAt,
+                CommitCount = source.CommitCount,
+                IncludedFileChangeCount = source.IncludedFileChangeCount
+            };
+        }
+
+        private ScoringConfiguration CloneScoringConfiguration(ScoringConfiguration source)
+        {
+            return new ScoringConfiguration
+            {
+                Attention = new AttentionWeights
+                {
+                    Churn = source.Attention.Churn,
+                    Recency = source.Attention.Recency,
+                    ContributorSpread = source.Attention.ContributorSpread,
+                    LowFamiliarityConcentration = source.Attention.LowFamiliarityConcentration
+                }
+            };
+        }
+
+        private ExclusionSummary CloneExclusionSummary(ExclusionSummary source)
+        {
+            return new ExclusionSummary
+            {
+                Category = source.Category,
+                Pattern = source.Pattern,
+                Count = source.Count
+            };
+        }
+
+        private TemporalCoupling CloneTemporalCoupling(TemporalCoupling source)
+        {
+            return new TemporalCoupling
+            {
+                FileA = source.FileA,
+                FileB = source.FileB,
+                SharedCommits = source.SharedCommits,
+                CouplingDegree = source.CouplingDegree
+            };
+        }
+
+        private MergeLeadTimeRecord CloneMergeLeadTimeRecord(MergeLeadTimeRecord source)
+        {
+            return new MergeLeadTimeRecord
+            {
+                Hash = source.Hash,
+                Message = source.Message,
+                Author = source.Author,
+                Date = source.Date,
+                LeadTimeHours = source.LeadTimeHours,
+                FileCount = source.FileCount
+            };
+        }
+
         private AnalysisResult CloneResultMetadata(AnalysisResult result)
         {
             return new AnalysisResult
             {
                 SchemaVersion = result.SchemaVersion,
                 Tool = result.Tool,
-                Analysis = new AnalysisMetadata
-                {
-                    RepoRoot = result.Analysis.RepoRoot,
-                    Command = result.Analysis.Command,
-                    GeneratedAt = result.Analysis.GeneratedAt,
-                    CommitCount = result.Analysis.CommitCount,
-                    IncludedFileChangeCount = result.Analysis.IncludedFileChangeCount
-                },
+                Analysis = CloneAnalysisMetadata(result.Analysis),
                 Settings = result.Settings.Clone(),
-                Exclusions = result.Exclusions.Select(e => new ExclusionSummary
-                {
-                    Category = e.Category,
-                    Pattern = e.Pattern,
-                    Count = e.Count
-                }).ToList(),
+                Exclusions = result.Exclusions.Select(CloneExclusionSummary).ToList(),
                 Warnings = result.Warnings.ToList(),
                 Configuration = new AnalysisConfiguration
                 {
-                    Scoring = new ScoringConfiguration
-                    {
-                        Attention = new AttentionWeights
-                        {
-                            Churn = result.Configuration.Scoring.Attention.Churn,
-                            Recency = result.Configuration.Scoring.Attention.Recency,
-                            ContributorSpread = result.Configuration.Scoring.Attention.ContributorSpread,
-                            LowFamiliarityConcentration = result.Configuration.Scoring.Attention.LowFamiliarityConcentration
-                        }
-                    },
+                    Scoring = CloneScoringConfiguration(result.Configuration.Scoring),
                     ConfiguredAliasCount = result.Configuration.ConfiguredAliasCount,
                     ConfiguredBotCount = result.Configuration.ConfiguredBotCount,
                     ConfiguredExcludeCount = result.Configuration.ConfiguredExcludeCount,
@@ -211,25 +250,11 @@ namespace Gitic
                         MergeOnEmail = result.Configuration.Identity.MergeOnEmail
                     }
                 },
-                TemporalCoupling = result.TemporalCoupling?.Select(tc => new TemporalCoupling
-                {
-                    FileA = tc.FileA,
-                    FileB = tc.FileB,
-                    SharedCommits = tc.SharedCommits,
-                    CouplingDegree = tc.CouplingDegree
-                }).ToList(),
+                TemporalCoupling = result.TemporalCoupling?.Select(CloneTemporalCoupling).ToList(),
                 LeadTimes = result.LeadTimes == null ? null : new LeadTimesInfo
                 {
                     AverageLeadTimeHours = result.LeadTimes.AverageLeadTimeHours,
-                    Merges = result.LeadTimes.Merges.Select(m => new MergeLeadTimeRecord
-                    {
-                        Hash = m.Hash,
-                        Message = m.Message,
-                        Author = m.Author,
-                        Date = m.Date,
-                        LeadTimeHours = m.LeadTimeHours,
-                        FileCount = m.FileCount
-                    }).ToList()
+                    Merges = result.LeadTimes.Merges.Select(CloneMergeLeadTimeRecord).ToList()
                 }
             };
         }
