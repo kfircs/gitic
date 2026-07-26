@@ -24,10 +24,12 @@ namespace Gitic
     public class RepositoryAnalyzer : IRepositoryAnalyzer
     {
         private readonly IConfigurationEngine _configEngine;
+        private readonly IAnalysisPipeline _pipeline;
 
-        public RepositoryAnalyzer(IConfigurationEngine? configEngine = null)
+        public RepositoryAnalyzer(IConfigurationEngine? configEngine = null, IAnalysisPipeline? pipeline = null)
         {
             _configEngine = configEngine ?? new ConfigurationEngine();
+            _pipeline = pipeline ?? new AnalysisPipeline();
         }
 
         public static async Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
@@ -56,8 +58,7 @@ namespace Gitic
             var commits = await commitsTask;
             var headFiles = await headFilesTask;
 
-            var pipeline = new AnalysisPipeline();
-            var pipelineResult = pipeline.Run(commits, headFiles, config, settings, input.Command, input.RepoRoot);
+            var pipelineResult = _pipeline.Run(commits, headFiles, config, settings, input.Command, input.RepoRoot);
 
             var filePaths = pipelineResult.Files.Select(f => f.Path).ToList();
 

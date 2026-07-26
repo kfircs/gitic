@@ -1334,6 +1334,63 @@ __GITIZER_NUMSTAT__
                 Assert.True(mockConfigEngine.LoadAndResolveCalled);
             }
 
+            private class MockAnalysisPipeline : IAnalysisPipeline
+            {
+                public bool RunCalled { get; set; }
+                public List<GitCommitRecord>? ReceivedCommits { get; set; }
+                public HashSet<string>? ReceivedHeadFiles { get; set; }
+
+                public AnalysisPipelineResult Run(
+                    List<GitCommitRecord> commits,
+                    HashSet<string> headFiles,
+                    GitizerConfig config,
+                    AnalysisSettings settings,
+                    AnalysisCommand command,
+                    string repoRoot,
+                    ITemporalCouplingEngine? temporalCouplingEngine = null,
+                    ILeadTimeEngine? leadTimeEngine = null,
+                    IMetricProcessorService? metricProcessorService = null)
+                {
+                    RunCalled = true;
+                    ReceivedCommits = commits;
+                    ReceivedHeadFiles = headFiles;
+
+                    return new AnalysisPipelineResult
+                    {
+                        Files = new List<FileMetric> { new FileMetric { Path = "src/main.cs" } },
+                        Warnings = new List<string> { "mock-pipeline-warning" },
+                        IncludedFileChangeCount = 42
+                    };
+                }
+            }
+
+            [Fact]
+            public async Task TestRepositoryAnalyzer_WithMockAnalysisPipeline()
+            {
+                var fakeProvider = new FakeFileStatsProvider();
+                var mockPipeline = new MockAnalysisPipeline();
+
+                var input = new AnalyzeInput
+                {
+                    RepoRoot = "/fake/root",
+                    Command = AnalysisCommand.Hotspots,
+                    Settings = new AnalysisSettings { Depth = 1 },
+                    FileStatsProvider = fakeProvider,
+                    GitClient = new FakeGitClient()
+                };
+
+                var analyzer = new RepositoryAnalyzer(pipeline: mockPipeline);
+                var result = await analyzer.AnalyzeAsync(input);
+
+                Assert.NotNull(result);
+                Assert.True(mockPipeline.RunCalled);
+                Assert.NotNull(mockPipeline.ReceivedCommits);
+                Assert.Single(mockPipeline.ReceivedCommits);
+                Assert.Equal("hash1", mockPipeline.ReceivedCommits[0].Hash);
+                Assert.Contains("mock-pipeline-warning", result.Warnings);
+                Assert.Equal(42, result.Analysis.IncludedFileChangeCount);
+            }
+
 
             [Fact]
             public void TestAnalysisSettingsNormalizer_DefaultNormalization()

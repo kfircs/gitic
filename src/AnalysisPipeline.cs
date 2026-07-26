@@ -4,6 +4,20 @@ using System.Linq;
 
 namespace Gitic
 {
+    public interface IAnalysisPipeline
+    {
+        AnalysisPipelineResult Run(
+            List<GitCommitRecord> commits,
+            HashSet<string> headFiles,
+            GitizerConfig config,
+            AnalysisSettings settings,
+            AnalysisCommand command,
+            string repoRoot,
+            ITemporalCouplingEngine? temporalCouplingEngine = null,
+            ILeadTimeEngine? leadTimeEngine = null,
+            IMetricProcessorService? metricProcessorService = null);
+    }
+
     public class AnalysisPipelineResult
     {
         public List<FileMetric> Files { get; set; } = new();
@@ -17,7 +31,7 @@ namespace Gitic
         public int IncludedFileChangeCount { get; set; }
     }
 
-    public class AnalysisPipeline
+    public class AnalysisPipeline : IAnalysisPipeline
     {
         public AnalysisPipelineResult Run(
             List<GitCommitRecord> commits,
