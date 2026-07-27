@@ -10,7 +10,7 @@ if [ -z "$1" ]; then
 fi
 
 NEW_VERSION=$1
-CURRENT_VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" Gitic.csproj)
+CURRENT_VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" ../Gitic.csproj)
 
 if [ "$NEW_VERSION" == "$CURRENT_VERSION" ]; then
     echo "Version is already $CURRENT_VERSION. Nothing to do."
@@ -20,8 +20,8 @@ fi
 echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION..."
 
 # Update Gitic.csproj
-sed -i.bak "s/<Version>$CURRENT_VERSION<\/Version>/<Version>$NEW_VERSION<\/Version>/" Gitic.csproj
-rm -f Gitic.csproj.bak
+sed -i.bak "s/<Version>$CURRENT_VERSION<\/Version>/<Version>$NEW_VERSION<\/Version>/" ../Gitic.csproj
+rm -f ../Gitic.csproj.bak
 
 # Update install.sh
 sed -i.bak "s/VERSION=\"$CURRENT_VERSION\"/VERSION=\"$NEW_VERSION\"/" install.sh

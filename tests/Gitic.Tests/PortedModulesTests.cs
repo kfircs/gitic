@@ -61,11 +61,18 @@ namespace Gitic.Tests
             Assert.False(classifier.Check("images/logo.png"));
             Assert.False(classifier.Check("photo.jpg"));
 
+            // Excluded because they are non-code files
+            Assert.False(classifier.Check("README.md"));
+            Assert.False(classifier.Check("assets/chart.svg"));
+            Assert.False(classifier.Check("docs/manual.pdf"));
+            Assert.False(classifier.Check("data/report.xlsx"));
+
             var exclusions = classifier.GetExclusions();
             Assert.Contains(exclusions, e => e.Category == "lockfile" && e.Pattern == "lockfiles");
             Assert.Contains(exclusions, e => e.Category == "test" && e.Pattern == "tests/**");
             Assert.Contains(exclusions, e => e.Category == "deleted" && e.Pattern == "missing from HEAD");
             Assert.Contains(exclusions, e => e.Category == "binary" && e.Pattern == "image files");
+            Assert.Contains(exclusions, e => e.Category == "non_code" && e.Pattern == "non-code files");
         }
 
         public class MockPathClassifier : IPathClassifier

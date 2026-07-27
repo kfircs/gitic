@@ -6,7 +6,7 @@ set -e
 echo "Building and packing Gitic..."
 dotnet pack -c Release
 
-PACKAGE_PATH="./nupkg"
+PACKAGE_PATH="../nupkg"
 VERSION="0.1.0"
 
 echo "Uninstalling any existing global tool..."

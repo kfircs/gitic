@@ -29,6 +29,31 @@ namespace Gitic
             ".bmp"
         };
 
+        public static readonly HashSet<string> NonCodeExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".md",
+            ".markdown",
+            ".mdown",
+            ".svg",
+            ".txt",
+            ".pdf",
+            ".docx",
+            ".doc",
+            ".xlsx",
+            ".xls",
+            ".pptx",
+            ".ppt",
+            ".csv",
+            ".rtf",
+            ".epub",
+            ".mobi",
+            ".zip",
+            ".tar",
+            ".gz",
+            ".rar",
+            ".7z"
+        };
+
         public static readonly Dictionary<string, string> DirectoryExcludes = new(StringComparer.OrdinalIgnoreCase)
         {
             { ".git", ".git/**" },
@@ -225,12 +250,21 @@ namespace Gitic
             {
                 return new ExclusionCategory { Category = "binary", Pattern = "image files" };
             }
+            if (IsNonCode(fileName))
+            {
+                return new ExclusionCategory { Category = "non_code", Pattern = "non-code files" };
+            }
             return null;
         }
 
         private bool IsBinaryImage(string fileName)
         {
             return Exclusions.BinaryImageExtensions.Contains(Path.GetExtension(fileName));
+        }
+
+        private bool IsNonCode(string fileName)
+        {
+            return Exclusions.NonCodeExtensions.Contains(Path.GetExtension(fileName));
         }
 
         private ExclusionCategory? ClassifyConfiguredExclusion(string path)

@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 Write-Host "Building and packing Gitic..."
 dotnet pack -c Release
 
-$PackagePath = "./nupkg"
+$PackagePath = "../nupkg"
 $Version = "0.1.0"
 
 Write-Host "Uninstalling any existing global tool..."
