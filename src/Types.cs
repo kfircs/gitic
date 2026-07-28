@@ -69,6 +69,9 @@ namespace Gitic
         [JsonPropertyName("columns")]
         public string? Columns { get; set; }
 
+        [JsonPropertyName("quiet")]
+        public bool Quiet { get; set; }
+
         public AnalysisSettings Clone()
         {
             return new AnalysisSettings
@@ -86,7 +89,8 @@ namespace Gitic
                 Color = Color,
                 Limit = Limit,
                 Sort = Sort,
-                Columns = Columns
+                Columns = Columns,
+                Quiet = Quiet
             };
         }
     }
@@ -409,10 +413,34 @@ namespace Gitic
         public List<MergeLeadTimeRecord> Merges { get; set; } = new();
     }
 
+    public class Diagnostic
+    {
+        [JsonPropertyName("code")]
+        public string Code { get; set; } = string.Empty;
+
+        [JsonPropertyName("severity")]
+        public string Severity { get; set; } = string.Empty;
+
+        [JsonPropertyName("message")]
+        public string Message { get; set; } = string.Empty;
+
+        [JsonPropertyName("hint")]
+        public string? Hint { get; set; }
+
+        public override string ToString()
+        {
+            if (string.IsNullOrEmpty(Hint))
+            {
+                return Message;
+            }
+            return $"{Message} {Hint}";
+        }
+    }
+
     public class AnalysisResult
     {
         [JsonPropertyName("schema_version")]
-        public string SchemaVersion { get; set; } = "1.0";
+        public string SchemaVersion { get; set; } = "1.1";
 
         [JsonPropertyName("tool")]
         public string Tool { get; set; } = "gitic";
@@ -449,6 +477,9 @@ namespace Gitic
 
         [JsonPropertyName("warnings")]
         public List<string> Warnings { get; set; } = new();
+
+        [JsonPropertyName("diagnostics")]
+        public List<Diagnostic> Diagnostics { get; set; } = new();
     }
 
     public class AnalysisMetadata

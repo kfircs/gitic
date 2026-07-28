@@ -20,26 +20,38 @@ namespace Gitic
     public interface IWarningRule
     {
         List<string> Collect(WarningContext context);
+        List<Diagnostic> CollectDiagnostics(WarningContext context);
     }
 
     public class EmailCollisionWarningRule : IWarningRule
     {
         public List<string> Collect(WarningContext context)
         {
+            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
+        }
+
+        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        {
             if ((context.AliasCount ?? 0) > 0)
             {
-                return new List<string>();
+                return new List<Diagnostic>();
             }
 
             if (context.EmailCollisions == null || context.EmailCollisions.Count == 0)
             {
-                return new List<string>();
+                return new List<Diagnostic>();
             }
 
             return context.EmailCollisions.Select(collision =>
             {
                 string nameList = string.Join(", ", collision.Names);
-                return $"Contributors {nameList} share email {collision.Email} but no alias is configured; they may be the same person. Add an alias in .gitic.yml (or legacy .gitizer.yml) or enable identity.merge_on_email to merge them.";
+                return new Diagnostic
+                {
+                    Code = "GITIC001",
+                    Severity = "Warning",
+                    Message = $"Contributors {nameList} share email {collision.Email} but no alias is configured; they may be the same person.",
+                    Hint = "Add an alias in .gitic.yml (or legacy .gitizer.yml) or enable identity.merge_on_email to merge them."
+                };
             }).ToList();
         }
     }
@@ -48,14 +60,25 @@ namespace Gitic
     {
         public List<string> Collect(WarningContext context)
         {
+            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
+        }
+
+        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        {
             if (context.SafeConfiguredBotCount == 0 && (context.AutomationMetrics?.Count ?? 0) > 0)
             {
-                return new List<string>
+                return new List<Diagnostic>
                 {
-                    $"No bots are explicitly configured; {context.AutomationMetrics?.Count ?? 0} automation identities were detected using default heuristics. Configure bots in .gitic.yml (or legacy .gitizer.yml) to control automation detection (e.g. workspace-specific agents like test harnesses)."
+                    new Diagnostic
+                    {
+                        Code = "GITIC002",
+                        Severity = "Warning",
+                        Message = $"No bots are explicitly configured; {context.AutomationMetrics?.Count ?? 0} automation identities were detected using default heuristics.",
+                        Hint = "Configure bots in .gitic.yml (or legacy .gitizer.yml) to control automation detection (e.g. workspace-specific agents like test harnesses)."
+                    }
                 };
             }
-            return new List<string>();
+            return new List<Diagnostic>();
         }
     }
 
@@ -63,14 +86,25 @@ namespace Gitic
     {
         public List<string> Collect(WarningContext context)
         {
+            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
+        }
+
+        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        {
             if (context.LeadTimes == null || context.LeadTimes.Merges.Count == 0)
             {
-                return new List<string>
+                return new List<Diagnostic>
                 {
-                    "No merge commits in the analysis window; branch lead time is unmeasured. Run with --include-merges or widen the window to measure lead time."
+                    new Diagnostic
+                    {
+                        Code = "GITIC003",
+                        Severity = "Warning",
+                        Message = "No merge commits in the analysis window; branch lead time is unmeasured.",
+                        Hint = "Run with --include-merges or widen the window to measure lead time."
+                    }
                 };
             }
-            return new List<string>();
+            return new List<Diagnostic>();
         }
     }
 
@@ -78,14 +112,25 @@ namespace Gitic
     {
         public List<string> Collect(WarningContext context)
         {
+            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
+        }
+
+        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        {
             if (context.SafeConfiguredBotCount == 0 && (context.AutomationMetrics?.Count ?? 0) == 0)
             {
-                return new List<string>
+                return new List<Diagnostic>
                 {
-                    "No bots are configured and no automation identities were detected. If this repository has CI or release bots, configure them in .gitic.yml (or legacy .gitizer.yml)."
+                    new Diagnostic
+                    {
+                        Code = "GITIC004",
+                        Severity = "Warning",
+                        Message = "No bots are configured and no automation identities were detected.",
+                        Hint = "If this repository has CI or release bots, configure them in .gitic.yml (or legacy .gitizer.yml)."
+                    }
                 };
             }
-            return new List<string>();
+            return new List<Diagnostic>();
         }
     }
 
@@ -93,18 +138,29 @@ namespace Gitic
     {
         public List<string> Collect(WarningContext context)
         {
+            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
+        }
+
+        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        {
             if (context.TemporalCoupling == null)
             {
-                return new List<string>();
+                return new List<Diagnostic>();
             }
             if (context.TemporalCoupling.OversizedCommitCount > 0)
             {
-                return new List<string>
+                return new List<Diagnostic>
                 {
-                    $"{context.TemporalCoupling.OversizedCommitCount} commit(s) changed more than {context.TemporalCoupling.Limit} files (max observed: {context.TemporalCoupling.MaxObservedFiles}) and were excluded from temporal coupling analysis. Configure metrics.temporal_coupling_max_commit_file_count in .gitic.yml (or legacy .gitizer.yml) to adjust."
+                    new Diagnostic
+                    {
+                        Code = "GITIC005",
+                        Severity = "Warning",
+                        Message = $"{context.TemporalCoupling.OversizedCommitCount} commit(s) changed more than {context.TemporalCoupling.Limit} files (max observed: {context.TemporalCoupling.MaxObservedFiles}) and were excluded from temporal coupling analysis.",
+                        Hint = "Configure metrics.temporal_coupling_max_commit_file_count in .gitic.yml (or legacy .gitizer.yml) to adjust."
+                    }
                 };
             }
-            return new List<string>();
+            return new List<Diagnostic>();
         }
     }
 
@@ -117,19 +173,30 @@ namespace Gitic
 
         public List<string> Collect(WarningContext context)
         {
+            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
+        }
+
+        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        {
             if (context.Files == null)
             {
-                return new List<string>();
+                return new List<Diagnostic>();
             }
             int suspiciousCount = context.Files.Count(IsSuspiciousFile);
             if (suspiciousCount > 0)
             {
-                return new List<string>
+                return new List<Diagnostic>
                 {
-                    $"{suspiciousCount} file(s) have single-touch high churn (>{HighChurnThreshold} lines) with a single author. These may be generated files or scaffolding. Consider adding them to your .gitic.yml (or legacy .gitizer.yml) excludes."
+                    new Diagnostic
+                    {
+                        Code = "GITIC006",
+                        Severity = "Warning",
+                        Message = $"{suspiciousCount} file(s) have single-touch high churn (>{HighChurnThreshold} lines) with a single author. These may be generated files or scaffolding.",
+                        Hint = "Consider adding them to your .gitic.yml (or legacy .gitizer.yml) excludes."
+                    }
                 };
             }
-            return new List<string>();
+            return new List<Diagnostic>();
         }
 
         private bool IsSuspiciousFile(FileMetric file)
@@ -166,6 +233,8 @@ namespace Gitic
     {
         List<string> Collect(WarningContext context);
         List<string> Collect(WarningContext context, List<string>? existingWarnings);
+        List<Diagnostic> CollectDiagnostics(WarningContext context);
+        List<Diagnostic> CollectDiagnostics(WarningContext context, List<string>? existingWarnings);
     }
 
     public class WarningCollector : IWarningCollector
@@ -185,9 +254,85 @@ namespace Gitic
 
         public List<string> Collect(WarningContext context, List<string>? existingWarnings)
         {
-            var baseWarnings = existingWarnings ?? Enumerable.Empty<string>();
-            var ruleWarnings = _rules.SelectMany(rule => rule.Collect(context));
-            return baseWarnings.Concat(ruleWarnings).Distinct().OrderBy(w => w, StringComparer.Ordinal).ToList();
+            return CollectDiagnostics(context, existingWarnings).Select(d => d.ToString()).ToList();
+        }
+
+        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        {
+            return CollectDiagnostics(context, null);
+        }
+
+        public List<Diagnostic> CollectDiagnostics(WarningContext context, List<string>? existingWarnings)
+        {
+            var list = new List<Diagnostic>();
+
+            if (existingWarnings != null)
+            {
+                foreach (var warning in existingWarnings)
+                {
+                    list.Add(ParseOrWrapWarning(warning));
+                }
+            }
+
+            foreach (var rule in _rules)
+            {
+                list.AddRange(rule.CollectDiagnostics(context));
+            }
+
+            return list
+                .GroupBy(d => new { d.Code, d.Message })
+                .Select(g => g.First())
+                .OrderBy(d => GetSeverityOrder(d.Severity))
+                .ThenBy(d => d.Code)
+                .ThenBy(d => d.Message)
+                .ToList();
+        }
+
+        private int GetSeverityOrder(string severity)
+        {
+            if (string.Equals(severity, "Critical", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(severity, "Error", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(severity, "Failure", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+            if (string.Equals(severity, "Warning", StringComparison.OrdinalIgnoreCase))
+            {
+                return 2;
+            }
+            return 3;
+        }
+
+        private Diagnostic ParseOrWrapWarning(string warning)
+        {
+            if (warning.Contains("matched multiple configured areas"))
+            {
+                int idx = warning.IndexOf("; using ");
+                if (idx >= 0)
+                {
+                    return new Diagnostic
+                    {
+                        Code = "GITIC007",
+                        Severity = "Warning",
+                        Message = warning.Substring(0, idx),
+                        Hint = warning.Substring(idx + 2) // "using ..."
+                    };
+                }
+                return new Diagnostic
+                {
+                    Code = "GITIC007",
+                    Severity = "Warning",
+                    Message = warning,
+                    Hint = "Adjust area path patterns in .gitic.yml (or legacy .gitizer.yml) to avoid overlapping patterns."
+                };
+            }
+
+            return new Diagnostic
+            {
+                Code = "GITIC999",
+                Severity = "Warning",
+                Message = warning
+            };
         }
     }
 }

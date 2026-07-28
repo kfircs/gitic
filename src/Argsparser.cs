@@ -143,6 +143,7 @@ Useful next steps:
             var limitOption = new Option<int?>("--limit") { Description = "Limit results to top N items", Recursive = true };
             var sortOption = new Option<string>("--sort") { Description = "Sort results by field", Recursive = true };
             var columnsOption = new Option<string>("--columns") { Description = "Select columns to show", Recursive = true };
+            var quietOption = new Option<bool>("--quiet") { Description = "Suppress non-critical warnings", Recursive = true };
 
             // Add global options
             rootCommand.Options.Add(configOption);
@@ -165,6 +166,7 @@ Useful next steps:
             rootCommand.Options.Add(limitOption);
             rootCommand.Options.Add(sortOption);
             rootCommand.Options.Add(columnsOption);
+            rootCommand.Options.Add(quietOption);
 
             // Subcommands
             var hotspotsRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
@@ -343,6 +345,7 @@ Useful next steps:
             settings.Limit = parseResult.GetValue(limitOption);
             settings.Sort = parseResult.GetValue(sortOption);
             settings.Columns = parseResult.GetValue(columnsOption);
+            settings.Quiet = parseResult.GetValue(quietOption);
 
             string repoPath = ".";
             string? contributorName = null;

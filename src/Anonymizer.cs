@@ -246,6 +246,13 @@ namespace Gitic
                 Settings = result.Settings.Clone(),
                 Exclusions = result.Exclusions.Select(CloneExclusionSummary).ToList(),
                 Warnings = result.Warnings.ToList(),
+                Diagnostics = result.Diagnostics.Select(d => new Diagnostic
+                {
+                    Code = d.Code,
+                    Severity = d.Severity,
+                    Message = d.Message,
+                    Hint = d.Hint
+                }).ToList(),
                 Configuration = new AnalysisConfiguration
                 {
                     Scoring = CloneScoringConfiguration(result.Configuration.Scoring),

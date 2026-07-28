@@ -254,10 +254,37 @@ Options:
                 string exclusionText = "exclusions " + string.Join(", ", result.Exclusions.Select(e => $"{e.Category}:{e.Count}")) + "\n";
                 stderrSb.Append(exclusionText);
             }
-            if (result.Warnings != null && result.Warnings.Count > 0)
+            if (result.Diagnostics != null && result.Diagnostics.Count > 0)
             {
-                string warningText = "warnings " + string.Join("; ", result.Warnings) + "\n";
-                stderrSb.Append(warningText);
+                var diagnosticsToShow = result.Diagnostics;
+                if (Parsed.Settings.Quiet)
+                {
+                    diagnosticsToShow = result.Diagnostics.Where(d =>
+                        string.Equals(d.Severity, "Critical", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(d.Severity, "Error", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(d.Severity, "Failure", StringComparison.OrdinalIgnoreCase)
+                    ).ToList();
+                }
+
+                if (diagnosticsToShow.Count > 0)
+                {
+                    var grouped = diagnosticsToShow
+                        .GroupBy(d => d.Severity.ToUpperInvariant())
+                        .OrderBy(g => GetSeverityOrder(g.Key));
+
+                    foreach (var group in grouped)
+                    {
+                        stderrSb.AppendLine($"[{group.Key}]");
+                        foreach (var diag in group)
+                        {
+                            stderrSb.AppendLine($"  {diag.Code}: {diag.Message}");
+                            if (!string.IsNullOrEmpty(diag.Hint))
+                            {
+                                stderrSb.AppendLine($"  Hint: {diag.Hint}");
+                            }
+                        }
+                    }
+                }
             }
 
             string stderrOutput = stderrSb.ToString();
@@ -267,6 +294,21 @@ Options:
             }
 
             return Cli.CliSuccess(tableOutput, stderrOutput);
+        }
+
+        private int GetSeverityOrder(string severity)
+        {
+            if (string.Equals(severity, "Critical", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(severity, "Error", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(severity, "Failure", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+            if (string.Equals(severity, "Warning", StringComparison.OrdinalIgnoreCase))
+            {
+                return 2;
+            }
+            return 3;
         }
     }
 

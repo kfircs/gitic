@@ -116,7 +116,8 @@ namespace Gitic
                         MergeOnEmail = config.Identity.MergeOnEmail
                     }
                 },
-                Warnings = pipelineResult.Warnings
+                Warnings = pipelineResult.Warnings,
+                Diagnostics = pipelineResult.Diagnostics
             };
 
             _metricProcessorService.SortMetrics(result, input.Command);

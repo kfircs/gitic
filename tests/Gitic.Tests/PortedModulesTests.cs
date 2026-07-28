@@ -210,6 +210,24 @@ namespace Gitic.Tests
                 CollectCalled = true;
                 return new List<string> { "mock_warning" };
             }
+
+            public List<Diagnostic> CollectDiagnostics(WarningContext context)
+            {
+                CollectCalled = true;
+                return new List<Diagnostic>
+                {
+                    new Diagnostic { Code = "GITIC999", Severity = "Warning", Message = "mock_warning" }
+                };
+            }
+
+            public List<Diagnostic> CollectDiagnostics(WarningContext context, List<string>? existingWarnings)
+            {
+                CollectCalled = true;
+                return new List<Diagnostic>
+                {
+                    new Diagnostic { Code = "GITIC999", Severity = "Warning", Message = "mock_warning" }
+                };
+            }
         }
 
         [Fact]
@@ -1195,6 +1213,237 @@ __GITIC_NUMSTAT__
             Assert.Equal("Delta warning", result[3]);
         }
 
+        [Fact]
+        public void TestDiagnostics_WarningRulesProduceStableDiagnostics()
+        {
+            // 1. EmailCollisionWarningRule
+            var emailRule = new EmailCollisionWarningRule();
+            var emailContext = new WarningContext
+            {
+                EmailCollisions = new List<EmailCollision>
+                {
+                    new() { Email = "test@example.com", Names = new List<string> { "Alice", "Bob" } }
+                },
+                AliasCount = 0
+            };
+            var emailDiags = emailRule.CollectDiagnostics(emailContext);
+            Assert.Single(emailDiags);
+            Assert.Equal("GITIC001", emailDiags[0].Code);
+            Assert.Equal("Warning", emailDiags[0].Severity);
+            Assert.Contains("share email test@example.com", emailDiags[0].Message);
+            Assert.Contains("Add an alias in .gitic.yml", emailDiags[0].Hint);
+
+            // 2. BotConfigWarningRule
+            var botRule = new BotConfigWarningRule();
+            var botContext = new WarningContext
+            {
+                ConfiguredBotCount = 0,
+                AutomationMetrics = new List<AutomationMetric> { new() { Name = "bot", Email = "bot@ci.com", TotalActivity = 10 } }
+            };
+            var botDiags = botRule.CollectDiagnostics(botContext);
+            Assert.Single(botDiags);
+            Assert.Equal("GITIC002", botDiags[0].Code);
+            Assert.Contains("No bots are explicitly configured", botDiags[0].Message);
+
+            // 3. LeadTimeWarningRule
+            var leadRule = new LeadTimeWarningRule();
+            var leadContext = new WarningContext
+            {
+                LeadTimes = new LeadTimesInfo { Merges = new List<MergeLeadTimeRecord>() }
+            };
+            var leadDiags = leadRule.CollectDiagnostics(leadContext);
+            Assert.Single(leadDiags);
+            Assert.Equal("GITIC003", leadDiags[0].Code);
+            Assert.Contains("No merge commits", leadDiags[0].Message);
+
+            // 4. NoBotsWarningRule
+            var noBotsRule = new NoBotsWarningRule();
+            var noBotsContext = new WarningContext
+            {
+                ConfiguredBotCount = 0,
+                AutomationMetrics = new List<AutomationMetric>()
+            };
+            var noBotsDiags = noBotsRule.CollectDiagnostics(noBotsContext);
+            Assert.Single(noBotsDiags);
+            Assert.Equal("GITIC004", noBotsDiags[0].Code);
+            Assert.Contains("No bots are configured and no automation identities", noBotsDiags[0].Message);
+
+            // 5. TemporalCouplingWarningRule
+            var couplingRule = new TemporalCouplingWarningRule();
+            var couplingContext = new WarningContext
+            {
+                TemporalCoupling = new TemporalCouplingResult
+                {
+                    OversizedCommitCount = 3,
+                    Limit = 50,
+                    MaxObservedFiles = 75
+                }
+            };
+            var couplingDiags = couplingRule.CollectDiagnostics(couplingContext);
+            Assert.Single(couplingDiags);
+            Assert.Equal("GITIC005", couplingDiags[0].Code);
+            Assert.Contains("3 commit(s) changed more than 50 files", couplingDiags[0].Message);
+
+            // 6. GeneratedFileWarningRule
+            var genRule = new GeneratedFileWarningRule();
+            var genContext = new WarningContext
+            {
+                Files = new List<FileMetric>
+                {
+                    new()
+                    {
+                        Path = "scaffolding.cs",
+                        Touches = 1,
+                        Churn = 250,
+                        Contributors = new List<ContributorShare>
+                        {
+                            new() { ActivityShare = 0.995 }
+                        }
+                    }
+                }
+            };
+            var genDiags = genRule.CollectDiagnostics(genContext);
+            Assert.Single(genDiags);
+            Assert.Equal("GITIC006", genDiags[0].Code);
+            Assert.Contains("single-touch high churn", genDiags[0].Message);
+        }
+
+        [Fact]
+        public void TestWarningCollector_SeverityOrderingAndDeduplication()
+        {
+            var collector = new WarningCollector();
+            var context = new WarningContext();
+            var existing = new List<string>
+            {
+                "Path test.cs matched multiple configured areas (Area1, Area2); using Area1."
+            };
+
+            var diags = collector.CollectDiagnostics(context, existing);
+            Assert.NotEmpty(diags);
+            Assert.Contains(diags, d => d.Code == "GITIC007");
+
+            var customCollector = new WarningCollector(new MockWarningRuleProvider(new List<IWarningRule>
+            {
+                new MockSeverityRule()
+            }));
+
+            var customDiags = customCollector.CollectDiagnostics(new WarningContext());
+            Assert.Equal(3, customDiags.Count);
+            Assert.Equal("Critical", customDiags[0].Severity);
+            Assert.Equal("Warning", customDiags[1].Severity);
+            Assert.Equal("Info", customDiags[2].Severity);
+        }
+
+        private class MockSeverityRule : IWarningRule
+        {
+            public List<string> Collect(WarningContext context) => new();
+            public List<Diagnostic> CollectDiagnostics(WarningContext context)
+            {
+                return new List<Diagnostic>
+                {
+                    new Diagnostic { Code = "W100", Severity = "Info", Message = "Low priority Info" },
+                    new Diagnostic { Code = "W200", Severity = "Critical", Message = "High priority Failure" },
+                    new Diagnostic { Code = "W150", Severity = "Warning", Message = "Medium priority Warning" }
+                };
+            }
+        }
+
+        private class MockConsoleReporter : IConsoleReporter
+        {
+            public string Stdout { get; set; } = string.Empty;
+            public string Stderr { get; set; } = string.Empty;
+
+            public void Write(string message) => Stdout += message;
+            public void WriteLine(string message) => Stdout += message + "\n";
+            public void WriteError(string message) => Stderr += message;
+            public void WriteErrorLine(string message) => Stderr += message + "\n";
+        }
+
+        private class TestStandardCommand : StandardRenderAnalysisCommand
+        {
+            public TestStandardCommand(ParsedArgs parsed) : base(parsed) { }
+            protected override AnalysisCommand CommandType => AnalysisCommand.Hotspots;
+
+            public Task<CliResult> TestProcessResultAsync(AnalysisResult result, IConsoleReporter reporter)
+            {
+                return ProcessResultAsync(result, reporter);
+            }
+        }
+
+        [Fact]
+        public async Task TestStreamRouting_And_QuietMode()
+        {
+            var settings = DefaultAnalysisSettings.Create();
+            settings.Quiet = false;
+            var parsed = new ParsedArgs { Settings = settings };
+            var command = new TestStandardCommand(parsed);
+
+            var result = new AnalysisResult
+            {
+                Analysis = new AnalysisMetadata { IncludedFileChangeCount = 1 },
+                Diagnostics = new List<Diagnostic>
+                {
+                    new() { Code = "W1", Severity = "Critical", Message = "Critical Error!" },
+                    new() { Code = "W2", Severity = "Warning", Message = "A warning." }
+                }
+            };
+
+            var reporter = new MockConsoleReporter();
+            await command.TestProcessResultAsync(result, reporter);
+
+            Assert.NotEmpty(reporter.Stdout);
+
+            Assert.Contains("[CRITICAL]", reporter.Stderr);
+            Assert.Contains("  W1: Critical Error!", reporter.Stderr);
+            Assert.Contains("[WARNING]", reporter.Stderr);
+            Assert.Contains("  W2: A warning.", reporter.Stderr);
+
+            var quietSettings = DefaultAnalysisSettings.Create();
+            quietSettings.Quiet = true;
+            var quietParsed = new ParsedArgs { Settings = quietSettings };
+            var quietCommand = new TestStandardCommand(quietParsed);
+
+            var quietReporter = new MockConsoleReporter();
+            await quietCommand.TestProcessResultAsync(result, quietReporter);
+
+            Assert.Contains("[CRITICAL]", quietReporter.Stderr);
+            Assert.Contains("  W1: Critical Error!", quietReporter.Stderr);
+            Assert.DoesNotContain("[WARNING]", quietReporter.Stderr);
+            Assert.DoesNotContain("  W2: A warning.", quietReporter.Stderr);
+        }
+
+        [Fact]
+        public async Task TestJSONCompatibility_AdditiveDiagnostics()
+        {
+            var settings = DefaultAnalysisSettings.Create();
+            settings.Json = true;
+            var parsed = new ParsedArgs { Settings = settings };
+            var command = new TestStandardCommand(parsed);
+
+            var result = new AnalysisResult
+            {
+                Analysis = new AnalysisMetadata { IncludedFileChangeCount = 1 },
+                Warnings = new List<string> { "Old warning text" },
+                Diagnostics = new List<Diagnostic>
+                {
+                    new() { Code = "W1", Severity = "Warning", Message = "Old warning text", Hint = "Do X" }
+                }
+            };
+
+            var reporter = new MockConsoleReporter();
+            await command.TestProcessResultAsync(result, reporter);
+
+            string json = reporter.Stdout;
+            Assert.Contains("\"schema_version\": \"1.1\"", json);
+            Assert.Contains("\"warnings\":", json);
+            Assert.Contains("Old warning text", json);
+            Assert.Contains("\"diagnostics\":", json);
+            Assert.Contains("\"code\": \"W1\"", json);
+            Assert.Contains("\"hint\": \"Do X\"", json);
+
+            Assert.Empty(reporter.Stderr);
+        }
+
         private class MockWarningRuleProvider : IWarningRuleProvider
         {
             private readonly List<IWarningRule> _rules;
@@ -1207,6 +1456,15 @@ __GITIC_NUMSTAT__
             public List<string> Collect(WarningContext context)
             {
                 return new List<string> { "Beta warning", "Alpha warning" };
+            }
+
+            public List<Diagnostic> CollectDiagnostics(WarningContext context)
+            {
+                return new List<Diagnostic>
+                {
+                    new Diagnostic { Code = "GITIC999", Severity = "Warning", Message = "Beta warning" },
+                    new Diagnostic { Code = "GITIC999", Severity = "Warning", Message = "Alpha warning" }
+                };
             }
         }
 

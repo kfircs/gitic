@@ -24,6 +24,7 @@ namespace Gitic
         public LeadTimesInfo LeadTimes { get; set; } = new();
         public List<ExclusionSummary> Exclusions { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
+        public List<Diagnostic> Diagnostics { get; set; } = new();
         public int IncludedFileChangeCount { get; set; }
     }
 
@@ -103,19 +104,18 @@ namespace Gitic
             var leadTimes = actualLeadTimeEngine.CalculateLeadTimes(commits);
 
             IWarningCollector actualWarningCollector = _warningCollector;
-            var warnings = actualWarningCollector.Collect(
-                new WarningContext
-                {
-                    EmailCollisions = actualAccumulator.GetEmailCollisions(),
-                    AliasCount = config.Aliases.Count,
-                    ConfiguredBotCount = config.Bots.Count,
-                    AutomationMetrics = automationMetrics,
-                    LeadTimes = leadTimes,
-                    TemporalCoupling = couplingResult,
-                    Files = rawFileMetrics
-                },
-                actualAccumulator.GetWarnings().ToList()
-            );
+            var warningContext = new WarningContext
+            {
+                EmailCollisions = actualAccumulator.GetEmailCollisions(),
+                AliasCount = config.Aliases.Count,
+                ConfiguredBotCount = config.Bots.Count,
+                AutomationMetrics = automationMetrics,
+                LeadTimes = leadTimes,
+                TemporalCoupling = couplingResult,
+                Files = rawFileMetrics
+            };
+            var warnings = actualWarningCollector.Collect(warningContext, actualAccumulator.GetWarnings().ToList());
+            var diagnostics = actualWarningCollector.CollectDiagnostics(warningContext, actualAccumulator.GetWarnings().ToList());
 
             return new AnalysisPipelineResult
             {
@@ -127,6 +127,7 @@ namespace Gitic
                 LeadTimes = leadTimes,
                 Exclusions = actualAccumulator.GetExclusions(),
                 Warnings = warnings,
+                Diagnostics = diagnostics,
                 IncludedFileChangeCount = actualAccumulator.GetIncludedFileChangeCount()
             };
         }
