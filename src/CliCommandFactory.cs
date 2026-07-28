@@ -117,14 +117,22 @@ Commands:
 Options:
   -h, --help                            Show this help menu
   -v, --version                         Show version information
+  --config <config>                     Path to non-default configuration file
+  --user-config <user-config>           Path to non-default global user configuration file
+  --format <format>                     Output format: human, plain, json (default: human)
+  --color <color>                       Color mode: auto, always, never (default: auto)
   --html <path>                         Output visual HTML report to path (for report command)
   --md <path>                           Output Markdown summary report to path (for report command)
   --svg <path>                          Output SVG reports to path (for report command)
   --json                                Output results in raw JSON format
   --all-time                            Analyze all history (ignoring time window settings)
-  --since <date>                        Filter commits since date (YYYY-MM-DD)
-  --path <pattern>                      Filter analysis to files matching glob pattern (e.g. 'src/**')
-  --depth <num>                         Directory depth for areas analysis (1-10, default: 2)
+  --since <since>                       Filter commits since date (YYYY-MM-DD)
+  --until <until>                       Filter commits until date (YYYY-MM-DD)
+  --path <path>                         Filter analysis to files matching glob pattern (e.g. 'src/**')
+  --depth <depth>                       Directory depth for areas analysis (1-10, default: 2)
+  --limit <limit>                       Limit results to top N items
+  --sort <sort>                         Sort results by field
+  --columns <columns>                   Select columns to show
   --include-merges                      Include merge commits in the analysis
   --include-deleted                     Include deleted files in stats
   --merge-by-email                      Merge contributor identities by email

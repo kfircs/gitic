@@ -387,19 +387,19 @@ namespace Gitic.Tests
         public void TestGitParserImplAndInterface()
         {
             IGitParser parser = new GitParser(new GitPatchParser());
-            Assert.Equal("__GITIZER_COMMIT__", parser.CommitMarker);
-            Assert.Equal("__GITIZER_NUMSTAT__", parser.NumstatMarker);
+            Assert.Equal("__GITIC_COMMIT__", parser.CommitMarker);
+            Assert.Equal("__GITIC_NUMSTAT__", parser.NumstatMarker);
 
             // Test parsing with a minimal valid log containing one commit
             string sampleOutput = 
-                "__GITIZER_COMMIT__\n" +
+                "__GITIC_COMMIT__\n" +
                 "abc1234\n" +
                 "2026-07-25T08:34:07Z\n" +
                 "Alice Smith\n" +
                 "alice@example.com\n" +
                 "parent123\n" +
                 "Implement IGitParser interface\n" +
-                "__GITIZER_NUMSTAT__\n" +
+                "__GITIC_NUMSTAT__\n" +
                 "5\t3\tsrc/Gitparser.cs\n" +
                 "diff --git a/src/Gitparser.cs b/src/Gitparser.cs\n" +
                 "@@ -1,3 +1,15 @@\n";
@@ -576,7 +576,7 @@ namespace Gitic.Tests
         public void TestGitParser_ParseGitLog()
         {
             var parser = new GitParser(new GitPatchParser());
-            string logOutput = $@"__GITIZER_COMMIT__
+            string logOutput = $@"__GITIC_COMMIT__
 hash1
 2026-06-01T12:00:00Z
 Author Name
@@ -584,7 +584,7 @@ author@email.com
 parent_hash
 
 This is a commit message.
-__GITIZER_NUMSTAT__
+__GITIC_NUMSTAT__
 10	5	src/main.cs
 2	0	src/helper.cs
 ";
@@ -1251,7 +1251,7 @@ __GITIZER_NUMSTAT__
                 Since = "2026-06-01T12:00:00Z"
             };
 
-            string logOutput = $@"__GITIZER_COMMIT__
+            string logOutput = $@"__GITIC_COMMIT__
 hash1
 2026-06-01T12:00:00Z
 Author Name
@@ -1259,7 +1259,7 @@ author@email.com
 parent_hash
 
 This is a commit message.
-__GITIZER_NUMSTAT__
+__GITIC_NUMSTAT__
 10	5	src/main.cs
 ";
 

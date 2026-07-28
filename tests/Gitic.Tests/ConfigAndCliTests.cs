@@ -569,6 +569,13 @@ bin/
             var runResult = await Cli.RunCliAsync(new[] { "--help" }, reporter);
             Assert.Equal(0, runResult.ExitCode);
             Assert.Contains("--svg <path>", runResult.Stdout);
+            Assert.Contains("--format <format>", runResult.Stdout);
+            Assert.Contains("--color <color>", runResult.Stdout);
+            Assert.Contains("--config <config>", runResult.Stdout);
+            Assert.Contains("--user-config <user-config>", runResult.Stdout);
+            Assert.Contains("--limit <limit>", runResult.Stdout);
+            Assert.Contains("--sort <sort>", runResult.Stdout);
+            Assert.Contains("--columns <columns>", runResult.Stdout);
         }
 
         [Fact]
@@ -639,6 +646,55 @@ bin/
             // Plain should use ASCII symbols [!] and *
             Assert.Contains("[!]", outputPlain);
             Assert.Contains("*", outputPlain);
+        }
+
+        [Fact]
+        public async Task TestCliTableRenderer_TerminalCapabilities()
+        {
+            var result = new AnalysisResult
+            {
+                Analysis = new AnalysisMetadata { IncludedFileChangeCount = 10 },
+                Files = new List<FileMetric>
+                {
+                    new() { Path = "src/Main.cs", AttentionScore = 85.0, HeatScore = 90.0, Churn = 500, ContributorCount = 5, ScoreBreakdown = new ScoreBreakdown() }
+                }
+            };
+
+            string? originalNoColor = Environment.GetEnvironmentVariable("NO_COLOR");
+            string? originalTerm = Environment.GetEnvironmentVariable("TERM");
+
+            try
+            {
+                // Scenario 1: NO_COLOR is set to any value
+                Environment.SetEnvironmentVariable("NO_COLOR", "1");
+                Environment.SetEnvironmentVariable("TERM", "xterm-256color");
+
+                var settingsAuto = new AnalysisSettings { Format = "human", Color = "auto" };
+                var rendererAuto = new CliTableRenderer(AnalysisCommand.Hotspots, settingsAuto);
+                string outputAuto = await rendererAuto.RenderAsync(result);
+
+                // Should disable color when NO_COLOR is set
+                Assert.DoesNotContain("\x1b[", outputAuto, StringComparison.Ordinal);
+
+                // Scenario 2: TERM=dumb
+                Environment.SetEnvironmentVariable("NO_COLOR", null);
+                Environment.SetEnvironmentVariable("TERM", "dumb");
+
+                var rendererDumb = new CliTableRenderer(AnalysisCommand.Hotspots, settingsAuto);
+                string outputDumb = await rendererDumb.RenderAsync(result);
+
+                // Should disable color and Unicode when TERM=dumb
+                Assert.DoesNotContain("\x1b[", outputDumb, StringComparison.Ordinal);
+                Assert.DoesNotContain("⚠️", outputDumb);
+                Assert.DoesNotContain("🔥", outputDumb);
+                Assert.Contains("[!]", outputDumb);
+                Assert.Contains("*", outputDumb);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("NO_COLOR", originalNoColor);
+                Environment.SetEnvironmentVariable("TERM", originalTerm);
+            }
         }
 
         [Fact]

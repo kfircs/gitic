@@ -11,7 +11,7 @@
     <ToolCommandName>gitic</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <Version>0.1.0</Version>
-    <Description>Gitizer C# Port (Gitic)</Description>
+    <Description>Gitic Strategic Codebase Analysis CLI</Description>
     <Authors>Author</Authors>
   </PropertyGroup>
 

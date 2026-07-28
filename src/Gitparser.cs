@@ -26,8 +26,8 @@ namespace Gitic
             _patchParser = patchParser;
         }
 
-        public string CommitMarker => "__GITIZER_COMMIT__";
-        public string NumstatMarker => "__GITIZER_NUMSTAT__";
+        public string CommitMarker => "__GITIC_COMMIT__";
+        public string NumstatMarker => "__GITIC_NUMSTAT__";
 
         public List<string> BuildGitLogArguments(GitHistoryExtractorOptions options)
         {
