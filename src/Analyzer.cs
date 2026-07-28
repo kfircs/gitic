@@ -70,7 +70,7 @@ namespace Gitic
             var gitignoreRules = PathClassifier.LoadGitignoreRules(input.RepoRoot);
             config.Excludes.AddRange(gitignoreRules);
 
-            var pipelineResult = _pipeline.Run(commits, headFiles, config, settings, input.Command);
+            var pipelineResult = _pipeline.Run(commits, headFiles, config, settings, input.Command, cancellationToken);
 
             var provider = input.FileStatsProvider ?? new DiskFileStatsProvider();
             var fileMetrics = await provider.EnrichFileMetricsAsync(input.RepoRoot, pipelineResult.Files);

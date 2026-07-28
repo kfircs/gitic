@@ -42,6 +42,18 @@ namespace Gitic
             }
 
             using var process = new Process { StartInfo = psi };
+            using var registration = cancellationToken.Register(() =>
+            {
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                }
+                catch { /* Ignore */ }
+            });
+
             try
             {
                 process.Start();

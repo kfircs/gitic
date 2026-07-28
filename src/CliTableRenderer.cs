@@ -64,8 +64,9 @@ namespace Gitic
             _termFormatter = new TerminalFormatter(_settings);
         }
 
-        public Task<string> RenderAsync(AnalysisResult result)
+        public Task<string> RenderAsync(AnalysisResult result, System.Threading.CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (result.Analysis.IncludedFileChangeCount == 0)
             {
                 return Task.FromResult("No commits matched the selected analysis window. Try --all-time or a wider --since value.\n");

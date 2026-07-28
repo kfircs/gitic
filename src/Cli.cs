@@ -34,8 +34,18 @@ namespace Gitic
             };
         }
 
-        public static async Task<CliResult> RunCliAsync(string[] args, IConsoleReporter? reporter = null)
+        public static async Task<CliResult> RunCliAsync(string[] args, IConsoleReporter? reporter = null, CancellationToken cancellationToken = default)
         {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+            ConsoleCancelEventHandler cancelHandler = (sender, e) =>
+            {
+                e.Cancel = true;
+                cts.Cancel();
+            };
+
+            Console.CancelKeyPress += cancelHandler;
+
             ICommandLineParser parser = new CommandLineParser(args);
             ParsedArgs parsed;
             try
@@ -44,6 +54,7 @@ namespace Gitic
             }
             catch (CommandLineParseError error)
             {
+                Console.CancelKeyPress -= cancelHandler;
                 reporter?.WriteError($"{error.Message}\n");
                 return CliFailure($"{error.Message}\n", exitCode: 2);
             }
@@ -51,13 +62,23 @@ namespace Gitic
             try
             {
                 ICliCommand command = CliCommandFactory.CreateCommand(parsed);
-                return await command.ExecuteAsync(reporter);
+                return await command.ExecuteAsync(reporter, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                string errMsg = "Operation cancelled.\n";
+                reporter?.WriteError(errMsg);
+                return CliFailure(errMsg, exitCode: 130);
             }
             catch (Exception ex)
             {
                 string errMsg = $"Error: {ex.Message}\n";
                 reporter?.WriteError(errMsg);
                 return CliFailure(errMsg);
+            }
+            finally
+            {
+                Console.CancelKeyPress -= cancelHandler;
             }
         }
     }

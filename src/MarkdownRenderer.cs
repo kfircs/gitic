@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Gitic
@@ -14,8 +15,9 @@ namespace Gitic
         {
         }
 
-        public Task<string> RenderAsync(AnalysisResult result)
+        public Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var sb = new StringBuilder();
             
             string repoName = Path.GetFileName(result.Analysis.RepoRoot.TrimEnd(Path.DirectorySeparatorChar));

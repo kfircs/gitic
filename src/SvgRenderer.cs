@@ -340,16 +340,18 @@ namespace Gitic
 
     public class SvgSummaryRenderer : IReportRenderer
     {
-        public Task<string> RenderAsync(AnalysisResult result)
+        public Task<string> RenderAsync(AnalysisResult result, System.Threading.CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(SvgGeneratorHelper.GenerateSvg(result));
         }
     }
 
     public class SvgComplexityRenderer : IReportRenderer
     {
-        public Task<string> RenderAsync(AnalysisResult result)
+        public Task<string> RenderAsync(AnalysisResult result, System.Threading.CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(SvgGeneratorHelper.GenerateComplexityRangesSvg(result));
         }
     }

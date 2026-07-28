@@ -1,12 +1,14 @@
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Gitic
 {
     public class JsonRenderer : IReportRenderer
     {
-        public Task<string> RenderAsync(AnalysisResult result)
+        public Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,

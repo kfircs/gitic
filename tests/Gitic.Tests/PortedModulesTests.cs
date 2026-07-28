@@ -1444,6 +1444,95 @@ __GITIC_NUMSTAT__
             Assert.Empty(reporter.Stderr);
         }
 
+        [Fact]
+        public async Task TestGitClient_Cancellation_Propagates()
+        {
+            var executor = new MockGitExecutor();
+            var client = new GitClient("/path/to/repo", executor);
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            {
+                await client.ListHeadFilesAsync(cts.Token);
+            });
+        }
+
+        private class TestReportCommand : ReportCommand
+        {
+            public TestReportCommand(ParsedArgs parsed) : base(parsed) { }
+
+            public Task<CliResult> TestProcessResultAsync(AnalysisResult result, IConsoleReporter reporter, CancellationToken cancellationToken = default)
+            {
+                return ProcessResultAsync(result, reporter, cancellationToken);
+            }
+        }
+
+        [Fact]
+        public async Task TestReportCommand_AtomicWrite_And_Cleanup()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            Directory.CreateDirectory(tempDir);
+            try
+            {
+                string htmlPath = Path.Combine(tempDir, "report.html");
+                string mdPath = Path.Combine(tempDir, "report.md");
+                await File.WriteAllTextAsync(htmlPath, "Existing HTML content");
+                await File.WriteAllTextAsync(mdPath, "Existing MD content");
+
+                var settings = DefaultAnalysisSettings.Create();
+                var parsed = new ParsedArgs
+                {
+                    Settings = settings,
+                    HtmlPath = htmlPath,
+                    MdPath = mdPath
+                };
+                var command = new TestReportCommand(parsed);
+                var result = new AnalysisResult
+                {
+                    Analysis = new AnalysisMetadata { IncludedFileChangeCount = 1 }
+                };
+
+                var reporter = new MockConsoleReporter();
+                var successResult = await command.TestProcessResultAsync(result, reporter, CancellationToken.None);
+                Assert.Equal(0, successResult.ExitCode);
+
+                string newHtml = await File.ReadAllTextAsync(htmlPath);
+                string newMd = await File.ReadAllTextAsync(mdPath);
+                Assert.Contains("<!doctype html>", newHtml);
+                Assert.Contains("# 📊 Gitic Analysis Report", newMd);
+
+                var files = Directory.GetFiles(tempDir);
+                Assert.Equal(2, files.Length);
+
+                await File.WriteAllTextAsync(htmlPath, "Valid HTML 2");
+                await File.WriteAllTextAsync(mdPath, "Valid MD 2");
+
+                var cts = new CancellationTokenSource();
+                cts.Cancel();
+
+                var cancelCommand = new TestReportCommand(parsed);
+                var quietReporter = new MockConsoleReporter();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                {
+                    await cancelCommand.TestProcessResultAsync(result, quietReporter, cts.Token);
+                });
+
+                Assert.Equal("Valid HTML 2", await File.ReadAllTextAsync(htmlPath));
+                Assert.Equal("Valid MD 2", await File.ReadAllTextAsync(mdPath));
+
+                var remainingFiles = Directory.GetFiles(tempDir);
+                Assert.Equal(2, remainingFiles.Length);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
         private class MockWarningRuleProvider : IWarningRuleProvider
         {
             private readonly List<IWarningRule> _rules;
@@ -1680,7 +1769,8 @@ __GITIC_NUMSTAT__
                     HashSet<string> headFiles,
                     GiticConfig config,
                     AnalysisSettings settings,
-                    AnalysisCommand command)
+                    AnalysisCommand command,
+                    CancellationToken cancellationToken = default)
                 {
                     RunCalled = true;
                     ReceivedCommits = commits;

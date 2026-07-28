@@ -11,7 +11,8 @@ namespace Gitic
             HashSet<string> headFiles,
             GiticConfig config,
             AnalysisSettings settings,
-            AnalysisCommand command);
+            AnalysisCommand command,
+            System.Threading.CancellationToken cancellationToken = default);
     }
 
     public class AnalysisPipelineResult
@@ -70,8 +71,10 @@ namespace Gitic
             HashSet<string> headFiles,
             GiticConfig config,
             AnalysisSettings settings,
-            AnalysisCommand command)
+            AnalysisCommand command,
+            System.Threading.CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             IPathClassifier pathClassifier = _pathClassifierFactory(headFiles, config.Excludes, settings.IncludeDeleted, settings.Path);
             bool mergeByEmail = (config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
             var actualIdentityRegistry = _identityRegistry ?? new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
@@ -86,6 +89,7 @@ namespace Gitic
             var allIncludedCommits = new List<List<string>>();
             foreach (var commit in commits)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var includedFilesInCommit = new List<string>();
                 actualAccumulator.AddCommit(commit, includedFilesInCommit);
                 allIncludedCommits.Add(includedFilesInCommit);

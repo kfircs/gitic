@@ -20,6 +20,7 @@ namespace Gitic
 
         public Task<string> RunAsync(string[] args, string cwd, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             _calls.Add(args);
             var key = GetKey(args);
             if (_outputs.TryGetValue(key, out string? value))
