@@ -687,5 +687,52 @@ bin/
             Assert.Contains("src/FileA.cs", output);
             Assert.DoesNotContain("src/FileC.cs", output);
         }
+
+        [Fact]
+        public async Task TestCliTableRenderer_AreasAndContributorsParity()
+        {
+            var result = new AnalysisResult
+            {
+                Analysis = new AnalysisMetadata { IncludedFileChangeCount = 10 },
+                Settings = new AnalysisSettings { Limit = 1, Sort = "heat" },
+                Areas = new List<AreaMetric>
+                {
+                    new() { Area = "src/AreaA", HeatScore = 50.0, AttentionScore = 30.0 },
+                    new() { Area = "src/AreaB", HeatScore = 90.0, AttentionScore = 40.0 }
+                },
+                Contributors = new List<ContributorMetric>
+                {
+                    new() { Name = "Alice", TotalActivity = 10 },
+                    new() { Name = "Bob", TotalActivity = 50 }
+                },
+                Automation = new List<AutomationMetric>
+                {
+                    new() { Name = "Bot1", TotalActivity = 5 }
+                }
+            };
+
+            // Test Areas custom sort
+            var service = new MetricProcessorService();
+            service.SortMetrics(result, AnalysisCommand.Areas);
+
+            // Heat sort should put AreaB first
+            Assert.Equal("src/AreaB", result.Areas[0].Area);
+
+            // Test Areas rendering (should apply Limit = 1)
+            var areaRenderer = new CliTableRenderer(AnalysisCommand.Areas, result.Settings);
+            string areaOutput = await areaRenderer.RenderAsync(result);
+            Assert.Contains("src/AreaB", areaOutput);
+            Assert.DoesNotContain("src/AreaA", areaOutput);
+
+            // Test Contributors sorting and rendering (Limit = 1, default sort by activity)
+            var contributorSettings = new AnalysisSettings { Limit = 1 };
+            var contributorRenderer = new CliTableRenderer(AnalysisCommand.Contributors, contributorSettings);
+            string contributorOutput = await contributorRenderer.RenderAsync(result);
+            
+            // Bob has activity 50, Alice has 10, Bot1 has 5 -> Bob should be rendered, Alice/Bot1 ignored due to Limit = 1
+            Assert.Contains("Bob", contributorOutput);
+            Assert.DoesNotContain("Alice", contributorOutput);
+            Assert.DoesNotContain("Bot1", contributorOutput);
+        }
     }
 }

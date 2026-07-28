@@ -278,27 +278,147 @@ namespace Gitic
 
         private string RenderAreaTable(AnalysisResult result)
         {
-            IConsoleTableBuilder table = new ConsoleTableBuilder()
-                .AddColumn("area", 28, "left")
-                .AddColumn("heat", 5, "right")
-                .AddColumn("attention", 9, "right")
-                .AddColumn("churn", 6, "right")
-                .AddColumn("contributors", 12, "right")
-                .AddColumn("top activity share", 24, "left")
-                .AddColumn("reasons");
-
-            foreach (var area in result.Areas)
+            // 1. Determine terminal width
+            int consoleWidth = 80;
+            try
             {
-                table.AddRow(new List<string>
+                if (!Console.IsOutputRedirected)
                 {
-                    area.Area,
-                    area.HeatScore.ToString(),
-                    area.AttentionScore.ToString(),
-                    area.Churn.ToString(),
-                    area.ContributorCount.ToString(),
-                    TopContributor(area.Contributors),
-                    ScoreReasons(area.ScoreBreakdown)
-                });
+                    consoleWidth = Console.WindowWidth;
+                }
+            }
+            catch { }
+
+            if (consoleWidth < 40) consoleWidth = 40;
+            if (consoleWidth > 200) consoleWidth = 200;
+
+            // 2. Select columns to display
+            var visibleColumns = new List<string>();
+            if (!string.IsNullOrEmpty(_settings.Columns))
+            {
+                visibleColumns = _settings.Columns.Split(',')
+                    .Select(c => c.Trim().ToLower())
+                    .Where(c => !string.IsNullOrEmpty(c))
+                    .ToList();
+            }
+            else
+            {
+                // Default based on terminal width
+                if (consoleWidth < 60)
+                {
+                    visibleColumns = new List<string> { "area", "attention" };
+                }
+                else if (consoleWidth < 100)
+                {
+                    visibleColumns = new List<string> { "area", "attention", "heat", "reasons" };
+                }
+                else
+                {
+                    visibleColumns = new List<string> { "area", "attention", "heat", "ownership", "rework", "contributors", "reasons" };
+                }
+            }
+
+            // 3. Set column properties
+            var columnDefs = new Dictionary<string, (string align, int stdWidth)>
+            {
+                { "area", ("left", 20) }, // dynamically adjusted
+                { "attention", ("right", 10) },
+                { "heat", ("right", 6) },
+                { "ownership", ("left", 24) },
+                { "rework", ("right", 8) },
+                { "contributors", ("right", 12) },
+                { "reasons", ("left", 25) }
+            };
+
+            // Calculate other columns width sum
+            int otherWidths = 0;
+            int colCount = 0;
+            foreach (var col in visibleColumns)
+            {
+                if (col == "area") continue;
+                if (columnDefs.TryGetValue(col, out var def))
+                {
+                    otherWidths += def.stdWidth;
+                    colCount++;
+                }
+            }
+
+            int spacing = visibleColumns.Count - 1;
+            int areaWidth = consoleWidth - otherWidths - spacing;
+            if (areaWidth < 12) areaWidth = 12;
+
+            int reasonsWidth = 25;
+            if (visibleColumns.Contains("reasons"))
+            {
+                int totalAllocated = areaWidth + otherWidths + spacing;
+                if (totalAllocated < consoleWidth)
+                {
+                    reasonsWidth += (consoleWidth - totalAllocated);
+                }
+            }
+
+            IConsoleTableBuilder table = new ConsoleTableBuilder();
+            foreach (var col in visibleColumns)
+            {
+                if (col == "area")
+                {
+                    table.AddColumn("area", areaWidth, "left");
+                }
+                else if (col == "reasons")
+                {
+                    table.AddColumn("reasons", reasonsWidth, "left");
+                }
+                else if (columnDefs.TryGetValue(col, out var def))
+                {
+                    table.AddColumn(col, def.stdWidth, def.align);
+                }
+            }
+
+            // 4. Sort and Limit Areas (from the result model)
+            int limit = _settings.Limit ?? 20;
+            var areasToRender = result.Areas.Take(limit).ToList();
+
+            foreach (var area in areasToRender)
+            {
+                var rowCells = new List<string>();
+                foreach (var col in visibleColumns)
+                {
+                    if (col == "area")
+                    {
+                        rowCells.Add(TruncatePath(area.Area, areaWidth));
+                    }
+                    else if (col == "attention")
+                    {
+                        rowCells.Add(_termFormatter.FormatAttention(area.AttentionScore, area.AttentionScore.ToString("F1")));
+                    }
+                    else if (col == "heat")
+                    {
+                        rowCells.Add(_termFormatter.FormatHeat(area.HeatScore, area.HeatScore.ToString("F1")));
+                    }
+                    else if (col == "ownership")
+                    {
+                        rowCells.Add(TopContributor(area.Contributors));
+                    }
+                    else if (col == "rework")
+                    {
+                        double rework = area.ReworkRate ?? 0;
+                        rowCells.Add($"{Math.Round(rework * 100)}%");
+                    }
+                    else if (col == "contributors")
+                    {
+                        rowCells.Add(area.ContributorCount.ToString());
+                    }
+                    else if (col == "reasons")
+                    {
+                        string scoreReasons = ScoreReasons(area.ScoreBreakdown);
+                        if (scoreReasons.Length > reasonsWidth)
+                        {
+                            scoreReasons = scoreReasons.Substring(0, reasonsWidth - 3) + "...";
+                        }
+                        rowCells.Add(scoreReasons);
+                    }
+                }
+                table.AddRow(rowCells);
             }
 
             return table.Render();
@@ -306,20 +426,189 @@ namespace Gitic
 
         private string RenderContributorTable(AnalysisResult result)
         {
-            IConsoleTableBuilder table = new ConsoleTableBuilder()
-                .AddColumn("contributor", 24, "left")
-                .AddColumn("activity", 8, "right")
-                .AddColumn("top area");
-
-            foreach (var contributor in result.Contributors)
+            // 1. Determine terminal width
+            int consoleWidth = 80;
+            try
             {
-                string topArea = contributor.Areas.Count > 0 ? contributor.Areas[0].Area : "";
-                table.AddRow(new List<string>
+                if (!Console.IsOutputRedirected)
                 {
-                    contributor.Name,
-                    contributor.TotalActivity.ToString(),
-                    topArea
-                });
+                    consoleWidth = Console.WindowWidth;
+                }
+            }
+            catch { }
+
+            if (consoleWidth < 40) consoleWidth = 40;
+            if (consoleWidth > 200) consoleWidth = 200;
+
+            // 2. Combine and compute human + bot metrics
+            var combined = new List<(string name, string email, string type, double activity, double share, double familiarity, string topAreas)>();
+
+            double totalAllActivity = result.Contributors.Sum(c => c.TotalActivity) + result.Automation.Sum(c => c.TotalActivity);
+
+            foreach (var h in result.Contributors)
+            {
+                double share = totalAllActivity > 0 ? (h.TotalActivity / totalAllActivity) : 0;
+                double familiarity = h.Areas.Count > 0 ? h.Areas.Average(a => a.FamiliarityScore) : 0;
+                string topAreas = string.Join(", ", h.Areas.Take(2).Select(a => a.Area));
+                combined.Add((h.Name, h.Email, "human", h.TotalActivity, share, familiarity, topAreas));
+            }
+
+            foreach (var b in result.Automation)
+            {
+                double share = totalAllActivity > 0 ? (b.TotalActivity / totalAllActivity) : 0;
+                double familiarity = b.Areas.Count > 0 ? b.Areas.Average(a => a.FamiliarityScore) : 0;
+                string topAreas = string.Join(", ", b.Areas.Take(2).Select(a => a.Area));
+                combined.Add((b.Name, b.Email, "bot", b.TotalActivity, share, familiarity, topAreas));
+            }
+
+            // Apply custom Sorting
+            if (!string.IsNullOrEmpty(_settings.Sort))
+            {
+                string sortField = _settings.Sort.ToLower();
+                if (sortField == "name" || sortField == "contributor")
+                {
+                    combined = combined.OrderBy(c => c.name).ToList();
+                }
+                else if (sortField == "activity" || sortField == "share")
+                {
+                    combined = combined.OrderByDescending(c => c.activity).ToList();
+                }
+                else if (sortField == "familiarity")
+                {
+                    combined = combined.OrderByDescending(c => c.familiarity).ToList();
+                }
+            }
+            else
+            {
+                // Default sorting by activity
+                combined = combined.OrderByDescending(c => c.activity).ToList();
+            }
+
+            // 3. Select columns to display
+            var visibleColumns = new List<string>();
+            if (!string.IsNullOrEmpty(_settings.Columns))
+            {
+                visibleColumns = _settings.Columns.Split(',')
+                    .Select(c => c.Trim().ToLower())
+                    .Where(c => !string.IsNullOrEmpty(c))
+                    .ToList();
+            }
+            else
+            {
+                // Default based on terminal width
+                if (consoleWidth < 60)
+                {
+                    visibleColumns = new List<string> { "contributor", "activity" };
+                }
+                else if (consoleWidth < 100)
+                {
+                    visibleColumns = new List<string> { "contributor", "type", "activity", "share", "top areas" };
+                }
+                else
+                {
+                    visibleColumns = new List<string> { "contributor", "type", "activity", "share", "familiarity", "top areas" };
+                }
+            }
+
+            // 4. Set column properties
+            var columnDefs = new Dictionary<string, (string align, int stdWidth)>
+            {
+                { "contributor", ("left", 24) }, // adjusted dynamically
+                { "type", ("left", 8) },
+                { "activity", ("right", 10) },
+                { "share", ("right", 8) },
+                { "familiarity", ("right", 11) },
+                { "top areas", ("left", 30) } // adjusted dynamically
+            };
+
+            // Calculate other columns width sum
+            int otherWidths = 0;
+            int colCount = 0;
+            foreach (var col in visibleColumns)
+            {
+                if (col == "contributor" || col == "top areas") continue;
+                if (columnDefs.TryGetValue(col, out var def))
+                {
+                    otherWidths += def.stdWidth;
+                    colCount++;
+                }
+            }
+
+            int spacing = visibleColumns.Count - 1;
+            int availableForStretch = consoleWidth - otherWidths - spacing;
+            if (availableForStretch < 20) availableForStretch = 20;
+
+            int contributorWidth = 24;
+            int topAreasWidth = 30;
+
+            if (visibleColumns.Contains("contributor") && visibleColumns.Contains("top areas"))
+            {
+                contributorWidth = (int)(availableForStretch * 0.45);
+                topAreasWidth = availableForStretch - contributorWidth;
+                if (contributorWidth < 12) contributorWidth = 12;
+                if (topAreasWidth < 12) topAreasWidth = 12;
+            }
+            else if (visibleColumns.Contains("contributor"))
+            {
+                contributorWidth = availableForStretch;
+            }
+            else if (visibleColumns.Contains("top areas"))
+            {
+                topAreasWidth = availableForStretch;
+            }
+
+            IConsoleTableBuilder table = new ConsoleTableBuilder();
+            foreach (var col in visibleColumns)
+            {
+                if (col == "contributor")
+                {
+                    table.AddColumn("contributor", contributorWidth, "left");
+                }
+                else if (col == "top areas")
+                {
+                    table.AddColumn("top areas", topAreasWidth, "left");
+                }
+                else if (columnDefs.TryGetValue(col, out var def))
+                {
+                    table.AddColumn(col, def.stdWidth, def.align);
+                }
+            }
+
+            // 5. Apply Limit and Render
+            int limit = _settings.Limit ?? 20;
+            var listToRender = combined.Take(limit).ToList();
+
+            foreach (var item in listToRender)
+            {
+                var rowCells = new List<string>();
+                foreach (var col in visibleColumns)
+                {
+                    if (col == "contributor")
+                    {
+                        rowCells.Add(TruncatePath(item.name, contributorWidth));
+                    }
+                    else if (col == "type")
+                    {
+                        rowCells.Add(item.type);
+                    }
+                    else if (col == "activity")
+                    {
+                        rowCells.Add(item.activity.ToString("F0"));
+                    }
+                    else if (col == "share")
+                    {
+                        rowCells.Add($"{Math.Round(item.share * 100)}%");
+                    }
+                    else if (col == "familiarity")
+                    {
+                        rowCells.Add($"{Math.Round(item.familiarity)}%");
+                    }
+                    else if (col == "top areas")
+                    {
+                        rowCells.Add(TruncatePath(item.topAreas, topAreasWidth));
+                    }
+                }
+                table.AddRow(rowCells);
             }
 
             return table.Render();

@@ -106,7 +106,35 @@ namespace Gitic
         public void SortMetrics(AnalysisResult result, AnalysisCommand command)
         {
             if (result == null) return;
-            result.Areas = SortAreasForCommand(result.Areas, command);
+            
+            if (command == AnalysisCommand.Areas && result.Settings != null && !string.IsNullOrEmpty(result.Settings.Sort))
+            {
+                string sortField = result.Settings.Sort.ToLower();
+                if (sortField == "attention")
+                {
+                    result.Areas = result.Areas.OrderByDescending(a => a.AttentionScore).ToList();
+                }
+                else if (sortField == "heat")
+                {
+                    result.Areas = result.Areas.OrderByDescending(a => a.HeatScore).ToList();
+                }
+                else if (sortField == "churn")
+                {
+                    result.Areas = result.Areas.OrderByDescending(a => a.Churn).ToList();
+                }
+                else if (sortField == "contributors")
+                {
+                    result.Areas = result.Areas.OrderByDescending(a => a.ContributorCount).ToList();
+                }
+                else
+                {
+                    result.Areas = SortAreasForCommand(result.Areas, command);
+                }
+            }
+            else
+            {
+                result.Areas = SortAreasForCommand(result.Areas, command);
+            }
             
             if (command == AnalysisCommand.Hotspots && result.Settings != null && !string.IsNullOrEmpty(result.Settings.Sort))
             {
