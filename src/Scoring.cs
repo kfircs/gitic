@@ -241,7 +241,7 @@ namespace Gitic
 
     public class FamiliarityScoringEngine : IFamiliarityScoringEngine
     {
-        private readonly GitizerConfig _config;
+        private readonly GiticConfig _config;
         private readonly HashSet<string> _activeContributorKeys;
         private readonly int _depth;
         private readonly IKnowledgeSiloCalculator _siloCalculator;
@@ -249,7 +249,7 @@ namespace Gitic
         private readonly IScoringUtilityService _scoringUtilityService;
 
         public FamiliarityScoringEngine(
-            GitizerConfig config,
+            GiticConfig config,
             HashSet<string>? activeContributorKeys = null,
             int depth = 2,
             IKnowledgeSiloCalculator? siloCalculator = null,

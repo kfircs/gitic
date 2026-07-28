@@ -14,13 +14,13 @@ namespace Gitic
 
     public static class Cli
     {
-        public static CliResult CliSuccess(string stdout)
+        public static CliResult CliSuccess(string stdout, string stderr = "")
         {
             return new CliResult
             {
                 ExitCode = 0,
                 Stdout = stdout,
-                Stderr = ""
+                Stderr = stderr
             };
         }
 
@@ -45,7 +45,7 @@ namespace Gitic
             catch (CommandLineParseError error)
             {
                 reporter?.WriteError($"{error.Message}\n");
-                return CliFailure($"{error.Message}\n");
+                return CliFailure($"{error.Message}\n", exitCode: 2);
             }
 
             try

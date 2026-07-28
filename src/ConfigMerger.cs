@@ -5,22 +5,22 @@ namespace Gitic
 {
     public interface IConfigMerger
     {
-        GitizerConfig CloneDefaultConfig();
-        GitizerConfigOverrides ConvertToOverrides(GitizerConfig config);
-        GitizerConfig CloneConfig(GitizerConfig config);
-        GitizerConfig MergeConfig(GitizerConfig baseConfig, GitizerConfigOverrides? overrideConfig = null);
+        GiticConfig CloneDefaultConfig();
+        GiticConfigOverrides ConvertToOverrides(GiticConfig config);
+        GiticConfig CloneConfig(GiticConfig config);
+        GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfigOverrides? overrideConfig = null);
     }
 
     public class ConfigMerger : IConfigMerger
     {
-        public GitizerConfig CloneDefaultConfig()
+        public GiticConfig CloneDefaultConfig()
         {
-            return CloneConfig(GitizerConfig.Default);
+            return CloneConfig(GiticConfig.Default);
         }
 
-        public GitizerConfigOverrides ConvertToOverrides(GitizerConfig config)
+        public GiticConfigOverrides ConvertToOverrides(GiticConfig config)
         {
-            return new GitizerConfigOverrides
+            return new GiticConfigOverrides
             {
                 Aliases = config.Aliases,
                 Bots = config.Bots,
@@ -41,9 +41,9 @@ namespace Gitic
             };
         }
 
-        public GitizerConfig CloneConfig(GitizerConfig config)
+        public GiticConfig CloneConfig(GiticConfig config)
         {
-            return new GitizerConfig
+            return new GiticConfig
             {
                 Aliases = config.Aliases.Select(alias => new AliasRule
                 {
@@ -68,7 +68,7 @@ namespace Gitic
             };
         }
 
-        public GitizerConfig MergeConfig(GitizerConfig baseConfig, GitizerConfigOverrides? overrideConfig = null)
+        public GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfigOverrides? overrideConfig = null)
         {
             var cloned = CloneConfig(baseConfig);
             if (overrideConfig == null)

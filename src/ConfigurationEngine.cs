@@ -8,13 +8,13 @@ namespace Gitic
     public interface IConfigurationEngine
     {
         string RenderStarterConfig();
-        Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGitizerConfigOptions? options = null);
+        Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGiticConfigOptions? options = null);
     }
 
     public class ResolvedConfiguration
     {
         public AnalysisSettings Settings { get; init; } = new();
-        public GitizerConfig Config { get; init; } = GitizerConfig.Default;
+        public GiticConfig Config { get; init; } = GiticConfig.Default;
     }
 
     public class ConfigurationEngine : IConfigurationEngine
@@ -36,7 +36,7 @@ namespace Gitic
 
         public string RenderStarterConfig()
         {
-            var attention = GitizerConfig.Default.Scoring.Attention;
+            var attention = GiticConfig.Default.Scoring.Attention;
             return
                 "aliases: []\n" +
                 "bots: []\n" +
@@ -58,11 +58,11 @@ namespace Gitic
                 "  temporal_coupling_max_commit_file_count: 20\n";
         }
 
-        public async Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGitizerConfigOptions? options = null)
+        public async Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGiticConfigOptions? options = null)
         {
-            options ??= new LoadGitizerConfigOptions { RepoRoot = input.RepoRoot };
+            options ??= new LoadGiticConfigOptions { RepoRoot = input.RepoRoot };
             
-            var loadedConfig = await LoadGitizerConfigInternalAsync(options);
+            var loadedConfig = await LoadGiticConfigInternalAsync(options);
             var mergedConfig = input.Config != null 
                 ? _configMerger.MergeConfig(loadedConfig.Config, _configMerger.ConvertToOverrides(input.Config)) 
                 : loadedConfig.Config;
@@ -76,20 +76,62 @@ namespace Gitic
             };
         }
 
-        private async Task<LoadedGitizerConfig> LoadGitizerConfigInternalAsync(LoadGitizerConfigOptions options)
+        private async Task<LoadedGiticConfig> LoadGiticConfigInternalAsync(LoadGiticConfigOptions options)
         {
             string userHome = options.UserHome ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            string userConfigPath = options.UserConfigPath ?? Path.Combine(userHome, ".config", "gitizer", "config.yml");
-            string? repoConfigPath = options.RepoConfigPath ?? (options.RepoRoot == null ? null : Path.Combine(options.RepoRoot, ".gitizer.yml"));
+            
+            string? userConfigPath = options.UserConfigPath;
+            if (userConfigPath == null)
+            {
+                string preferredUserPath = Path.Combine(userHome, ".config", "gitic", "config.yml");
+                string fallbackUserPath = Path.Combine(userHome, ".config", "gitizer", "config.yml");
+                if (File.Exists(preferredUserPath))
+                {
+                    userConfigPath = preferredUserPath;
+                }
+                else if (File.Exists(fallbackUserPath))
+                {
+                    userConfigPath = fallbackUserPath;
+                    Console.Error.WriteLine($"Warning: Using legacy user configuration file at '{fallbackUserPath}'. Please migrate to '{preferredUserPath}'.");
+                }
+                else
+                {
+                    userConfigPath = preferredUserPath;
+                }
+            }
+
+            string? repoConfigPath = options.RepoConfigPath;
+            if (repoConfigPath == null && options.RepoRoot != null)
+            {
+                string preferredRepoPath = Path.Combine(options.RepoRoot, ".gitic.yml");
+                string fallbackRepoPath = Path.Combine(options.RepoRoot, ".gitizer.yml");
+                if (File.Exists(preferredRepoPath))
+                {
+                    repoConfigPath = preferredRepoPath;
+                }
+                else if (File.Exists(fallbackRepoPath))
+                {
+                    repoConfigPath = fallbackRepoPath;
+                    Console.Error.WriteLine($"Warning: Using legacy repository configuration file at '{fallbackRepoPath}'. Please migrate to '{preferredRepoPath}'.");
+                }
+                else
+                {
+                    repoConfigPath = preferredRepoPath;
+                }
+            }
+            else if (repoConfigPath == null && options.RepoRoot == null)
+            {
+                repoConfigPath = null;
+            }
 
             string? userConfigRaw = await ReadOptionalUtf8Async(userConfigPath);
             string? repoConfigRaw = repoConfigPath == null ? null : await ReadOptionalUtf8Async(repoConfigPath);
 
-            GitizerConfigOverrides? userOverride = userConfigRaw == null
+            GiticConfigOverrides? userOverride = userConfigRaw == null
                 ? null
                 : ParseAndValidateOverride(userConfigRaw, $"user config ({userConfigPath})");
 
-            GitizerConfigOverrides? repoOverride = repoConfigRaw == null
+            GiticConfigOverrides? repoOverride = repoConfigRaw == null
                 ? null
                 : ParseAndValidateOverride(repoConfigRaw, $"repo config ({repoConfigPath})");
 
@@ -100,7 +142,7 @@ namespace Gitic
 
             _validator.ValidateAttentionWeights(merged.Scoring.Attention, "effective config");
 
-            return new LoadedGitizerConfig
+            return new LoadedGiticConfig
             {
                 Config = merged,
                 Sources = new ConfigSources
@@ -127,7 +169,7 @@ namespace Gitic
             }
         }
 
-        private GitizerConfigOverrides ParseAndValidateOverride(string content, string source)
+        private GiticConfigOverrides ParseAndValidateOverride(string content, string source)
         {
             var parsed = _yamlParser.Parse(content, source);
             return _overridesNormalizer.NormalizeOverride(parsed, source);

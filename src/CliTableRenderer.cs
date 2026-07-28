@@ -54,10 +54,14 @@ namespace Gitic
     public class CliTableRenderer : IReportRenderer
     {
         private readonly AnalysisCommand _command;
+        private readonly AnalysisSettings _settings;
+        private readonly TerminalFormatter _termFormatter;
 
-        public CliTableRenderer(AnalysisCommand command)
+        public CliTableRenderer(AnalysisCommand command, AnalysisSettings? settings = null)
         {
             _command = command;
+            _settings = settings ?? DefaultAnalysisSettings.Create();
+            _termFormatter = new TerminalFormatter(_settings);
         }
 
         public Task<string> RenderAsync(AnalysisResult result)
@@ -67,28 +71,22 @@ namespace Gitic
                 return Task.FromResult("No commits matched the selected analysis window. Try --all-time or a wider --since value.\n");
             }
 
-            var formatter = new CliReportFormatter(result);
-
             if (_command == AnalysisCommand.Contributors)
             {
-                string tableString = RenderContributorTable(result);
-                return Task.FromResult(formatter.Format(tableString, includeWarnings: false));
+                return Task.FromResult(RenderContributorTable(result));
             }
             if (_command == AnalysisCommand.Contributor)
             {
-                string tableString = RenderSingleContributorTable(result);
-                return Task.FromResult(formatter.Format(tableString, includeWarnings: false));
+                return Task.FromResult(RenderSingleContributorTable(result));
             }
             if (_command == AnalysisCommand.Areas)
             {
-                string tableString = RenderAreaTable(result);
-                return Task.FromResult(formatter.Format(tableString, includeWarnings: true));
+                return Task.FromResult(RenderAreaTable(result));
             }
 
             // Default fallback to hotspots
             {
-                string tableString = RenderHotspotTable(result);
-                return Task.FromResult(formatter.Format(tableString, includeWarnings: true));
+                return Task.FromResult(RenderHotspotTable(result));
             }
         }
 
@@ -96,8 +94,8 @@ namespace Gitic
         {
             IConsoleTableBuilder table = new ConsoleTableBuilder()
                 .AddColumn("file", 28, "left")
-                .AddColumn("attention", 9, "right")
-                .AddColumn("heat", 5, "right")
+                .AddColumn("attention", 13, "right")
+                .AddColumn("heat", 9, "right")
                 .AddColumn("churn", 6, "right")
                 .AddColumn("contributors", 12, "right")
                 .AddColumn("top activity share", 24, "left")
@@ -109,8 +107,8 @@ namespace Gitic
                 table.AddRow(new List<string>
                 {
                     file.Path,
-                    file.AttentionScore.ToString(),
-                    file.HeatScore.ToString(),
+                    _termFormatter.FormatAttention(file.AttentionScore, file.AttentionScore.ToString()),
+                    _termFormatter.FormatHeat(file.HeatScore, file.HeatScore.ToString()),
                     file.Churn.ToString(),
                     file.ContributorCount.ToString(),
                     TopContributor(file.Contributors),
@@ -226,6 +224,94 @@ namespace Gitic
                 .ToList();
 
             return sortedReasons.Count == 0 ? "no activity" : string.Join(", ", sortedReasons);
+        }
+    }
+
+    public class TerminalFormatter
+    {
+        private readonly bool _isColorEnabled;
+        private readonly bool _useUnicode;
+
+        public TerminalFormatter(AnalysisSettings settings)
+        {
+            string? termEnv = Environment.GetEnvironmentVariable("TERM");
+            bool isNoColorPresent = Environment.GetEnvironmentVariable("NO_COLOR") != null;
+            bool isOutputRedirected = Console.IsOutputRedirected;
+
+            string colorOption = settings.Color ?? "auto";
+            string formatOption = settings.Format ?? "human";
+
+            if (string.Equals(formatOption, "plain", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(formatOption, "json", StringComparison.OrdinalIgnoreCase))
+            {
+                _isColorEnabled = false;
+                _useUnicode = false;
+            }
+            else
+            {
+                if (string.Equals(colorOption, "never", StringComparison.OrdinalIgnoreCase))
+                {
+                    _isColorEnabled = false;
+                }
+                else if (string.Equals(colorOption, "always", StringComparison.OrdinalIgnoreCase))
+                {
+                    _isColorEnabled = true;
+                }
+                else // "auto"
+                {
+                    if (isNoColorPresent || string.Equals(termEnv, "dumb", StringComparison.OrdinalIgnoreCase) || isOutputRedirected)
+                    {
+                        _isColorEnabled = false;
+                    }
+                    else
+                    {
+                        _isColorEnabled = true;
+                    }
+                }
+
+                if (string.Equals(colorOption, "always", StringComparison.OrdinalIgnoreCase))
+                {
+                    _useUnicode = true;
+                }
+                else if (string.Equals(termEnv, "dumb", StringComparison.OrdinalIgnoreCase) || isOutputRedirected)
+                {
+                    _useUnicode = false;
+                }
+                else
+                {
+                    _useUnicode = true;
+                }
+            }
+        }
+
+        public string FormatAttention(double score, string textValue)
+        {
+            if (score >= 80.0)
+            {
+                string symbol = _useUnicode ? "⚠️  " : "[!] ";
+                string text = $"{symbol}{textValue}";
+                return _isColorEnabled ? $"\x1b[1;31m{text}\x1b[0m" : text;
+            }
+            else if (score >= 50.0)
+            {
+                return _isColorEnabled ? $"\x1b[33m{textValue}\x1b[0m" : textValue;
+            }
+            return textValue;
+        }
+
+        public string FormatHeat(double score, string textValue)
+        {
+            if (score >= 80.0)
+            {
+                string symbol = _useUnicode ? "🔥  " : "* ";
+                string text = $"{symbol}{textValue}";
+                return _isColorEnabled ? $"\x1b[1;31m{text}\x1b[0m" : text;
+            }
+            else if (score >= 50.0)
+            {
+                return _isColorEnabled ? $"\x1b[33m{textValue}\x1b[0m" : textValue;
+            }
+            return textValue;
         }
     }
 }

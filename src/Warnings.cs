@@ -39,7 +39,7 @@ namespace Gitic
             return context.EmailCollisions.Select(collision =>
             {
                 string nameList = string.Join(", ", collision.Names);
-                return $"Contributors {nameList} share email {collision.Email} but no alias is configured; they may be the same person. Add an alias in .gitizer.yml or enable identity.merge_on_email to merge them.";
+                return $"Contributors {nameList} share email {collision.Email} but no alias is configured; they may be the same person. Add an alias in .gitic.yml (or legacy .gitizer.yml) or enable identity.merge_on_email to merge them.";
             }).ToList();
         }
     }
@@ -52,7 +52,7 @@ namespace Gitic
             {
                 return new List<string>
                 {
-                    $"No bots are explicitly configured; {context.AutomationMetrics?.Count ?? 0} automation identities were detected using default heuristics. Configure bots in .gitizer.yml to control automation detection (e.g. workspace-specific agents like test harnesses)."
+                    $"No bots are explicitly configured; {context.AutomationMetrics?.Count ?? 0} automation identities were detected using default heuristics. Configure bots in .gitic.yml (or legacy .gitizer.yml) to control automation detection (e.g. workspace-specific agents like test harnesses)."
                 };
             }
             return new List<string>();
@@ -82,7 +82,7 @@ namespace Gitic
             {
                 return new List<string>
                 {
-                    "No bots are configured and no automation identities were detected. If this repository has CI or release bots, configure them in .gitizer.yml."
+                    "No bots are configured and no automation identities were detected. If this repository has CI or release bots, configure them in .gitic.yml (or legacy .gitizer.yml)."
                 };
             }
             return new List<string>();
@@ -101,7 +101,7 @@ namespace Gitic
             {
                 return new List<string>
                 {
-                    $"{context.TemporalCoupling.OversizedCommitCount} commit(s) changed more than {context.TemporalCoupling.Limit} files (max observed: {context.TemporalCoupling.MaxObservedFiles}) and were excluded from temporal coupling analysis. Configure metrics.temporal_coupling_max_commit_file_count in .gitizer.yml to adjust."
+                    $"{context.TemporalCoupling.OversizedCommitCount} commit(s) changed more than {context.TemporalCoupling.Limit} files (max observed: {context.TemporalCoupling.MaxObservedFiles}) and were excluded from temporal coupling analysis. Configure metrics.temporal_coupling_max_commit_file_count in .gitic.yml (or legacy .gitizer.yml) to adjust."
                 };
             }
             return new List<string>();
@@ -126,7 +126,7 @@ namespace Gitic
             {
                 return new List<string>
                 {
-                    $"{suspiciousCount} file(s) have single-touch high churn (>{HighChurnThreshold} lines) with a single author. These may be generated files or scaffolding. Consider adding them to your .gitizer.yml excludes."
+                    $"{suspiciousCount} file(s) have single-touch high churn (>{HighChurnThreshold} lines) with a single author. These may be generated files or scaffolding. Consider adding them to your .gitic.yml (or legacy .gitizer.yml) excludes."
                 };
             }
             return new List<string>();

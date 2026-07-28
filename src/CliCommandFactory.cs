@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,6 +19,11 @@ namespace Gitic
             if (string.Equals(parsed.Command, "help", StringComparison.OrdinalIgnoreCase))
             {
                 return new HelpCommand();
+            }
+
+            if (string.Equals(parsed.Command, "version", StringComparison.OrdinalIgnoreCase))
+            {
+                return new VersionCommand();
             }
 
             if (string.Equals(parsed.Command, "config", StringComparison.OrdinalIgnoreCase))
@@ -54,12 +60,32 @@ namespace Gitic
         }
     }
 
+    public class VersionCommand : ICliCommand
+    {
+        public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter)
+        {
+            var assembly = typeof(Cli).Assembly;
+            var version = assembly.GetName().Version?.ToString(3) ?? "0.1.0";
+            var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            var displayVersion = string.IsNullOrEmpty(infoVersion) ? version : infoVersion;
+
+            string versionText = $"gitic version {displayVersion}\n";
+            reporter?.Write(versionText);
+            return Task.FromResult(Cli.CliSuccess(versionText));
+        }
+    }
+
     public class HelpCommand : ICliCommand
     {
         public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter)
         {
+            var assembly = typeof(Cli).Assembly;
+            var version = assembly.GetName().Version?.ToString(3) ?? "0.1.0";
+            var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            var displayVersion = string.IsNullOrEmpty(infoVersion) ? version : infoVersion;
+
             string helpText = 
-@"Gitic - Gitizer C# Port (v0.1.0)
+$@"Gitic Strategic Codebase Analysis (v{displayVersion})
 A tool to analyze Git repositories and identify code hotspots, contributor ownership, areas, and temporal coupling.
 
 Usage:
@@ -70,13 +96,16 @@ Commands:
   areas [repo_path]                     Analyze code ownership and changes across directories
   contributors [repo_path]              Show contributor metrics and profiles
   contributor <name> [repo_path]        Analyze a specific contributor's details
-  report [repo_path] [options]          Generate reports (visual HTML and/or Markdown summary)
-  config init                           Generate a starter config file (.gitizer.yml)
+  report [repo_path] [options]          Generate reports (visual HTML, Markdown, and/or SVG)
+  config init                           Generate a starter config file (.gitic.yml)
+  version                               Show version information
 
 Options:
   -h, --help                            Show this help menu
+  -v, --version                         Show version information
   --html <path>                         Output visual HTML report to path (for report command)
   --md <path>                           Output Markdown summary report to path (for report command)
+  --svg <path>                          Output SVG reports to path (for report command)
   --json                                Output results in raw JSON format
   --all-time                            Analyze all history (ignoring time window settings)
   --since <date>                        Filter commits since date (YYYY-MM-DD)
@@ -105,9 +134,9 @@ Options:
         {
             if (_parsed.ConfigAction != "init")
             {
-                string errMsg = "config requires an action. Try: gitizer config init\n";
+                string errMsg = "config requires an action. Try: gitic config init\n";
                 reporter?.WriteError(errMsg);
-                return Task.FromResult(Cli.CliFailure(errMsg));
+                return Task.FromResult(Cli.CliFailure(errMsg, exitCode: 2));
             }
 
             var engine = new ConfigurationEngine();
@@ -135,7 +164,7 @@ Options:
             if (repoRoot == null)
             {
                 string errMsg = $"Path {Parsed.RepoPath} is not inside a Git repository.\n" +
-                                "Run gitizer from a Git worktree or pass the path to one.\n";
+                                "Run gitic from a Git worktree or pass the path to one.\n";
                 reporter?.WriteError(errMsg);
                 return Cli.CliFailure(errMsg);
             }
@@ -156,7 +185,7 @@ Options:
             }
             catch (ConfigValidationError error)
             {
-                string errMsg = $"Invalid Gitizer config:\n{string.Join("\n", error.Details)}\n";
+                string errMsg = $"Invalid Gitic config:\n{string.Join("\n", error.Details)}\n";
                 reporter?.WriteError(errMsg);
                 return Cli.CliFailure(errMsg);
             }
@@ -173,19 +202,37 @@ Options:
 
         protected override async Task<CliResult> ProcessResultAsync(AnalysisResult result, IConsoleReporter? reporter)
         {
-            IReportRenderer renderer;
-            if (Parsed.Settings.Json)
+            if (Parsed.Settings.Json || string.Equals(Parsed.Settings.Format, "json", StringComparison.OrdinalIgnoreCase))
             {
-                renderer = new JsonRenderer();
-            }
-            else
-            {
-                renderer = new CliTableRenderer(CommandType);
+                var jsonRenderer = new JsonRenderer();
+                string jsonOutput = await jsonRenderer.RenderAsync(result);
+                reporter?.Write(jsonOutput);
+                return Cli.CliSuccess(jsonOutput);
             }
 
-            string output = await renderer.RenderAsync(result);
-            reporter?.Write(output);
-            return Cli.CliSuccess(output);
+            var renderer = new CliTableRenderer(CommandType, Parsed.Settings);
+            string tableOutput = await renderer.RenderAsync(result);
+            reporter?.Write(tableOutput);
+
+            var stderrSb = new StringBuilder();
+            if (result.Exclusions != null && result.Exclusions.Count > 0)
+            {
+                string exclusionText = "exclusions " + string.Join(", ", result.Exclusions.Select(e => $"{e.Category}:{e.Count}")) + "\n";
+                stderrSb.Append(exclusionText);
+            }
+            if (result.Warnings != null && result.Warnings.Count > 0)
+            {
+                string warningText = "warnings " + string.Join("; ", result.Warnings) + "\n";
+                stderrSb.Append(warningText);
+            }
+
+            string stderrOutput = stderrSb.ToString();
+            if (!string.IsNullOrEmpty(stderrOutput))
+            {
+                reporter?.WriteError(stderrOutput);
+            }
+
+            return Cli.CliSuccess(tableOutput, stderrOutput);
         }
     }
 
@@ -241,7 +288,7 @@ Options:
             {
                 string errMsg = "report requires --html <path>, --md <path>, or --svg <path>.\n";
                 reporter?.WriteError(errMsg);
-                return Cli.CliFailure(errMsg);
+                return Cli.CliFailure(errMsg, exitCode: 2);
             }
 
             var outputSb = new StringBuilder();

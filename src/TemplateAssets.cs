@@ -128,7 +128,7 @@ public static class TemplateAssets
     <div id="report-error" class="hidden rounded-xl border border-red-500/40 bg-red-500/10 p-4 mb-6 text-red-300">
       <div class="font-bold mb-1">Report data failed to load</div>
       <div id="report-error-msg" class="text-sm font-mono break-words"></div>
-      <div class="text-xs mt-2 text-red-300/70">The embedded report JSON may be truncated or corrupted. Regenerate the report with: gitizer report &lt;repo&gt; --html &lt;path&gt;</div>
+      <div class="text-xs mt-2 text-red-300/70">The embedded report JSON may be truncated or corrupted. Regenerate the report with: gitic report &lt;repo&gt; --html &lt;path&gt;</div>
     </div>
 
     <!-- Header Controls -->
@@ -136,7 +136,7 @@ public static class TemplateAssets
       <div>
         <h1 class="text-3xl font-extrabold tracking-tight flex items-center gap-2">
           <span class="w-2.5 h-6 accent-bg rounded-sm inline-block"></span>
-          <span>gitizer dashboard</span>
+          <span>gitic dashboard</span>
         </h1>
         <p class="text-sm text-gray-400 mt-1" id="repo-path"></p>
         <p class="text-xs text-gray-500 mt-1" id="analysis-window"></p>
@@ -467,7 +467,7 @@ public static class TemplateAssets
 """;
 
     public const string ClientScriptTemplate = """
-  <script id="gitizer-data" type="application/json">__RESULT_JSON__</script>
+  <script id="gitic-data" type="application/json">__RESULT_JSON__</script>
   <script>
     function showReportError(msg) {
       const banner = document.getElementById('report-error');
@@ -478,7 +478,7 @@ public static class TemplateAssets
 
     let report;
     try {
-      report = JSON.parse(document.getElementById('gitizer-data').textContent);
+      report = JSON.parse(document.getElementById('gitic-data').textContent);
     } catch (err) {
       showReportError(err && err.message ? err.message : String(err));
       report = {
@@ -748,11 +748,11 @@ public static class TemplateAssets
 
         const areaFiles = report.files.filter(f => f.area === area.area);
         const filesLogHtml = areaFiles.map(f => {
-          const sizeStr = f.size !== undefined ? f.size + ' B' : '0 B';
+          const linesStr = f.lines !== undefined ? f.lines + ' lines' : '0 lines';
           const widthStr = f.width !== undefined ? f.width + ' ch' : '0 ch';
           return `
             <div class="truncate text-left text-[10px] pt-0.5 first:pt-0" title="${f.path}">
-              <span class="text-gray-500 font-mono">[${sizeStr}, width: ${widthStr}]</span>
+              <span class="text-gray-500 font-mono">[${linesStr}, width: ${widthStr}]</span>
               <span class="font-mono text-gray-300 ml-1">${f.path}</span>
             </div>
           `;
@@ -1240,13 +1240,13 @@ public static class TemplateAssets
 <html lang="en" data-theme="deloitte">
 <head>
   <meta charset="utf-8">
-  <title>gitizer — Strategic Codebase Analysis</title>
-  <meta name="description" content="gitizer strategic codebase analysis report: hotspots, contributor familiarity, lead time, and risk signals from local Git history.">
-  <meta property="og:title" content="gitizer Strategic Codebase Analysis">
+  <title>gitic — Strategic Codebase Analysis</title>
+  <meta name="description" content="gitic strategic codebase analysis report: hotspots, contributor familiarity, lead time, and risk signals from local Git history.">
+  <meta property="og:title" content="gitic Strategic Codebase Analysis">
   <meta property="og:description" content="Hotspots, contributor familiarity, lead time, and risk signals from local Git history.">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="gitizer">
-  <!-- Compatibility support for tests: <title>Gitizer Report</title> escapeCell(row[column]) sortState .replaceAll('<', '&lt;') -->
+  <meta property="og:site_name" content="gitic">
+  <!-- Compatibility support for tests: <title>Gitic Report</title> escapeCell(row[column]) sortState .replaceAll('<', '&lt;') -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     __CSS__

@@ -498,5 +498,147 @@ bin/
                 Console.SetError(oldError);
             }
         }
+
+        [Fact]
+        public async Task TestCli_VersionSupport()
+        {
+            var reporter = new MockConsoleReporter();
+            
+            var runResult1 = await Cli.RunCliAsync(new[] { "--version" }, reporter);
+            Assert.Equal(0, runResult1.ExitCode);
+            Assert.Contains("gitic version", runResult1.Stdout);
+
+            var runResult2 = await Cli.RunCliAsync(new[] { "-v" }, reporter);
+            Assert.Equal(0, runResult2.ExitCode);
+
+            var runResult3 = await Cli.RunCliAsync(new[] { "version" }, reporter);
+            Assert.Equal(0, runResult3.ExitCode);
+        }
+
+        [Fact]
+        public async Task TestCli_EmptyArgsSupport()
+        {
+            var reporter = new MockConsoleReporter();
+            var runResult = await Cli.RunCliAsync(new string[0], reporter);
+            Assert.Equal(2, runResult.ExitCode);
+            Assert.Contains("Gitic: Strategic Codebase Analysis", runResult.Stderr);
+            Assert.Contains("Useful next steps:", runResult.Stderr);
+        }
+
+        [Fact]
+        public async Task TestConfigurationEngine_FallbackResolution()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Directory.CreateDirectory(tempDir);
+            try
+            {
+                var engine = new ConfigurationEngine();
+                
+                // Case 1: Neither exists - should fall back to default
+                var optionsEmpty = new LoadGiticConfigOptions { RepoRoot = tempDir };
+                var resolvedEmpty = await engine.LoadAndResolveAsync(new AnalyzeInput { RepoRoot = tempDir }, optionsEmpty);
+                Assert.NotNull(resolvedEmpty.Config);
+                
+                // Case 2: Only legacy .gitizer.yml exists - should load it
+                string legacyPath = Path.Combine(tempDir, ".gitizer.yml");
+                File.WriteAllText(legacyPath, "identity:\n  merge_on_email: true\n");
+                var optionsLegacy = new LoadGiticConfigOptions { RepoRoot = tempDir };
+                var resolvedLegacy = await engine.LoadAndResolveAsync(new AnalyzeInput { RepoRoot = tempDir }, optionsLegacy);
+                Assert.True(resolvedLegacy.Config.Identity.MergeOnEmail);
+
+                // Case 3: Both exist - preferred .gitic.yml should take precedence
+                string preferredPath = Path.Combine(tempDir, ".gitic.yml");
+                File.WriteAllText(preferredPath, "identity:\n  merge_on_email: false\n");
+                var optionsBoth = new LoadGiticConfigOptions { RepoRoot = tempDir };
+                var resolvedBoth = await engine.LoadAndResolveAsync(new AnalyzeInput { RepoRoot = tempDir }, optionsBoth);
+                Assert.False(resolvedBoth.Config.Identity.MergeOnEmail);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestCli_HelpDocumentsSVGReports()
+        {
+            var reporter = new MockConsoleReporter();
+            var runResult = await Cli.RunCliAsync(new[] { "--help" }, reporter);
+            Assert.Equal(0, runResult.ExitCode);
+            Assert.Contains("--svg <path>", runResult.Stdout);
+        }
+
+        [Fact]
+        public async Task TestCli_NonRepoExitCodes()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Directory.CreateDirectory(tempDir);
+            try
+            {
+                var runResult = await Cli.RunCliAsync(new[] { "hotspots", tempDir });
+                Assert.Equal(1, runResult.ExitCode);
+                Assert.Contains("is not inside a Git repository", runResult.Stderr);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestCli_InvalidUsageExitCodes()
+        {
+            var runResult1 = await Cli.RunCliAsync(new[] { "hotspots", "--color", "invalid-color-value" });
+            Assert.Equal(2, runResult1.ExitCode);
+            Assert.Contains("--color must be", runResult1.Stderr);
+
+            var runResult2 = await Cli.RunCliAsync(new[] { "hotspots", "--format", "invalid-format-value" });
+            Assert.Equal(2, runResult2.ExitCode);
+            Assert.Contains("--format must be", runResult2.Stderr);
+
+            var runResult3 = await Cli.RunCliAsync(new[] { "config", "invalid-action" });
+            Assert.Equal(2, runResult3.ExitCode);
+            Assert.Contains("config requires an action", runResult3.Stderr);
+        }
+
+        [Fact]
+        public async Task TestCliTableRenderer_FormatsAndColors()
+        {
+            var result = new AnalysisResult
+            {
+                Analysis = new AnalysisMetadata { IncludedFileChangeCount = 10 },
+                Files = new List<FileMetric>
+                {
+                    new() { Path = "src/Main.cs", AttentionScore = 85.0, HeatScore = 90.0, Churn = 500, ContributorCount = 5, ScoreBreakdown = new ScoreBreakdown() }
+                }
+            };
+
+            // Case 1: human format, color always
+            var settingsAlways = new AnalysisSettings { Format = "human", Color = "always" };
+            var rendererAlways = new CliTableRenderer(AnalysisCommand.Hotspots, settingsAlways);
+            string outputAlways = await rendererAlways.RenderAsync(result);
+            
+            // Check for Unicode warning (⚠️) and heat (🔥) symbols and ANSI colors
+            Assert.Contains("⚠️", outputAlways);
+            Assert.Contains("🔥", outputAlways);
+            Assert.Contains("\x1b[1;31m", outputAlways);
+
+            // Case 2: plain format (should have no Unicode and no ANSI)
+            var settingsPlain = new AnalysisSettings { Format = "plain" };
+            var rendererPlain = new CliTableRenderer(AnalysisCommand.Hotspots, settingsPlain);
+            string outputPlain = await rendererPlain.RenderAsync(result);
+            Assert.DoesNotContain("⚠️", outputPlain);
+            Assert.DoesNotContain("🔥", outputPlain);
+            Assert.DoesNotContain("\x1b[", outputPlain, StringComparison.Ordinal);
+            // Plain should use ASCII symbols [!] and *
+            Assert.Contains("[!]", outputPlain);
+            Assert.Contains("*", outputPlain);
+        }
     }
 }

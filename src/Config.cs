@@ -79,7 +79,7 @@ namespace Gitic
         public AttentionWeights Attention { get; set; } = new();
     }
 
-    public class GitizerConfig
+    public class GiticConfig
     {
         [JsonPropertyName("aliases")]
         public List<AliasRule> Aliases { get; set; } = new();
@@ -102,7 +102,7 @@ namespace Gitic
         [JsonPropertyName("metrics")]
         public MetricsConfig Metrics { get; set; } = new();
 
-        public static GitizerConfig Default => new()
+        public static GiticConfig Default => new()
         {
             Aliases = new(),
             Bots = new(),
@@ -129,7 +129,7 @@ namespace Gitic
         };
     }
 
-    public class GitizerConfigOverrides
+    public class GiticConfigOverrides
     {
         public List<AliasRule>? Aliases { get; set; }
         public List<BotRule>? Bots { get; set; }
@@ -163,9 +163,9 @@ namespace Gitic
         public int? TemporalCouplingMaxCommitFileCount { get; set; }
     }
 
-    public class LoadedGitizerConfig
+    public class LoadedGiticConfig
     {
-        public GitizerConfig Config { get; set; } = new();
+        public GiticConfig Config { get; set; } = new();
         public ConfigSources Sources { get; set; } = new();
     }
 
@@ -175,7 +175,7 @@ namespace Gitic
         public string? Repo { get; set; }
     }
 
-    public class LoadGitizerConfigOptions
+    public class LoadGiticConfigOptions
     {
         public string? RepoRoot { get; set; }
         public string? UserHome { get; set; }

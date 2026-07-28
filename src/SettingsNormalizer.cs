@@ -24,7 +24,9 @@ namespace Gitic
                 MergeByEmail = settings.MergeByEmail ?? defaults.MergeByEmail,
                 Path = settings.Path ?? defaults.Path,
                 Anonymize = settings.Anonymize,
-                Depth = settings.Depth > UninitializedDepth ? settings.Depth : defaults.Depth
+                Depth = settings.Depth > UninitializedDepth ? settings.Depth : defaults.Depth,
+                Format = string.IsNullOrEmpty(settings.Format) ? defaults.Format : settings.Format,
+                Color = string.IsNullOrEmpty(settings.Color) ? defaults.Color : settings.Color
             };
         }
     }

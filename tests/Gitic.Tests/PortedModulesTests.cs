@@ -84,7 +84,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestChangeAccumulator_WithPathClassifierMock()
         {
-            var config = GitizerConfig.Default;
+            var config = GiticConfig.Default;
             var settings = new AnalysisSettings();
             var mockFilter = new MockPathClassifier();
             var identityRegistry = new IdentityRegistry();
@@ -136,7 +136,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestChangeAccumulator_WithDecoupledIdentityRegistry()
         {
-            var config = GitizerConfig.Default;
+            var config = GiticConfig.Default;
             var settings = new AnalysisSettings();
             var mockFilter = new MockPathClassifier();
             var mockIdentityRegistry = new MockIdentityRegistry();
@@ -170,10 +170,10 @@ namespace Gitic.Tests
                 ValidateCalled = true;
             }
 
-            public GitizerConfigOverrides NormalizeOverride(object? input, string source)
+            public GiticConfigOverrides NormalizeOverride(object? input, string source)
             {
                 NormalizeCalled = true;
-                return new GitizerConfigOverrides();
+                return new GiticConfigOverrides();
             }
         }
 
@@ -677,6 +677,18 @@ __GITIZER_NUMSTAT__
 
             var sortedFilesHotspots = service.SortFilesForCommand(files, AnalysisCommand.Hotspots);
             Assert.Equal("f2", sortedFilesHotspots[0].Path);
+
+            // Test sorting by Lines and Size (ch count)
+            var filesWithSize = new List<FileMetric>
+            {
+                new() { Path = "smallLinesLargeSize", Lines = 5, Size = 1000, AttentionScore = 10 },
+                new() { Path = "largeLinesSmallSize", Lines = 20, Size = 100, AttentionScore = 5 },
+                new() { Path = "sameLinesLargerSize", Lines = 20, Size = 500, AttentionScore = 1 }
+            };
+            var sortedFilesBySize = service.SortFilesForCommand(filesWithSize, AnalysisCommand.Hotspots);
+            Assert.Equal("sameLinesLargerSize", sortedFilesBySize[0].Path); // 20 lines, 500 chars (larger than 100 chars)
+            Assert.Equal("largeLinesSmallSize", sortedFilesBySize[1].Path); // 20 lines, 100 chars
+            Assert.Equal("smallLinesLargeSize", sortedFilesBySize[2].Path); // 5 lines, 1000 chars
         }
 
         [Fact]
@@ -1366,13 +1378,13 @@ __GITIZER_NUMSTAT__
                     return "";
                 }
 
-                public Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGitizerConfigOptions? options = null)
+                public Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGiticConfigOptions? options = null)
                 {
                     LoadAndResolveCalled = true;
                     return Task.FromResult(new ResolvedConfiguration
                     {
                         Settings = new AnalysisSettings(),
-                        Config = GitizerConfig.Default
+                        Config = GiticConfig.Default
                     });
                 }
             }
@@ -1408,7 +1420,7 @@ __GITIZER_NUMSTAT__
                 public AnalysisPipelineResult Run(
                     List<GitCommitRecord> commits,
                     HashSet<string> headFiles,
-                    GitizerConfig config,
+                    GiticConfig config,
                     AnalysisSettings settings,
                     AnalysisCommand command)
                 {
@@ -1535,7 +1547,7 @@ __GITIZER_NUMSTAT__
                     }
                 };
                 var headFiles = new HashSet<string>();
-                var config = GitizerConfig.Default;
+                var config = GiticConfig.Default;
                 var settings = new AnalysisSettings();
                 var command = AnalysisCommand.Hotspots;
 
@@ -2005,7 +2017,7 @@ __GITIZER_NUMSTAT__
             [Fact]
             public void TestIFamiliarityScoringEngine_InterfaceAndImplementation()
             {
-                var config = new GitizerConfig();
+                var config = new GiticConfig();
                 IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(config);
                 var items = new List<ItemAccumulator>();
                 var files = engine.ScoreFiles(items, 2);
@@ -2043,7 +2055,7 @@ __GITIZER_NUMSTAT__
             [Fact]
             public void TestFamiliarityScoringEngine_UsesInjectedKnowledgeSiloCalculator()
             {
-                var config = new GitizerConfig();
+                var config = new GiticConfig();
                 var mockCalculator = new MockKnowledgeSiloCalculator();
                 var activeKeys = new HashSet<string> { "active" };
                 IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(
@@ -2113,7 +2125,7 @@ __GITIZER_NUMSTAT__
             [Fact]
             public void TestFamiliarityScoringEngine_UsesInjectedScoringUtilityService()
             {
-                var config = new GitizerConfig();
+                var config = new GiticConfig();
                 var mockUtility = new MockScoringUtilityService();
                 IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(
                     config,
@@ -2259,7 +2271,7 @@ __GITIZER_NUMSTAT__
                     }
                 };
                 var headFiles = new HashSet<string> { "mockfile.cs" };
-                var config = new GitizerConfig();
+                var config = new GiticConfig();
                 var settings = new AnalysisSettings();
 
                 var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
@@ -2288,7 +2300,7 @@ __GITIZER_NUMSTAT__
                     }
                 };
                 var headFiles = new HashSet<string> { "mockfile.cs" };
-                var config = new GitizerConfig();
+                var config = new GiticConfig();
                 var settings = new AnalysisSettings();
 
                 var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
@@ -2313,7 +2325,7 @@ __GITIZER_NUMSTAT__
                     }
                 };
                 var headFiles = new HashSet<string> { "mockfile.cs" };
-                var config = new GitizerConfig();
+                var config = new GiticConfig();
                 var settings = new AnalysisSettings();
 
                 var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);

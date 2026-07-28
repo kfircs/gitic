@@ -52,6 +52,12 @@ namespace Gitic
         [JsonPropertyName("depth")]
         public int Depth { get; set; }
 
+        [JsonPropertyName("format")]
+        public string Format { get; set; } = "human";
+
+        [JsonPropertyName("color")]
+        public string Color { get; set; } = "auto";
+
         public AnalysisSettings Clone()
         {
             return new AnalysisSettings
@@ -64,7 +70,9 @@ namespace Gitic
                 MergeByEmail = MergeByEmail,
                 Path = Path,
                 Anonymize = Anonymize,
-                Depth = Depth
+                Depth = Depth,
+                Format = Format,
+                Color = Color
             };
         }
     }
@@ -393,7 +401,7 @@ namespace Gitic
         public string SchemaVersion { get; set; } = "1.0";
 
         [JsonPropertyName("tool")]
-        public string Tool { get; set; } = "gitizer";
+        public string Tool { get; set; } = "gitic";
 
         [JsonPropertyName("analysis")]
         public AnalysisMetadata Analysis { get; set; } = new();

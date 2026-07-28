@@ -9,7 +9,7 @@ namespace Gitic
         AnalysisPipelineResult Run(
             List<GitCommitRecord> commits,
             HashSet<string> headFiles,
-            GitizerConfig config,
+            GiticConfig config,
             AnalysisSettings settings,
             AnalysisCommand command);
     }
@@ -37,8 +37,8 @@ namespace Gitic
         private readonly IIdentityRegistry? _identityRegistry;
         private readonly IChangeAccumulator? _accumulator;
         private readonly Func<HashSet<string>, List<ExcludeRule>, bool, string?, IPathClassifier> _pathClassifierFactory;
-        private readonly Func<GitizerConfig, AnalysisSettings, IPathClassifier, IIdentityRegistry, IChangeAccumulator> _changeAccumulatorFactory;
-        private readonly Func<GitizerConfig, HashSet<string>, int, IFamiliarityScoringEngine> _scoringEngineFactory;
+        private readonly Func<GiticConfig, AnalysisSettings, IPathClassifier, IIdentityRegistry, IChangeAccumulator> _changeAccumulatorFactory;
+        private readonly Func<GiticConfig, HashSet<string>, int, IFamiliarityScoringEngine> _scoringEngineFactory;
 
         public AnalysisPipeline(
             ITemporalCouplingEngine? temporalCouplingEngine = null,
@@ -49,8 +49,8 @@ namespace Gitic
             IIdentityRegistry? identityRegistry = null,
             IChangeAccumulator? accumulator = null,
             Func<HashSet<string>, List<ExcludeRule>, bool, string?, IPathClassifier>? pathClassifierFactory = null,
-            Func<GitizerConfig, AnalysisSettings, IPathClassifier, IIdentityRegistry, IChangeAccumulator>? changeAccumulatorFactory = null,
-            Func<GitizerConfig, HashSet<string>, int, IFamiliarityScoringEngine>? scoringEngineFactory = null)
+            Func<GiticConfig, AnalysisSettings, IPathClassifier, IIdentityRegistry, IChangeAccumulator>? changeAccumulatorFactory = null,
+            Func<GiticConfig, HashSet<string>, int, IFamiliarityScoringEngine>? scoringEngineFactory = null)
         {
             _temporalCouplingEngine = temporalCouplingEngine;
             _leadTimeEngine = leadTimeEngine ?? new LeadTimeEngine();
@@ -67,7 +67,7 @@ namespace Gitic
         public AnalysisPipelineResult Run(
             List<GitCommitRecord> commits,
             HashSet<string> headFiles,
-            GitizerConfig config,
+            GiticConfig config,
             AnalysisSettings settings,
             AnalysisCommand command)
         {

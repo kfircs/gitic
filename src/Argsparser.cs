@@ -34,7 +34,9 @@ namespace Gitic
             MergeByEmail = false,
             Path = null,
             Anonymize = false,
-            Depth = 2
+            Depth = 2,
+            Format = "human",
+            Color = "auto"
         };
     }
 
@@ -55,7 +57,8 @@ namespace Gitic
             "contributors",
             "contributor",
             "report",
-            "config"
+            "config",
+            "version"
         };
 
         private readonly List<string> _args;
@@ -71,6 +74,19 @@ namespace Gitic
 
         public ParsedArgs Parse()
         {
+            if (_args.Contains("--version") || _args.Contains("-v") || _args.Contains("version"))
+            {
+                return new ParsedArgs
+                {
+                    Command = "version",
+                    RepoPath = ".",
+                    Settings = DefaultAnalysisSettings.Create(),
+                    ContributorName = null,
+                    HtmlPath = null,
+                    ConfigAction = null
+                };
+            }
+
             if (_args.Contains("--help") || _args.Contains("-h") || _args.Contains("help"))
             {
                 return new ParsedArgs
@@ -86,7 +102,16 @@ namespace Gitic
 
             if (_args.Count == 0)
             {
-                throw new CommandLineParseError("A command is required.");
+                throw new CommandLineParseError(
+@"Gitic: Strategic Codebase Analysis
+A tool to analyze Git repositories and identify code hotspots, contributor ownership, areas, and temporal coupling.
+
+Usage:
+  gitic <command> [repo_path] [options]
+
+Useful next steps:
+  1. Run 'gitic hotspots' to identify high-complexity/high-churn files in the current repository.
+  2. Run 'gitic --help' to see all available commands and options.");
             }
 
             string commandName = _args[0];
@@ -212,6 +237,33 @@ namespace Gitic
             {
                 case "--json":
                     settings.Json = true;
+                    settings.Format = "json";
+                    break;
+                case "--format":
+                    string formatVal = ConsumeValue(arg);
+                    if (!string.Equals(formatVal, "human", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(formatVal, "plain", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(formatVal, "json", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new CommandLineParseError("--format must be 'human', 'plain', or 'json'.");
+                    }
+                    settings.Format = formatVal.ToLower();
+                    if (string.Equals(formatVal, "json", StringComparison.OrdinalIgnoreCase))
+                    {
+                        settings.Json = true;
+                    }
+                    _index += 1;
+                    break;
+                case "--color":
+                    string colorVal = ConsumeValue(arg);
+                    if (!string.Equals(colorVal, "auto", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(colorVal, "always", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(colorVal, "never", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new CommandLineParseError("--color must be 'auto', 'always', or 'never'.");
+                    }
+                    settings.Color = colorVal.ToLower();
+                    _index += 1;
                     break;
                 case "--all-time":
                     settings.AllTime = true;

@@ -31,11 +31,11 @@ namespace Gitic
         private int _includedFileChangeCount = 0;
         private readonly IIdentityRegistry _identityRegistry;
 
-        private readonly GitizerConfig _config;
+        private readonly GiticConfig _config;
         private readonly AnalysisSettings _settings;
 
         public ChangeAccumulator(
-            GitizerConfig config,
+            GiticConfig config,
             AnalysisSettings settings,
             IPathClassifier filter,
             IIdentityRegistry identityRegistry,

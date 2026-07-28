@@ -10,7 +10,7 @@ namespace Gitic
         public string RepoRoot { get; set; } = string.Empty;
         public AnalysisCommand Command { get; set; }
         public AnalysisSettings Settings { get; set; } = new();
-        public GitizerConfig? Config { get; set; }
+        public GiticConfig? Config { get; set; }
         public string? ContributorName { get; set; }
         public IFileStatsProvider? FileStatsProvider { get; set; } = null;
         public IGitClient? GitClient { get; set; } = null;
@@ -77,7 +77,7 @@ namespace Gitic
             var result = new AnalysisResult
             {
                 SchemaVersion = "1.0",
-                Tool = "gitizer",
+                Tool = "gitic",
                 Analysis = new AnalysisMetadata
                 {
                     RepoRoot = input.RepoRoot,

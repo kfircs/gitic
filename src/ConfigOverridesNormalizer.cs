@@ -6,7 +6,7 @@ namespace Gitic
 {
     internal interface IConfigOverridesNormalizer
     {
-        GitizerConfigOverrides NormalizeOverride(object? input, string source);
+        GiticConfigOverrides NormalizeOverride(object? input, string source);
     }
 
     internal class ConfigOverridesNormalizer : IConfigOverridesNormalizer
@@ -18,7 +18,7 @@ namespace Gitic
             _validator = validator;
         }
 
-        public GitizerConfigOverrides NormalizeOverride(object? input, string source)
+        public GiticConfigOverrides NormalizeOverride(object? input, string source)
         {
             var errors = new List<string>();
             if (!IsRecord(input, out var record))
@@ -28,7 +28,7 @@ namespace Gitic
 
             CheckUnknownKeys(record, ConfigValidator.TopLevelKeys, "", source, errors);
 
-            var @override = new GitizerConfigOverrides();
+            var @override = new GiticConfigOverrides();
 
             if (record.TryGetValue("aliases", out var aliasesVal))
             {

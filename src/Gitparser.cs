@@ -59,8 +59,7 @@ namespace Gitic
 
         public List<GitCommitRecord> ParseGitLog(string output)
         {
-            return output
-                .Split(new[] { CommitMarker }, StringSplitOptions.None)
+            return Regex.Split(output, $@"^{Regex.Escape(CommitMarker)}\r?$", RegexOptions.Multiline)
                 .Select(record => record.Trim())
                 .Where(record => record.Length > 0)
                 .Select(ParseCommitRecord)

@@ -80,7 +80,11 @@ namespace Gitic
             {
                 return files.OrderByDescending(f => f.HeatScore).ToList();
             }
-            return files.OrderByDescending(f => f.AttentionScore).ToList();
+            return files
+                .OrderByDescending(f => f.Lines ?? 0)
+                .ThenByDescending(f => f.Size ?? 0)
+                .ThenByDescending(f => f.AttentionScore)
+                .ToList();
         }
 
         public List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command)
