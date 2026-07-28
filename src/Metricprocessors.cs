@@ -174,6 +174,109 @@ namespace Gitic
             }
 
             result.Contributors = SortContributorsForCommand(result.Contributors, command);
+
+            if (command == AnalysisCommand.TemporalCoupling)
+            {
+                if (result.TemporalCoupling != null)
+                {
+                    if (result.Settings != null && !string.IsNullOrEmpty(result.Settings.Sort))
+                    {
+                        string sortField = result.Settings.Sort.ToLower();
+                        if (sortField == "coupling" || sortField == "coupling_degree" || sortField == "degree")
+                        {
+                            result.TemporalCoupling = result.TemporalCoupling
+                                .OrderByDescending(tc => tc.CouplingDegree)
+                                .ThenByDescending(tc => tc.SharedCommits)
+                                .ThenBy(tc => tc.FileA)
+                                .ToList();
+                        }
+                        else if (sortField == "shared" || sortField == "shared_commits" || sortField == "commits")
+                        {
+                            result.TemporalCoupling = result.TemporalCoupling
+                                .OrderByDescending(tc => tc.SharedCommits)
+                                .ThenByDescending(tc => tc.CouplingDegree)
+                                .ThenBy(tc => tc.FileA)
+                                .ToList();
+                        }
+                        else if (sortField == "file" || sortField == "filea" || sortField == "file_a")
+                        {
+                            result.TemporalCoupling = result.TemporalCoupling
+                                .OrderBy(tc => tc.FileA)
+                                .ThenBy(tc => tc.FileB)
+                                .ToList();
+                        }
+                        else
+                        {
+                            result.TemporalCoupling = result.TemporalCoupling
+                                .OrderByDescending(tc => tc.CouplingDegree)
+                                .ThenByDescending(tc => tc.SharedCommits)
+                                .ThenBy(tc => tc.FileA)
+                                .ToList();
+                        }
+                    }
+                    else
+                    {
+                        result.TemporalCoupling = result.TemporalCoupling
+                            .OrderByDescending(tc => tc.CouplingDegree)
+                            .ThenByDescending(tc => tc.SharedCommits)
+                            .ThenBy(tc => tc.FileA)
+                            .ToList();
+                    }
+                }
+            }
+
+            if (command == AnalysisCommand.LeadTime)
+            {
+                if (result.LeadTimes != null && result.LeadTimes.Merges != null)
+                {
+                    if (result.Settings != null && !string.IsNullOrEmpty(result.Settings.Sort))
+                    {
+                        string sortField = result.Settings.Sort.ToLower();
+                        if (sortField == "lead_time" || sortField == "leadtime" || sortField == "time" || sortField == "hours")
+                        {
+                            result.LeadTimes.Merges = result.LeadTimes.Merges
+                                .OrderByDescending(m => m.LeadTimeHours)
+                                .ThenByDescending(m => m.Date)
+                                .ToList();
+                        }
+                        else if (sortField == "date" || sortField == "time_stamp")
+                        {
+                            result.LeadTimes.Merges = result.LeadTimes.Merges
+                                .OrderByDescending(m => m.Date)
+                                .ThenByDescending(m => m.LeadTimeHours)
+                                .ToList();
+                        }
+                        else if (sortField == "files" || sortField == "file_count" || sortField == "count")
+                        {
+                            result.LeadTimes.Merges = result.LeadTimes.Merges
+                                .OrderByDescending(m => m.FileCount)
+                                .ThenByDescending(m => m.LeadTimeHours)
+                                .ToList();
+                        }
+                        else if (sortField == "author")
+                        {
+                            result.LeadTimes.Merges = result.LeadTimes.Merges
+                                .OrderBy(m => m.Author)
+                                .ThenByDescending(m => m.LeadTimeHours)
+                                .ToList();
+                        }
+                        else
+                        {
+                            result.LeadTimes.Merges = result.LeadTimes.Merges
+                                .OrderByDescending(m => m.LeadTimeHours)
+                                .ThenByDescending(m => m.Date)
+                                .ToList();
+                        }
+                    }
+                    else
+                    {
+                        result.LeadTimes.Merges = result.LeadTimes.Merges
+                            .OrderByDescending(m => m.LeadTimeHours)
+                            .ThenByDescending(m => m.Date)
+                            .ToList();
+                    }
+                }
+            }
         }
 
         public HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits)

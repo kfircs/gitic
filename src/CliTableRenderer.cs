@@ -83,6 +83,14 @@ namespace Gitic
             {
                 return Task.FromResult(RenderAreaTable(result));
             }
+            if (_command == AnalysisCommand.TemporalCoupling)
+            {
+                return Task.FromResult(RenderTemporalCouplingTable(result));
+            }
+            if (_command == AnalysisCommand.LeadTime)
+            {
+                return Task.FromResult(RenderLeadTimeTable(result));
+            }
 
             // Default fallback to hotspots
             {
@@ -111,6 +119,255 @@ namespace Gitic
             }
 
             return path.Substring(0, keepStart) + "..." + path.Substring(path.Length - keepEnd);
+        }
+
+        private string RenderTemporalCouplingTable(AnalysisResult result)
+        {
+            if (result.TemporalCoupling == null || result.TemporalCoupling.Count == 0)
+            {
+                return "No temporal coupling pairs found (requires >= 3 shared commits). Try widening the analysis window, modifying limits, or specifying --include-merges.\n";
+            }
+
+            // 1. Determine terminal width
+            int consoleWidth = 80;
+            try
+            {
+                if (!Console.IsOutputRedirected)
+                {
+                    consoleWidth = Console.WindowWidth;
+                }
+            }
+            catch { }
+
+            if (consoleWidth < 40) consoleWidth = 40;
+            if (consoleWidth > 200) consoleWidth = 200;
+
+            // 2. Select columns to display
+            var visibleColumns = new List<string>();
+            if (!string.IsNullOrEmpty(_settings.Columns))
+            {
+                visibleColumns = _settings.Columns.Split(',')
+                    .Select(c => c.Trim().ToLower())
+                    .Where(c => !string.IsNullOrEmpty(c))
+                    .ToList();
+            }
+            else
+            {
+                // Default
+                visibleColumns = new List<string> { "file_a", "file_b", "shared", "coupling" };
+            }
+
+            // 3. Set column properties
+            var columnDefs = new Dictionary<string, (string align, int stdWidth)>
+            {
+                { "shared", ("right", 8) },
+                { "coupling", ("right", 10) }
+            };
+
+            int otherWidths = 0;
+            foreach (var col in visibleColumns)
+            {
+                if (col == "file_a" || col == "file_b") continue;
+                if (columnDefs.TryGetValue(col, out var def))
+                {
+                    otherWidths += def.stdWidth;
+                }
+            }
+
+            int spacing = visibleColumns.Count - 1;
+            int remainingWidth = consoleWidth - otherWidths - spacing;
+            if (remainingWidth < 24) remainingWidth = 24;
+
+            int fileAWidth = remainingWidth / 2;
+            int fileBWidth = remainingWidth - fileAWidth;
+
+            IConsoleTableBuilder table = new ConsoleTableBuilder();
+            foreach (var col in visibleColumns)
+            {
+                if (col == "file_a")
+                {
+                    table.AddColumn("file_a", fileAWidth, "left");
+                }
+                else if (col == "file_b")
+                {
+                    table.AddColumn("file_b", fileBWidth, "left");
+                }
+                else if (columnDefs.TryGetValue(col, out var def))
+                {
+                    table.AddColumn(col, def.stdWidth, def.align);
+                }
+            }
+
+            // 4. Limit and Render
+            int limit = _settings.Limit ?? 20;
+            var listToRender = result.TemporalCoupling.Take(limit).ToList();
+
+            foreach (var item in listToRender)
+            {
+                var rowCells = new List<string>();
+                foreach (var col in visibleColumns)
+                {
+                    if (col == "file_a")
+                    {
+                        rowCells.Add(TruncatePath(item.FileA, fileAWidth));
+                    }
+                    else if (col == "file_b")
+                    {
+                        rowCells.Add(TruncatePath(item.FileB, fileBWidth));
+                    }
+                    else if (col == "shared")
+                    {
+                        rowCells.Add(item.SharedCommits.ToString());
+                    }
+                    else if (col == "coupling")
+                    {
+                        double couplingVal = item.CouplingDegree;
+                        string displayVal = $"{Math.Round(couplingVal * 100)}%";
+                        if (couplingVal >= 0.7)
+                        {
+                            rowCells.Add(_termFormatter.FormatHeat(100.0, displayVal));
+                        }
+                        else if (couplingVal >= 0.5)
+                        {
+                            rowCells.Add(_termFormatter.FormatAttention(50.0, displayVal));
+                        }
+                        else
+                        {
+                            rowCells.Add(displayVal);
+                        }
+                    }
+                }
+                table.AddRow(rowCells);
+            }
+
+            return table.Render();
+        }
+
+        private string RenderLeadTimeTable(AnalysisResult result)
+        {
+            if (result.LeadTimes == null || result.LeadTimes.Merges.Count == 0)
+            {
+                return "No merge commits in the analysis window; branch lead time is unmeasured. Run with --include-merges or widen the window to measure lead time.\n";
+            }
+
+            // 1. Determine terminal width
+            int consoleWidth = 80;
+            try
+            {
+                if (!Console.IsOutputRedirected)
+                {
+                    consoleWidth = Console.WindowWidth;
+                }
+            }
+            catch { }
+
+            if (consoleWidth < 40) consoleWidth = 40;
+            if (consoleWidth > 200) consoleWidth = 200;
+
+            // 2. Select columns to display
+            var visibleColumns = new List<string>();
+            if (!string.IsNullOrEmpty(_settings.Columns))
+            {
+                visibleColumns = _settings.Columns.Split(',')
+                    .Select(c => c.Trim().ToLower())
+                    .Where(c => !string.IsNullOrEmpty(c))
+                    .ToList();
+            }
+            else
+            {
+                // Default based on terminal width
+                if (consoleWidth < 60)
+                {
+                    visibleColumns = new List<string> { "hash", "lead_time" };
+                }
+                else if (consoleWidth < 100)
+                {
+                    visibleColumns = new List<string> { "hash", "date", "lead_time", "author" };
+                }
+                else
+                {
+                    visibleColumns = new List<string> { "hash", "date", "lead_time", "author", "files", "message" };
+                }
+            }
+
+            // 3. Set column properties
+            var columnDefs = new Dictionary<string, (string align, int stdWidth)>
+            {
+                { "hash", ("left", 8) },
+                { "date", ("left", 20) },
+                { "lead_time", ("right", 15) },
+                { "author", ("left", 15) },
+                { "files", ("right", 8) },
+                { "message", ("left", 30) }
+            };
+
+            int otherWidths = 0;
+            foreach (var col in visibleColumns)
+            {
+                if (col == "message") continue;
+                if (columnDefs.TryGetValue(col, out var def))
+                {
+                    otherWidths += def.stdWidth;
+                }
+            }
+
+            int spacing = visibleColumns.Count - 1;
+            int messageWidth = consoleWidth - otherWidths - spacing;
+            if (messageWidth < 10) messageWidth = 10;
+
+            IConsoleTableBuilder table = new ConsoleTableBuilder();
+            foreach (var col in visibleColumns)
+            {
+                if (col == "message")
+                {
+                    table.AddColumn("message", messageWidth, "left");
+                }
+                else if (columnDefs.TryGetValue(col, out var def))
+                {
+                    table.AddColumn(col, def.stdWidth, def.align);
+                }
+            }
+
+            // 4. Limit and Render
+            int limit = _settings.Limit ?? 20;
+            var listToRender = result.LeadTimes.Merges.Take(limit).ToList();
+
+            foreach (var m in listToRender)
+            {
+                var rowCells = new List<string>();
+                foreach (var col in visibleColumns)
+                {
+                    if (col == "hash")
+                    {
+                        rowCells.Add(m.Hash.Length > 7 ? m.Hash.Substring(0, 7) : m.Hash);
+                    }
+                    else if (col == "date")
+                    {
+                        rowCells.Add(m.Date.Length > 19 ? m.Date.Substring(0, 19) : m.Date);
+                    }
+                    else if (col == "lead_time")
+                    {
+                        rowCells.Add($"{m.LeadTimeHours:F1} hours");
+                    }
+                    else if (col == "author")
+                    {
+                        rowCells.Add(m.Author.Length > 15 ? m.Author.Substring(0, 12) + "..." : m.Author);
+                    }
+                    else if (col == "files")
+                    {
+                        rowCells.Add(m.FileCount.ToString());
+                    }
+                    else if (col == "message")
+                    {
+                        string msg = m.Message.Replace("\r", "").Replace("\n", " ").Trim();
+                        rowCells.Add(msg.Length > messageWidth ? msg.Substring(0, messageWidth - 3) + "..." : msg);
+                    }
+                }
+                table.AddRow(rowCells);
+            }
+
+            string avgLeadTimeStr = $"Average Lead Time: {result.LeadTimes.AverageLeadTimeHours:F1} hours\n\n";
+            return avgLeadTimeStr + table.Render();
         }
 
         private string RenderHotspotTable(AnalysisResult result)

@@ -20,7 +20,9 @@ namespace Gitic
         Areas,
         Contributors,
         Contributor,
-        Report
+        Report,
+        TemporalCoupling,
+        LeadTime
     }
 
     public class AnalysisSettings

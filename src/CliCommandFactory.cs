@@ -57,6 +57,16 @@ namespace Gitic
                 return new ReportCommand(parsed);
             }
 
+            if (string.Equals(parsed.Command, "temporal-coupling", StringComparison.OrdinalIgnoreCase))
+            {
+                return new TemporalCouplingCommand(parsed);
+            }
+
+            if (string.Equals(parsed.Command, "lead-time", StringComparison.OrdinalIgnoreCase))
+            {
+                return new LeadTimeCommand(parsed);
+            }
+
             throw new CommandLineParseError($"Unknown command: {parsed.Command}");
         }
     }
@@ -111,6 +121,8 @@ Commands:
   contributors [repo_path]              Show contributor metrics and profiles
   contributor <name> [repo_path]        Analyze a specific contributor's details
   report [repo_path] [options]          Generate reports (visual HTML, Markdown, and/or SVG)
+  temporal-coupling [repo_path]        Analyze temporal coupling between files
+  lead-time [repo_path]                 Measure code change and merge lead times
   config init                           Generate a starter config file (.gitic.yml)
   version                               Show version information
 
@@ -274,6 +286,18 @@ Options:
     {
         public ContributorsCommand(ParsedArgs parsed) : base(parsed) { }
         protected override AnalysisCommand CommandType => AnalysisCommand.Contributors;
+    }
+
+    public class TemporalCouplingCommand : StandardRenderAnalysisCommand
+    {
+        public TemporalCouplingCommand(ParsedArgs parsed) : base(parsed) { }
+        protected override AnalysisCommand CommandType => AnalysisCommand.TemporalCoupling;
+    }
+
+    public class LeadTimeCommand : StandardRenderAnalysisCommand
+    {
+        public LeadTimeCommand(ParsedArgs parsed) : base(parsed) { }
+        protected override AnalysisCommand CommandType => AnalysisCommand.LeadTime;
     }
 
     public class ContributorCommand : StandardRenderAnalysisCommand

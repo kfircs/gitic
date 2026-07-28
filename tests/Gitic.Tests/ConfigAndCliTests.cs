@@ -289,6 +289,18 @@ excludes:
             Assert.Contains("Usage:", runResult.Stdout);
             Assert.Contains("Commands:", runResult.Stdout);
             Assert.Contains("Options:", runResult.Stdout);
+            Assert.Contains("temporal-coupling", runResult.Stdout);
+            Assert.Contains("lead-time", runResult.Stdout);
+
+            var tcArgs = new[] { "temporal-coupling", "." };
+            var tcParser = new CommandLineParser(tcArgs);
+            var tcParsed = tcParser.Parse();
+            Assert.Equal("temporal-coupling", tcParsed.Command);
+
+            var ltArgs = new[] { "lead-time", "." };
+            var ltParser = new CommandLineParser(ltArgs);
+            var ltParsed = ltParser.Parse();
+            Assert.Equal("lead-time", ltParsed.Command);
         }
 
         [Fact]
@@ -789,6 +801,76 @@ bin/
             Assert.Contains("Bob", contributorOutput);
             Assert.DoesNotContain("Alice", contributorOutput);
             Assert.DoesNotContain("Bot1", contributorOutput);
+        }
+
+        [Fact]
+        public async Task TestCli_TemporalCouplingAndLeadTime_RenderingAndSorting()
+        {
+            var result = new AnalysisResult
+            {
+                Analysis = new AnalysisMetadata { IncludedFileChangeCount = 10 },
+                Settings = new AnalysisSettings { Limit = 1, Sort = "degree" },
+                TemporalCoupling = new List<TemporalCoupling>
+                {
+                    new() { FileA = "src/Main.cs", FileB = "src/Helper.cs", SharedCommits = 5, CouplingDegree = 0.8 },
+                    new() { FileA = "src/User.cs", FileB = "src/Auth.cs", SharedCommits = 10, CouplingDegree = 0.9 }
+                },
+                LeadTimes = new LeadTimesInfo
+                {
+                    AverageLeadTimeHours = 42.5,
+                    Merges = new List<MergeLeadTimeRecord>
+                    {
+                        new() { Hash = "abc1234", Date = "2026-07-28T12:00:00Z", LeadTimeHours = 10.0, Author = "Alice", FileCount = 2, Message = "Merge feature branch" },
+                        new() { Hash = "def5678", Date = "2026-07-28T14:00:00Z", LeadTimeHours = 40.0, Author = "Bob", FileCount = 5, Message = "Merge another branch" }
+                    }
+                }
+            };
+
+            // 1. Test Temporal Coupling Sorting & Limit
+            var service = new MetricProcessorService();
+            service.SortMetrics(result, AnalysisCommand.TemporalCoupling);
+
+            // Coupling Degree sort should put src/User.cs & src/Auth.cs first (0.9 > 0.8)
+            Assert.Equal("src/User.cs", result.TemporalCoupling[0].FileA);
+
+            var tcRenderer = new CliTableRenderer(AnalysisCommand.TemporalCoupling, result.Settings);
+            string tcOutput = await tcRenderer.RenderAsync(result);
+            Assert.Contains("src/User.cs", tcOutput);
+            Assert.DoesNotContain("src/Main.cs", tcOutput); // excluded due to limit = 1
+
+            // 2. Test Lead Time Sorting & Limit
+            var leadTimeSettings = new AnalysisSettings { Limit = 1, Sort = "hours" };
+            result.Settings = leadTimeSettings;
+            service.SortMetrics(result, AnalysisCommand.LeadTime);
+
+            // LeadTimeHours sort (hours descending) should put def5678 first (40.0 > 10.0)
+            Assert.Equal("def5678", result.LeadTimes.Merges[0].Hash);
+
+            var ltRenderer = new CliTableRenderer(AnalysisCommand.LeadTime, leadTimeSettings);
+            string ltOutput = await ltRenderer.RenderAsync(result);
+            Assert.Contains("def5678", ltOutput);
+            Assert.Contains("Average Lead Time: 42.5 hours", ltOutput);
+            Assert.DoesNotContain("abc1234", ltOutput); // excluded due to limit = 1
+        }
+
+        [Fact]
+        public async Task TestCli_TemporalCouplingAndLeadTime_NoDataGuidance()
+        {
+            var emptyResult = new AnalysisResult
+            {
+                Analysis = new AnalysisMetadata { IncludedFileChangeCount = 10 },
+                Settings = new AnalysisSettings(),
+                TemporalCoupling = new List<TemporalCoupling>(),
+                LeadTimes = new LeadTimesInfo { Merges = new List<MergeLeadTimeRecord>() }
+            };
+
+            var tcRenderer = new CliTableRenderer(AnalysisCommand.TemporalCoupling, emptyResult.Settings);
+            string tcOutput = await tcRenderer.RenderAsync(emptyResult);
+            Assert.Contains("No temporal coupling pairs found", tcOutput);
+
+            var ltRenderer = new CliTableRenderer(AnalysisCommand.LeadTime, emptyResult.Settings);
+            string ltOutput = await ltRenderer.RenderAsync(emptyResult);
+            Assert.Contains("No merge commits in the analysis window", ltOutput);
         }
     }
 }

@@ -194,6 +194,16 @@ Useful next steps:
             reportCommand.Arguments.Add(reportRepoPathArg);
             rootCommand.Subcommands.Add(reportCommand);
 
+            var temporalCouplingRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+            var temporalCouplingCommand = new Command("temporal-coupling", "Analyze temporal coupling between files");
+            temporalCouplingCommand.Arguments.Add(temporalCouplingRepoPathArg);
+            rootCommand.Subcommands.Add(temporalCouplingCommand);
+
+            var leadTimeRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+            var leadTimeCommand = new Command("lead-time", "Measure code change and merge lead times");
+            leadTimeCommand.Arguments.Add(leadTimeRepoPathArg);
+            rootCommand.Subcommands.Add(leadTimeCommand);
+
             var configCommand = new Command("config", "Generate a starter config file");
             var actionArg = new Argument<string>("action") { Description = "The config action (e.g., init)", DefaultValueFactory = _ => "init" };
             configCommand.Arguments.Add(actionArg);
@@ -209,7 +219,8 @@ Useful next steps:
                 {
                     var lower = arg.ToLower();
                     if (lower == "hotspots" || lower == "areas" || lower == "contributors" || 
-                        lower == "contributor" || lower == "report" || lower == "config" || lower == "version" || lower == "help")
+                        lower == "contributor" || lower == "report" || lower == "config" || lower == "version" || lower == "help" ||
+                        lower == "temporal-coupling" || lower == "lead-time")
                     {
                         return lower;
                     }
@@ -348,6 +359,14 @@ Useful next steps:
             else if (commandName == "contributors")
             {
                 repoPath = parseResult.GetValue(contributorsRepoPathArg) ?? ".";
+            }
+            else if (commandName == "temporal-coupling")
+            {
+                repoPath = parseResult.GetValue(temporalCouplingRepoPathArg) ?? ".";
+            }
+            else if (commandName == "lead-time")
+            {
+                repoPath = parseResult.GetValue(leadTimeRepoPathArg) ?? ".";
             }
             else if (commandName == "report")
             {
