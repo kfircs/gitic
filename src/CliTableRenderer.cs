@@ -90,30 +90,187 @@ namespace Gitic
             }
         }
 
+        public static string TruncatePath(string path, int maxLength)
+        {
+            if (string.IsNullOrEmpty(path) || path.Length <= maxLength)
+            {
+                return path;
+            }
+
+            if (maxLength <= 5)
+            {
+                return path.Substring(path.Length - maxLength);
+            }
+
+            int keepEnd = maxLength / 2;
+            int keepStart = maxLength - keepEnd - 3; // -3 for "..."
+
+            if (keepStart <= 0)
+            {
+                return "..." + path.Substring(path.Length - (maxLength - 3));
+            }
+
+            return path.Substring(0, keepStart) + "..." + path.Substring(path.Length - keepEnd);
+        }
+
         private string RenderHotspotTable(AnalysisResult result)
         {
-            IConsoleTableBuilder table = new ConsoleTableBuilder()
-                .AddColumn("file", 28, "left")
-                .AddColumn("attention", 13, "right")
-                .AddColumn("heat", 9, "right")
-                .AddColumn("churn", 6, "right")
-                .AddColumn("contributors", 12, "right")
-                .AddColumn("top activity share", 24, "left")
-                .AddColumn("reasons");
+            // 1. Determine terminal width
+            int consoleWidth = 80;
+            try
+            {
+                if (!Console.IsOutputRedirected)
+                {
+                    consoleWidth = Console.WindowWidth;
+                }
+            }
+            catch { }
 
-            var filesToRender = result.Files.Take(20).ToList();
+            // Bounded terminal width between 40 and 200
+            if (consoleWidth < 40) consoleWidth = 40;
+            if (consoleWidth > 200) consoleWidth = 200;
+
+            // 2. Select columns to display
+            var visibleColumns = new List<string>();
+            if (!string.IsNullOrEmpty(_settings.Columns))
+            {
+                visibleColumns = _settings.Columns.Split(',')
+                    .Select(c => c.Trim().ToLower())
+                    .Where(c => !string.IsNullOrEmpty(c))
+                    .ToList();
+            }
+            else
+            {
+                // Default based on terminal width
+                if (consoleWidth < 60)
+                {
+                    visibleColumns = new List<string> { "file", "attention" };
+                }
+                else if (consoleWidth < 100)
+                {
+                    visibleColumns = new List<string> { "file", "attention", "heat", "reasons" };
+                }
+                else
+                {
+                    visibleColumns = new List<string> { "file", "attention", "heat", "ownership", "rework", "coordination", "reasons" };
+                }
+            }
+
+            // 3. Set column properties (alignment and standard width)
+            var columnDefs = new Dictionary<string, (string align, int stdWidth)>
+            {
+                { "file", ("left", 20) }, // will be adjusted dynamically
+                { "attention", ("right", 10) },
+                { "heat", ("right", 6) },
+                { "churn", ("right", 6) },
+                { "contributors", ("right", 12) },
+                { "ownership", ("right", 9) },
+                { "rework", ("right", 8) },
+                { "coordination", ("right", 12) },
+                { "reasons", ("left", 25) }
+            };
+
+            // Calculate other columns width sum
+            int otherWidths = 0;
+            int colCount = 0;
+            foreach (var col in visibleColumns)
+            {
+                if (col == "file") continue;
+                if (columnDefs.TryGetValue(col, out var def))
+                {
+                    otherWidths += def.stdWidth;
+                    colCount++;
+                }
+            }
+
+            // Allocate remaining width to file column
+            int spacing = visibleColumns.Count - 1;
+            int fileWidth = consoleWidth - otherWidths - spacing;
+            if (fileWidth < 12) fileWidth = 12; // Min file width
+
+            // Re-adjust reasons if width is very large
+            int reasonsWidth = 25;
+            if (visibleColumns.Contains("reasons"))
+            {
+                int totalAllocated = fileWidth + otherWidths + spacing;
+                if (totalAllocated < consoleWidth)
+                {
+                    reasonsWidth += (consoleWidth - totalAllocated);
+                }
+            }
+
+            IConsoleTableBuilder table = new ConsoleTableBuilder();
+            foreach (var col in visibleColumns)
+            {
+                if (col == "file")
+                {
+                    table.AddColumn("file", fileWidth, "left");
+                }
+                else if (col == "reasons")
+                {
+                    table.AddColumn("reasons", reasonsWidth, "left");
+                }
+                else if (columnDefs.TryGetValue(col, out var def))
+                {
+                    table.AddColumn(col, def.stdWidth, def.align);
+                }
+            }
+
+            // 4. Sort and Limit data model
+            int limit = _settings.Limit ?? 20;
+            var filesToRender = result.Files.Take(limit).ToList();
+
             foreach (var file in filesToRender)
             {
-                table.AddRow(new List<string>
+                var rowCells = new List<string>();
+                foreach (var col in visibleColumns)
                 {
-                    file.Path,
-                    _termFormatter.FormatAttention(file.AttentionScore, file.AttentionScore.ToString()),
-                    _termFormatter.FormatHeat(file.HeatScore, file.HeatScore.ToString()),
-                    file.Churn.ToString(),
-                    file.ContributorCount.ToString(),
-                    TopContributor(file.Contributors),
-                    ScoreReasons(file.ScoreBreakdown)
-                });
+                    if (col == "file")
+                    {
+                        rowCells.Add(TruncatePath(file.Path, fileWidth));
+                    }
+                    else if (col == "attention")
+                    {
+                        rowCells.Add(_termFormatter.FormatAttention(file.AttentionScore, file.AttentionScore.ToString("F1")));
+                    }
+                    else if (col == "heat")
+                    {
+                        rowCells.Add(_termFormatter.FormatHeat(file.HeatScore, file.HeatScore.ToString("F1")));
+                    }
+                    else if (col == "churn")
+                    {
+                        rowCells.Add(file.Churn.ToString());
+                    }
+                    else if (col == "contributors")
+                    {
+                        rowCells.Add(file.ContributorCount.ToString());
+                    }
+                    else if (col == "ownership")
+                    {
+                        double share = file.KnowledgeSilo?.TopOwnerShare ?? 0;
+                        rowCells.Add($"{Math.Round(share * 100)}%");
+                    }
+                    else if (col == "rework")
+                    {
+                        double rework = file.ReworkRate ?? 0;
+                        rowCells.Add($"{Math.Round(rework * 100)}%");
+                    }
+                    else if (col == "coordination")
+                    {
+                        double coord = file.CoordinationOverlap ?? 0;
+                        rowCells.Add(Math.Round(coord).ToString());
+                    }
+                    else if (col == "reasons")
+                    {
+                        string scoreReasons = ScoreReasons(file.ScoreBreakdown);
+                        if (scoreReasons.Length > reasonsWidth)
+                        {
+                            scoreReasons = scoreReasons.Substring(0, reasonsWidth - 3) + "...";
+                        }
+                        rowCells.Add(scoreReasons);
+                    }
+                }
+                table.AddRow(rowCells);
             }
 
             return table.Render();

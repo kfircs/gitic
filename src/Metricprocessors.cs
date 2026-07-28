@@ -107,7 +107,44 @@ namespace Gitic
         {
             if (result == null) return;
             result.Areas = SortAreasForCommand(result.Areas, command);
-            result.Files = SortFilesForCommand(result.Files, command);
+            
+            if (command == AnalysisCommand.Hotspots && result.Settings != null && !string.IsNullOrEmpty(result.Settings.Sort))
+            {
+                string sortField = result.Settings.Sort.ToLower();
+                if (sortField == "attention")
+                {
+                    result.Files = result.Files.OrderByDescending(f => f.AttentionScore).ToList();
+                }
+                else if (sortField == "heat")
+                {
+                    result.Files = result.Files.OrderByDescending(f => f.HeatScore).ToList();
+                }
+                else if (sortField == "churn")
+                {
+                    result.Files = result.Files.OrderByDescending(f => f.Churn).ToList();
+                }
+                else if (sortField == "rework")
+                {
+                    result.Files = result.Files.OrderByDescending(f => f.ReworkRate ?? 0).ToList();
+                }
+                else if (sortField == "coordination")
+                {
+                    result.Files = result.Files.OrderByDescending(f => f.CoordinationOverlap ?? 0).ToList();
+                }
+                else if (sortField == "lines")
+                {
+                    result.Files = result.Files.OrderByDescending(f => f.Lines ?? 0).ToList();
+                }
+                else
+                {
+                    result.Files = SortFilesForCommand(result.Files, command);
+                }
+            }
+            else
+            {
+                result.Files = SortFilesForCommand(result.Files, command);
+            }
+
             result.Contributors = SortContributorsForCommand(result.Contributors, command);
         }
 

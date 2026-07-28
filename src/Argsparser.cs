@@ -329,6 +329,9 @@ Useful next steps:
             settings.Since = parseResult.GetValue(sinceOption);
             settings.Path = parseResult.GetValue(pathOption);
             settings.Depth = parseResult.GetValue(depthOption);
+            settings.Limit = parseResult.GetValue(limitOption);
+            settings.Sort = parseResult.GetValue(sortOption);
+            settings.Columns = parseResult.GetValue(columnsOption);
 
             string repoPath = ".";
             string? contributorName = null;

@@ -640,5 +640,52 @@ bin/
             Assert.Contains("[!]", outputPlain);
             Assert.Contains("*", outputPlain);
         }
+
+        [Fact]
+        public void TestTruncatePath_MiddleTruncation()
+        {
+            Assert.Equal("src/foo/ba...z/MyClass.cs", CliTableRenderer.TruncatePath("src/foo/bar/baz/MyClass.cs", 25));
+            Assert.Equal("src/MyClass.cs", CliTableRenderer.TruncatePath("src/MyClass.cs", 25));
+            Assert.Equal("s", CliTableRenderer.TruncatePath("src/MyClass.cs", 1));
+            Assert.Equal("s.cs", CliTableRenderer.TruncatePath("src/MyClass.cs", 4));
+        }
+
+        [Fact]
+        public async Task TestCliTableRenderer_AdaptiveHotspotsTable()
+        {
+            var result = new AnalysisResult
+            {
+                Analysis = new AnalysisMetadata { IncludedFileChangeCount = 10 },
+                Settings = new AnalysisSettings { Limit = 2, Sort = "churn", Columns = "file,attention,churn" },
+                Files = new List<FileMetric>
+                {
+                    new() { Path = "src/FileA.cs", AttentionScore = 80.0, Churn = 500 },
+                    new() { Path = "src/FileB.cs", AttentionScore = 90.0, Churn = 1000 },
+                    new() { Path = "src/FileC.cs", AttentionScore = 70.0, Churn = 200 }
+                }
+            };
+
+            // Test 1: Sorting and Limit
+            var service = new MetricProcessorService();
+            service.SortMetrics(result, AnalysisCommand.Hotspots);
+
+            // Churn sort should put FileB first, then FileA, then FileC
+            Assert.Equal("src/FileB.cs", result.Files[0].Path);
+            Assert.Equal("src/FileA.cs", result.Files[1].Path);
+
+            // Test 2: Custom Columns and Limit Rendering
+            var renderer = new CliTableRenderer(AnalysisCommand.Hotspots, result.Settings);
+            string output = await renderer.RenderAsync(result);
+
+            // Output should contain only requested columns and limited to 2 rows
+            Assert.Contains("file", output);
+            Assert.Contains("attention", output);
+            Assert.Contains("churn", output);
+            Assert.DoesNotContain("heat", output);
+
+            Assert.Contains("src/FileB.cs", output);
+            Assert.Contains("src/FileA.cs", output);
+            Assert.DoesNotContain("src/FileC.cs", output);
+        }
     }
 }

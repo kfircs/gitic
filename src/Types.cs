@@ -58,6 +58,15 @@ namespace Gitic
         [JsonPropertyName("color")]
         public string Color { get; set; } = "auto";
 
+        [JsonPropertyName("limit")]
+        public int? Limit { get; set; }
+
+        [JsonPropertyName("sort")]
+        public string? Sort { get; set; }
+
+        [JsonPropertyName("columns")]
+        public string? Columns { get; set; }
+
         public AnalysisSettings Clone()
         {
             return new AnalysisSettings
@@ -72,7 +81,10 @@ namespace Gitic
                 Anonymize = Anonymize,
                 Depth = Depth,
                 Format = Format,
-                Color = Color
+                Color = Color,
+                Limit = Limit,
+                Sort = Sort,
+                Columns = Columns
             };
         }
     }
