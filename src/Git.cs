@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Gitic
@@ -17,12 +18,12 @@ namespace Gitic
 
     public interface IGitExecutor
     {
-        Task<string> RunAsync(string[] args, string cwd);
+        Task<string> RunAsync(string[] args, string cwd, CancellationToken cancellationToken = default);
     }
 
     public class ExecFileGitExecutor : IGitExecutor
     {
-        public async Task<string> RunAsync(string[] args, string cwd)
+        public async Task<string> RunAsync(string[] args, string cwd, CancellationToken cancellationToken = default)
         {
             var allArgs = new List<string> { "-C", cwd };
             allArgs.AddRange(args);
@@ -44,9 +45,9 @@ namespace Gitic
             try
             {
                 process.Start();
-                string stdout = await process.StandardOutput.ReadToEndAsync();
-                string stderr = await process.StandardError.ReadToEndAsync();
-                await process.WaitForExitAsync();
+                string stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+                string stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
+                await process.WaitForExitAsync(cancellationToken);
 
                 if (process.ExitCode != 0)
                 {
@@ -83,8 +84,8 @@ namespace Gitic
 
     public interface IGitClient : ICommitStream
     {
-        Task<string?> GetRepositoryRootAsync();
-        Task<HashSet<string>> ListHeadFilesAsync();
+        Task<string?> GetRepositoryRootAsync(CancellationToken cancellationToken = default);
+        Task<HashSet<string>> ListHeadFilesAsync(CancellationToken cancellationToken = default);
     }
 
     public class GitClient : IGitClient
@@ -101,11 +102,11 @@ namespace Gitic
             _parser = new GitParser(patchParser);
         }
 
-        public async Task<string?> GetRepositoryRootAsync()
+        public async Task<string?> GetRepositoryRootAsync(CancellationToken cancellationToken = default)
         {
             try
             {
-                string stdout = await _executor.RunAsync(new[] { "rev-parse", "--show-toplevel" }, _repoRoot);
+                string stdout = await _executor.RunAsync(new[] { "rev-parse", "--show-toplevel" }, _repoRoot, cancellationToken);
                 string trimmed = stdout.Trim();
                 return trimmed.Length > 0 ? trimmed : null;
             }
@@ -115,9 +116,9 @@ namespace Gitic
             }
         }
 
-        public async Task<HashSet<string>> ListHeadFilesAsync()
+        public async Task<HashSet<string>> ListHeadFilesAsync(CancellationToken cancellationToken = default)
         {
-            string stdout = await _executor.RunAsync(new[] { "ls-tree", "-r", "--name-only", "HEAD" }, _repoRoot);
+            string stdout = await _executor.RunAsync(new[] { "ls-tree", "-r", "--name-only", "HEAD" }, _repoRoot, cancellationToken);
             return new HashSet<string>(
                 stdout
                     .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -126,12 +127,12 @@ namespace Gitic
             );
         }
 
-        public async Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null)
+        public async Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null, CancellationToken cancellationToken = default)
         {
             var opt = options ?? new GitHistoryExtractorOptions();
             var args = _parser.BuildGitLogArguments(opt);
 
-            string stdout = await _executor.RunAsync(args.ToArray(), _repoRoot);
+            string stdout = await _executor.RunAsync(args.ToArray(), _repoRoot, cancellationToken);
             return _parser.ParseGitLog(stdout);
         }
     }

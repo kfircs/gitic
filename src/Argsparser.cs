@@ -1,5 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using System.IO;
+using System.Linq;
 
 namespace Gitic
 {
@@ -47,57 +51,22 @@ namespace Gitic
 
     public class CommandLineParser : ICommandLineParser
     {
-        private const int MinDepth = 1;
-        private const int MaxDepth = 10;
-
-        private static readonly HashSet<string> ValidCommands = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "hotspots",
-            "areas",
-            "contributors",
-            "contributor",
-            "report",
-            "config",
-            "version"
-        };
-
         private readonly List<string> _args;
-        private int _index;
-        private string? _htmlPath;
-        private string? _mdPath;
-        private string? _svgPath;
 
         public CommandLineParser(string[] args)
         {
-            _args = new List<string>(args);
+            _args = args != null ? new List<string>(args) : new List<string>();
         }
 
         public ParsedArgs Parse()
         {
-            if (_args.Contains("--version") || _args.Contains("-v") || _args.Contains("version"))
+            if (_args == null)
             {
-                return new ParsedArgs
-                {
-                    Command = "version",
-                    RepoPath = ".",
-                    Settings = DefaultAnalysisSettings.Create(),
-                    ContributorName = null,
-                    HtmlPath = null,
-                    ConfigAction = null
-                };
+                throw new CommandLineParseError("Arguments cannot be null.");
             }
-
-            if (_args.Contains("--help") || _args.Contains("-h") || _args.Contains("help"))
+            if (_args.Any(arg => arg == null || arg.Trim() == ""))
             {
-                return new ParsedArgs
-                {
-                    Command = "help",
-                    RepoPath = ".",
-                    Settings = DefaultAnalysisSettings.Create(),
-                    ContributorName = null,
-                    HtmlPath = null,
-                    ConfigAction = null
-                };
+                throw new CommandLineParseError("Command name or argument cannot be empty or null.");
             }
 
             if (_args.Count == 0)
@@ -114,216 +83,303 @@ Useful next steps:
   2. Run 'gitic --help' to see all available commands and options.");
             }
 
-            string commandName = _args[0];
-            ValidateCommand(commandName);
+            // 1. Build the command model
+            var rootCommand = new RootCommand("Gitic Strategic Codebase Analysis");
+
+            var configOption = new Option<string>("--config") { Description = "Path to non-default configuration file", Recursive = true };
+            var userConfigOption = new Option<string>("--user-config") { Description = "Path to non-default global user configuration file", Recursive = true };
+            var jsonOption = new Option<bool>("--json") { Description = "Output results in raw JSON format", Recursive = true };
+            
+            var formatOption = new Option<string>("--format") 
+            { 
+                Description = "Output format: human, plain, json", 
+                DefaultValueFactory = _ => "human",
+                Recursive = true 
+            };
+            
+            var colorOption = new Option<string>("--color") 
+            { 
+                Description = "Color mode: auto, always, never", 
+                DefaultValueFactory = _ => "auto",
+                Recursive = true 
+            };
+            
+            var allTimeOption = new Option<bool>("--all-time") { Description = "Analyze all history (ignoring time window settings)", Recursive = true };
+            var includeMergesOption = new Option<bool>("--include-merges") { Description = "Include merge commits in the analysis", Recursive = true };
+            var includeDeletedOption = new Option<bool>("--include-deleted") { Description = "Include deleted files in stats", Recursive = true };
+            var mergeByEmailOption = new Option<bool>("--merge-by-email") { Description = "Merge contributor identities by email", Recursive = true };
+            var anonymizeOption = new Option<bool>("--anonymize") { Description = "Anonymize contributor names/emails in output", Recursive = true };
+            var sinceOption = new Option<string>("--since") { Description = "Filter commits since date (YYYY-MM-DD)", Recursive = true };
+            var untilOption = new Option<string>("--until") { Description = "Filter commits until date (YYYY-MM-DD)", Recursive = true };
+            var pathOption = new Option<string>("--path") { Description = "Filter analysis to files matching glob pattern", Recursive = true };
+            
+            var depthOption = new Option<int>("--depth") 
+            { 
+                Description = "Directory depth for areas analysis (1-10)", 
+                DefaultValueFactory = _ => 2,
+                Recursive = true 
+            };
+            depthOption.Validators.Add(result =>
+            {
+                try
+                {
+                    var value = result.GetValue(depthOption);
+                    if (value < 1 || value > 10)
+                    {
+                        result.AddError("--depth must be an integer between 1 and 10.");
+                    }
+                }
+                catch
+                {
+                    result.AddError("--depth must be an integer between 1 and 10.");
+                }
+            });
+
+            var htmlOption = new Option<string>("--html") { Description = "Output visual HTML report to path", Recursive = true, HelpName = "path" };
+            var mdOption = new Option<string>("--md") { Description = "Output Markdown summary report to path", Recursive = true, HelpName = "path" };
+            var svgOption = new Option<string>("--svg") { Description = "Output SVG reports to path", Recursive = true, HelpName = "path" };
+
+            // Gitic-004 options placeholder
+            var limitOption = new Option<int?>("--limit") { Description = "Limit results to top N items", Recursive = true };
+            var sortOption = new Option<string>("--sort") { Description = "Sort results by field", Recursive = true };
+            var columnsOption = new Option<string>("--columns") { Description = "Select columns to show", Recursive = true };
+
+            // Add global options
+            rootCommand.Options.Add(configOption);
+            rootCommand.Options.Add(userConfigOption);
+            rootCommand.Options.Add(jsonOption);
+            rootCommand.Options.Add(formatOption);
+            rootCommand.Options.Add(colorOption);
+            rootCommand.Options.Add(allTimeOption);
+            rootCommand.Options.Add(includeMergesOption);
+            rootCommand.Options.Add(includeDeletedOption);
+            rootCommand.Options.Add(mergeByEmailOption);
+            rootCommand.Options.Add(anonymizeOption);
+            rootCommand.Options.Add(sinceOption);
+            rootCommand.Options.Add(untilOption);
+            rootCommand.Options.Add(pathOption);
+            rootCommand.Options.Add(depthOption);
+            rootCommand.Options.Add(htmlOption);
+            rootCommand.Options.Add(mdOption);
+            rootCommand.Options.Add(svgOption);
+            rootCommand.Options.Add(limitOption);
+            rootCommand.Options.Add(sortOption);
+            rootCommand.Options.Add(columnsOption);
+
+            // Subcommands
+            var hotspotsRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+            var hotspotsCommand = new Command("hotspots", "Identify code hotspots with high complexity/churn");
+            hotspotsCommand.Arguments.Add(hotspotsRepoPathArg);
+            rootCommand.Subcommands.Add(hotspotsCommand);
+
+            var areasRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+            var areasCommand = new Command("areas", "Analyze code ownership and changes across directories");
+            areasCommand.Arguments.Add(areasRepoPathArg);
+            rootCommand.Subcommands.Add(areasCommand);
+
+            var contributorsRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+            var contributorsCommand = new Command("contributors", "Show contributor metrics and profiles");
+            contributorsCommand.Arguments.Add(contributorsRepoPathArg);
+            rootCommand.Subcommands.Add(contributorsCommand);
+
+            var contributorRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+            var contributorCommand = new Command("contributor", "Analyze a specific contributor's details");
+            var nameArg = new Argument<string>("name") { Description = "The contributor name" };
+            contributorCommand.Arguments.Add(nameArg);
+            contributorCommand.Arguments.Add(contributorRepoPathArg);
+            rootCommand.Subcommands.Add(contributorCommand);
+
+            var reportRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+            var reportCommand = new Command("report", "Generate reports (visual HTML, Markdown, and/or SVG)");
+            reportCommand.Arguments.Add(reportRepoPathArg);
+            rootCommand.Subcommands.Add(reportCommand);
+
+            var configCommand = new Command("config", "Generate a starter config file");
+            var actionArg = new Argument<string>("action") { Description = "The config action (e.g., init)", DefaultValueFactory = _ => "init" };
+            configCommand.Arguments.Add(actionArg);
+            rootCommand.Subcommands.Add(configCommand);
+
+            var versionCommand = new Command("version", "Show version information");
+            rootCommand.Subcommands.Add(versionCommand);
+
+            // Case-insensitivity normalization for the command name
+            var normalizedArgs = _args.Select((arg, idx) => 
+            {
+                if (idx == 0 && arg != null)
+                {
+                    var lower = arg.ToLower();
+                    if (lower == "hotspots" || lower == "areas" || lower == "contributors" || 
+                        lower == "contributor" || lower == "report" || lower == "config" || lower == "version" || lower == "help")
+                    {
+                        return lower;
+                    }
+                }
+                return arg;
+            })
+            .Where(arg => arg != null)
+            .Select(arg => arg!)
+            .ToList();
+
+            // Intercept help/version checks at the very beginning to avoid unrelated secondary parsing errors
+            if (_args.Contains("--help") || _args.Contains("-h") || normalizedArgs.Contains("help"))
+            {
+                var pr = rootCommand.Parse(normalizedArgs);
+                using var stdoutWriter = new StringWriter();
+                using var stderrWriter = new StringWriter();
+                pr.Invoke(new InvocationConfiguration
+                {
+                    Output = stdoutWriter,
+                    Error = stderrWriter
+                });
+                string helpText = stdoutWriter.ToString();
+                if (string.IsNullOrEmpty(helpText))
+                {
+                    helpText = stderrWriter.ToString();
+                }
+
+                return new ParsedArgs
+                {
+                    Command = "help",
+                    RepoPath = ".",
+                    Settings = DefaultAnalysisSettings.Create(),
+                    HtmlPath = helpText
+                };
+            }
+
+            if (_args.Contains("--version") || _args.Contains("-v") || normalizedArgs.Contains("version"))
+            {
+                return new ParsedArgs
+                {
+                    Command = "version",
+                    RepoPath = ".",
+                    Settings = DefaultAnalysisSettings.Create()
+                };
+            }
+
+            // Parse the normalized arguments
+            var parseResult = rootCommand.Parse(normalizedArgs);
+
+            // Handle invalid usage or unrecognized elements
+            if (parseResult.Errors.Any())
+            {
+                var errors = string.Join("\n", parseResult.Errors.Select(e => 
+                {
+                    var msg = e.Message;
+                    if (msg.Contains("--depth") || (e.SymbolResult is OptionResult optionResult && optionResult.Option == depthOption))
+                    {
+                        return "--depth must be an integer between 1 and 10.";
+                    }
+                    return msg;
+                }).Distinct());
+
+                if (parseResult.Errors.Any(e => e.Message.Contains("--depth") || (e.SymbolResult is OptionResult optionResult && optionResult.Option == depthOption)))
+                {
+                    throw new CommandLineParseError(errors);
+                }
+                throw new CommandLineParseError($"{errors}\nTry running 'gitic --help' for usage.");
+            }
+
+            // Check if root command has been invoked without subcommands
+            if (parseResult.CommandResult.Command == rootCommand)
+            {
+                throw new CommandLineParseError("A command is required.\nTry running 'gitic --help' for usage.");
+            }
+
+            string commandName = parseResult.CommandResult.Command.Name;
 
             var settings = DefaultAnalysisSettings.Create();
-            var positionals = new List<string>();
-            _htmlPath = null;
-            _mdPath = null;
-            _svgPath = null;
 
-            for (_index = 1; _index < _args.Count; _index += 1)
+            // Populate settings from options
+            settings.Json = parseResult.GetValue(jsonOption);
+            
+            var formatVal = parseResult.GetValue(formatOption);
+            if (formatVal != null)
             {
-                string arg = _args[_index];
-                if (arg.StartsWith("--"))
+                if (!string.Equals(formatVal, "human", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(formatVal, "plain", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(formatVal, "json", StringComparison.OrdinalIgnoreCase))
                 {
-                    ProcessFlag(arg, settings);
+                    throw new CommandLineParseError("--format must be 'human', 'plain', or 'json'.");
                 }
-                else
+                settings.Format = formatVal.ToLower();
+                if (string.Equals(formatVal, "json", StringComparison.OrdinalIgnoreCase))
                 {
-                    positionals.Add(arg);
+                    settings.Json = true;
                 }
             }
 
-            if (commandName == "report")
+            var colorVal = parseResult.GetValue(colorOption);
+            if (colorVal != null)
             {
+                if (!string.Equals(colorVal, "auto", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(colorVal, "always", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(colorVal, "never", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new CommandLineParseError("--color must be 'auto', 'always', or 'never'.");
+                }
+                settings.Color = colorVal.ToLower();
+            }
+
+            settings.AllTime = parseResult.GetValue(allTimeOption);
+            settings.IncludeMerges = parseResult.GetValue(includeMergesOption);
+            settings.IncludeDeleted = parseResult.GetValue(includeDeletedOption);
+            settings.MergeByEmail = parseResult.GetValue(mergeByEmailOption);
+            settings.Anonymize = parseResult.GetValue(anonymizeOption);
+            
+            settings.Since = parseResult.GetValue(sinceOption);
+            settings.Path = parseResult.GetValue(pathOption);
+            settings.Depth = parseResult.GetValue(depthOption);
+
+            string repoPath = ".";
+            string? contributorName = null;
+            string? configAction = null;
+
+            if (commandName == "hotspots")
+            {
+                repoPath = parseResult.GetValue(hotspotsRepoPathArg) ?? ".";
+            }
+            else if (commandName == "areas")
+            {
+                repoPath = parseResult.GetValue(areasRepoPathArg) ?? ".";
+            }
+            else if (commandName == "contributors")
+            {
+                repoPath = parseResult.GetValue(contributorsRepoPathArg) ?? ".";
+            }
+            else if (commandName == "report")
+            {
+                repoPath = parseResult.GetValue(reportRepoPathArg) ?? ".";
                 settings.IncludeMerges = true;
             }
-
-            if (commandName == "config")
+            else if (commandName == "contributor")
             {
-                return new ParsedArgs
+                contributorName = parseResult.GetValue(nameArg);
+                repoPath = parseResult.GetValue(contributorRepoPathArg) ?? ".";
+                if (string.IsNullOrEmpty(contributorName))
                 {
-                    Command = "config",
-                    RepoPath = ".",
-                    Settings = settings,
-                    ContributorName = null,
-                    HtmlPath = _htmlPath,
-                    MdPath = _mdPath,
-                    SvgPath = _svgPath,
-                    ConfigAction = positionals.Count > 0 ? positionals[0] : null
-                };
+                    throw new CommandLineParseError("contributor requires a contributor name.");
+                }
+            }
+            else if (commandName == "config")
+            {
+                configAction = parseResult.GetValue(actionArg) ?? "init";
             }
 
-            if (commandName == "contributor")
-            {
-                string? contributorName = positionals.Count > 0 ? positionals[0] : null;
-                ValidateContributorName(contributorName);
-                return new ParsedArgs
-                {
-                    Command = "contributor",
-                    RepoPath = positionals.Count > 1 ? positionals[1] : ".",
-                    Settings = settings,
-                    ContributorName = contributorName,
-                    HtmlPath = _htmlPath,
-                    MdPath = _mdPath,
-                    SvgPath = _svgPath,
-                    ConfigAction = null
-                };
-            }
+            string? htmlPath = parseResult.GetValue(htmlOption);
+            string? mdPath = parseResult.GetValue(mdOption);
+            string? svgPath = parseResult.GetValue(svgOption);
 
             return new ParsedArgs
             {
                 Command = commandName,
-                RepoPath = positionals.Count > 0 ? positionals[0] : ".",
+                RepoPath = repoPath,
                 Settings = settings,
-                ContributorName = null,
-                HtmlPath = _htmlPath,
-                MdPath = _mdPath,
-                SvgPath = _svgPath,
-                ConfigAction = null
+                ContributorName = contributorName,
+                HtmlPath = htmlPath,
+                MdPath = mdPath,
+                SvgPath = svgPath,
+                ConfigAction = configAction
             };
-        }
-
-        private void ValidateCommand(string? commandName)
-        {
-            if (string.IsNullOrEmpty(commandName))
-            {
-                throw new CommandLineParseError("A command is required.");
-            }
-            if (!IsCommand(commandName))
-            {
-                throw new CommandLineParseError($"Unknown command: {commandName}");
-            }
-        }
-
-        private string ValidateNextValue(string argName, string? value)
-        {
-            if (value == null)
-            {
-                throw new CommandLineParseError($"{argName} requires a value.");
-            }
-            return value;
-        }
-
-        private int ValidateDepth(string value)
-        {
-            if (!int.TryParse(value, out int depth) || depth < MinDepth || depth > MaxDepth)
-            {
-                throw new CommandLineParseError($"--depth must be an integer between {MinDepth} and {MaxDepth}.");
-            }
-            return depth;
-        }
-
-        private void ValidateUnknownFlag(string arg)
-        {
-            throw new CommandLineParseError($"Unknown flag: {arg}");
-        }
-
-        private void ValidateContributorName(string? contributorName)
-        {
-            if (string.IsNullOrEmpty(contributorName))
-            {
-                throw new CommandLineParseError("contributor requires a contributor name.");
-            }
-        }
-
-        private void ProcessFlag(
-            string arg,
-            AnalysisSettings settings)
-        {
-            switch (arg)
-            {
-                case "--json":
-                    settings.Json = true;
-                    settings.Format = "json";
-                    break;
-                case "--format":
-                    string formatVal = ConsumeValue(arg);
-                    if (!string.Equals(formatVal, "human", StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(formatVal, "plain", StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(formatVal, "json", StringComparison.OrdinalIgnoreCase))
-                    {
-                        throw new CommandLineParseError("--format must be 'human', 'plain', or 'json'.");
-                    }
-                    settings.Format = formatVal.ToLower();
-                    if (string.Equals(formatVal, "json", StringComparison.OrdinalIgnoreCase))
-                    {
-                        settings.Json = true;
-                    }
-                    _index += 1;
-                    break;
-                case "--color":
-                    string colorVal = ConsumeValue(arg);
-                    if (!string.Equals(colorVal, "auto", StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(colorVal, "always", StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(colorVal, "never", StringComparison.OrdinalIgnoreCase))
-                    {
-                        throw new CommandLineParseError("--color must be 'auto', 'always', or 'never'.");
-                    }
-                    settings.Color = colorVal.ToLower();
-                    _index += 1;
-                    break;
-                case "--all-time":
-                    settings.AllTime = true;
-                    break;
-                case "--include-merges":
-                    settings.IncludeMerges = true;
-                    break;
-                case "--merge-by-email":
-                    settings.MergeByEmail = true;
-                    break;
-                case "--include-deleted":
-                    settings.IncludeDeleted = true;
-                    break;
-                case "--anonymize":
-                    settings.Anonymize = true;
-                    break;
-                case "--since":
-                    settings.Since = ConsumeValue(arg);
-                    _index += 1;
-                    break;
-                case "--path":
-                    settings.Path = ConsumeValue(arg);
-                    _index += 1;
-                    break;
-                case "--depth":
-                    string rawDepth = ConsumeValue(arg);
-                    settings.Depth = ValidateDepth(rawDepth);
-                    _index += 1;
-                    break;
-                case "--html":
-                    _htmlPath = ConsumeValue(arg);
-                    _index += 1;
-                    break;
-                case "--md":
-                    _mdPath = ConsumeValue(arg);
-                    _index += 1;
-                    break;
-                case "--svg":
-                    _svgPath = ConsumeValue(arg);
-                    _index += 1;
-                    break;
-                default:
-                    ValidateUnknownFlag(arg);
-                    break;
-            }
-        }
-
-        private string ConsumeValue(string argName)
-        {
-            if (_index + 1 >= _args.Count)
-            {
-                throw new CommandLineParseError($"{argName} requires a value.");
-            }
-            string rawValue = _args[_index + 1];
-            return ValidateNextValue(argName, rawValue);
-        }
-
-        private bool IsCommand(string command)
-        {
-            return ValidCommands.Contains(command);
         }
     }
 }

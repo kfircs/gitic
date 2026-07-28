@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Gitic
@@ -18,7 +19,7 @@ namespace Gitic
 
     public interface IRepositoryAnalyzer
     {
-        Task<AnalysisResult> AnalyzeAsync(AnalyzeInput input);
+        Task<AnalysisResult> AnalyzeAsync(AnalyzeInput input, CancellationToken cancellationToken = default);
     }
 
     public class RepositoryAnalyzer : IRepositoryAnalyzer
@@ -46,7 +47,7 @@ namespace Gitic
             return await analyzer.AnalyzeAsync(input);
         }
 
-        public async Task<AnalysisResult> AnalyzeAsync(AnalyzeInput input)
+        public async Task<AnalysisResult> AnalyzeAsync(AnalyzeInput input, CancellationToken cancellationToken = default)
         {
             var resolvedConfig = await _configEngine.LoadAndResolveAsync(input);
             var settings = resolvedConfig.Settings;
@@ -58,8 +59,8 @@ namespace Gitic
                 IncludeMerges = settings.IncludeMerges,
                 AllTime = settings.AllTime,
                 Since = settings.Since
-            });
-            var headFilesTask = gitClient.ListHeadFilesAsync();
+            }, cancellationToken);
+            var headFilesTask = gitClient.ListHeadFilesAsync(cancellationToken);
 
             await Task.WhenAll(commitsTask, headFilesTask);
 

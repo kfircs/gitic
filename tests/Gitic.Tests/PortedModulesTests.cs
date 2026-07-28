@@ -1794,9 +1794,9 @@ __GITIZER_NUMSTAT__
 
             private class FakeGitClient : IGitClient
             {
-                public Task<string?> GetRepositoryRootAsync() => Task.FromResult<string?>("/fake/root");
-                public Task<HashSet<string>> ListHeadFilesAsync() => Task.FromResult(new HashSet<string> { "src/main.cs" });
-                public Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null)
+                public Task<string?> GetRepositoryRootAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>("/fake/root");
+                public Task<HashSet<string>> ListHeadFilesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new HashSet<string> { "src/main.cs" });
+                public Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null, CancellationToken cancellationToken = default)
                 {
                     return Task.FromResult(new List<GitCommitRecord>
                     {

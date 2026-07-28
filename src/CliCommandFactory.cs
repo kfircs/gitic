@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Gitic
 {
     public interface ICliCommand
     {
-        Task<CliResult> ExecuteAsync(IConsoleReporter? reporter);
+        Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default);
     }
 
     public static class CliCommandFactory
@@ -18,7 +19,7 @@ namespace Gitic
         {
             if (string.Equals(parsed.Command, "help", StringComparison.OrdinalIgnoreCase))
             {
-                return new HelpCommand();
+                return new HelpCommand(parsed.HtmlPath);
             }
 
             if (string.Equals(parsed.Command, "version", StringComparison.OrdinalIgnoreCase))
@@ -62,7 +63,7 @@ namespace Gitic
 
     public class VersionCommand : ICliCommand
     {
-        public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter)
+        public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
         {
             var assembly = typeof(Cli).Assembly;
             var version = assembly.GetName().Version?.ToString(3) ?? "0.1.0";
@@ -77,8 +78,21 @@ namespace Gitic
 
     public class HelpCommand : ICliCommand
     {
-        public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter)
+        private readonly string? _generatedHelpText;
+
+        public HelpCommand(string? generatedHelpText = null)
         {
+            _generatedHelpText = generatedHelpText;
+        }
+
+        public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
+        {
+            if (!string.IsNullOrEmpty(_generatedHelpText))
+            {
+                reporter?.Write(_generatedHelpText);
+                return Task.FromResult(Cli.CliSuccess(_generatedHelpText));
+            }
+
             var assembly = typeof(Cli).Assembly;
             var version = assembly.GetName().Version?.ToString(3) ?? "0.1.0";
             var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
@@ -130,7 +144,7 @@ Options:
             _parsed = parsed;
         }
 
-        public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter)
+        public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
         {
             if (_parsed.ConfigAction != "init")
             {
@@ -157,10 +171,10 @@ Options:
 
         protected abstract AnalysisCommand CommandType { get; }
 
-        public async Task<CliResult> ExecuteAsync(IConsoleReporter? reporter)
+        public async Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
         {
             var gitClient = new GitClient(Parsed.RepoPath);
-            string? repoRoot = await gitClient.GetRepositoryRootAsync();
+            string? repoRoot = await gitClient.GetRepositoryRootAsync(cancellationToken);
             if (repoRoot == null)
             {
                 string errMsg = $"Path {Parsed.RepoPath} is not inside a Git repository.\n" +
@@ -181,7 +195,7 @@ Options:
             AnalysisResult result;
             try
             {
-                result = await analyzer.AnalyzeAsync(input);
+                result = await analyzer.AnalyzeAsync(input, cancellationToken);
             }
             catch (ConfigValidationError error)
             {

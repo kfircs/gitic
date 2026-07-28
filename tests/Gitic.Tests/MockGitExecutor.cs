@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Gitic
@@ -17,7 +18,7 @@ namespace Gitic
             _outputs[key] = output;
         }
 
-        public Task<string> RunAsync(string[] args, string cwd)
+        public Task<string> RunAsync(string[] args, string cwd, CancellationToken cancellationToken = default)
         {
             _calls.Add(args);
             var key = GetKey(args);
