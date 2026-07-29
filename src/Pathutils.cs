@@ -4,30 +4,20 @@ using System.Text.RegularExpressions;
 
 namespace Gitic
 {
-    public static class PathUtils
+    public interface IGlobMatcher
     {
-        private static readonly ConcurrentDictionary<string, Regex> _regexCache = new ConcurrentDictionary<string, Regex>();
+        bool MatchesPathPattern(string path, string pattern);
+        bool MatchesTextPattern(string value, string pattern);
+    }
 
-        public static string NormalizeGitPath(string? path)
+    public class CachedGlobMatcher : IGlobMatcher
+    {
+        private readonly ConcurrentDictionary<string, Regex> _regexCache = new ConcurrentDictionary<string, Regex>();
+
+        public bool MatchesPathPattern(string path, string pattern)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                return string.Empty;
-            }
-
-            string normalized = path.Replace('\\', '/');
-            if (normalized.StartsWith("./", StringComparison.Ordinal))
-            {
-                normalized = normalized.Substring(2);
-            }
-            normalized = normalized.TrimStart('/');
-            return normalized;
-        }
-
-        public static bool MatchesPathPattern(string path, string pattern)
-        {
-            string normalizedPath = NormalizeGitPath(path);
-            string normalizedPattern = NormalizeGitPath(pattern).TrimStart('/').TrimEnd('/');
+            string normalizedPath = PathUtils.NormalizeGitPath(path);
+            string normalizedPattern = PathUtils.NormalizeGitPath(pattern).TrimStart('/').TrimEnd('/');
             if (normalizedPattern.Length == 0)
             {
                 return false;
@@ -39,7 +29,7 @@ namespace Gitic
             return normalizedPath == normalizedPattern || normalizedPath.StartsWith(normalizedPattern + "/");
         }
 
-        public static bool MatchesTextPattern(string value, string pattern)
+        public bool MatchesTextPattern(string value, string pattern)
         {
             if (pattern.Contains('*') || pattern.Contains('?'))
             {
@@ -48,7 +38,7 @@ namespace Gitic
             return value.Contains(pattern);
         }
 
-        public static Regex GlobToRegExp(string pattern)
+        public Regex GlobToRegExp(string pattern)
         {
             return _regexCache.GetOrAdd(pattern, p =>
             {
@@ -83,6 +73,51 @@ namespace Gitic
             }
             source += "$";
             return source;
+        }
+    }
+
+    public static class PathUtils
+    {
+        private static IGlobMatcher _matcher = new CachedGlobMatcher();
+
+        public static void SetMatcher(IGlobMatcher matcher)
+        {
+            _matcher = matcher ?? throw new ArgumentNullException(nameof(matcher));
+        }
+
+        public static string NormalizeGitPath(string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return string.Empty;
+            }
+
+            string normalized = path.Replace('\\', '/');
+            if (normalized.StartsWith("./", StringComparison.Ordinal))
+            {
+                normalized = normalized.Substring(2);
+            }
+            normalized = normalized.TrimStart('/');
+            return normalized;
+        }
+
+        public static bool MatchesPathPattern(string path, string pattern)
+        {
+            return _matcher.MatchesPathPattern(path, pattern);
+        }
+
+        public static bool MatchesTextPattern(string value, string pattern)
+        {
+            return _matcher.MatchesTextPattern(value, pattern);
+        }
+
+        public static Regex GlobToRegExp(string pattern)
+        {
+            if (_matcher is CachedGlobMatcher cached)
+            {
+                return cached.GlobToRegExp(pattern);
+            }
+            return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
     }
 }

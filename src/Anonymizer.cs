@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 namespace Gitic
 {
@@ -8,8 +9,6 @@ namespace Gitic
     {
         AnalysisResult Anonymize(AnalysisResult result);
     }
-
-
 
     public interface IIdentityAnonymizationCache
     {
@@ -61,245 +60,73 @@ namespace Gitic
         {
         }
 
-        private ContributorShare AnonymizeHumanContributorShare(ContributorShare contributor, IIdentityAnonymizationCache cache)
-        {
-            return MapToContributorShare(contributor, cache.AnonymizeHuman(contributor.Name, contributor.Email));
-        }
-
-        private ContributorMetric AnonymizeHumanContributorMetric(ContributorMetric contributor, IIdentityAnonymizationCache cache)
-        {
-            return MapToContributorMetric(contributor, cache.AnonymizeHuman(contributor.Name, contributor.Email));
-        }
-
-        private ContributorShare MapToContributorShare(ContributorShare source, GitIdentity identity)
-        {
-            return new ContributorShare
-            {
-                Name = identity.Name,
-                Email = identity.Email,
-                Activity = source.Activity,
-                ActivityShare = source.ActivityShare
-            };
-        }
-
-        private ContributorMetric MapToContributorMetric(ContributorMetric source, GitIdentity identity)
-        {
-            return new ContributorMetric
-            {
-                Name = identity.Name,
-                Email = identity.Email,
-                TotalActivity = source.TotalActivity,
-                Areas = CloneAreas(source.Areas)
-            };
-        }
-
-        private AutomationMetric MapToAutomationMetric(AutomationMetric source, GitIdentity identity)
-        {
-            return new AutomationMetric
-            {
-                Name = identity.Name,
-                Email = identity.Email,
-                TotalActivity = source.TotalActivity,
-                Areas = CloneAreas(source.Areas)
-            };
-        }
-
-        private List<ContributorAreaMetric> CloneAreas(IEnumerable<ContributorAreaMetric> areas)
-        {
-            return areas.Select(area => new ContributorAreaMetric
-            {
-                Area = area.Area,
-                Activity = area.Activity,
-                ActivityShare = area.ActivityShare,
-                FamiliarityScore = area.FamiliarityScore
-            }).ToList();
-        }
-
-        private FileMetric AnonymizeFileMetric(FileMetric file, IIdentityAnonymizationCache cache)
-        {
-            return new FileMetric
-            {
-                Path = file.Path,
-                Area = file.Area,
-                Touches = file.Touches,
-                Added = file.Added,
-                Deleted = file.Deleted,
-                Churn = file.Churn,
-                LastTouched = file.LastTouched,
-                ContributorCount = file.ContributorCount,
-                Contributors = file.Contributors.Select(contributor =>
-                    AnonymizeHumanContributorShare(contributor, cache)
-                ).ToList(),
-                HeatScore = file.HeatScore,
-                AttentionScore = file.AttentionScore,
-                ScoreBreakdown = file.ScoreBreakdown.Clone(),
-                InnerSymbols = file.InnerSymbols?.Select(s => new InnerSymbolMetric
-                {
-                    Name = s.Name,
-                    Touches = s.Touches
-                }).ToList(),
-                DebtVolatility = file.DebtVolatility,
-                ReworkRate = file.ReworkRate,
-                CoordinationOverlap = file.CoordinationOverlap,
-                KnowledgeSilo = file.KnowledgeSilo == null ? null : new KnowledgeSiloMetric
-                {
-                    TruckFactor = file.KnowledgeSilo.TruckFactor,
-                    TopOwnerShare = file.KnowledgeSilo.TopOwnerShare,
-                    IsSilo = file.KnowledgeSilo.IsSilo,
-                    Abandoned = file.KnowledgeSilo.Abandoned
-                },
-                Size = file.Size,
-                Width = file.Width,
-                Lines = file.Lines
-            };
-        }
-
-        private AreaMetric AnonymizeAreaMetric(AreaMetric area, IIdentityAnonymizationCache cache)
-        {
-            return new AreaMetric
-            {
-                Area = area.Area,
-                Touches = area.Touches,
-                Added = area.Added,
-                Deleted = area.Deleted,
-                Churn = area.Churn,
-                FileCount = area.FileCount,
-                LastTouched = area.LastTouched,
-                ContributorCount = area.ContributorCount,
-                Contributors = area.Contributors.Select(contributor =>
-                    AnonymizeHumanContributorShare(contributor, cache)
-                ).ToList(),
-                HeatScore = area.HeatScore,
-                AttentionScore = area.AttentionScore,
-                ScoreBreakdown = area.ScoreBreakdown.Clone(),
-                ReworkRate = area.ReworkRate
-            };
-        }
-
-        private AnalysisMetadata CloneAnalysisMetadata(AnalysisMetadata source)
-        {
-            return new AnalysisMetadata
-            {
-                RepoRoot = source.RepoRoot,
-                Command = source.Command,
-                GeneratedAt = source.GeneratedAt,
-                CommitCount = source.CommitCount,
-                IncludedFileChangeCount = source.IncludedFileChangeCount
-            };
-        }
-
-        private ScoringConfiguration CloneScoringConfiguration(ScoringConfiguration source)
-        {
-            return new ScoringConfiguration
-            {
-                Attention = new AttentionWeights
-                {
-                    Churn = source.Attention.Churn,
-                    Recency = source.Attention.Recency,
-                    ContributorSpread = source.Attention.ContributorSpread,
-                    LowFamiliarityConcentration = source.Attention.LowFamiliarityConcentration
-                }
-            };
-        }
-
-        private ExclusionSummary CloneExclusionSummary(ExclusionSummary source)
-        {
-            return new ExclusionSummary
-            {
-                Category = source.Category,
-                Pattern = source.Pattern,
-                Count = source.Count
-            };
-        }
-
-        private TemporalCoupling CloneTemporalCoupling(TemporalCoupling source)
-        {
-            return new TemporalCoupling
-            {
-                FileA = source.FileA,
-                FileB = source.FileB,
-                SharedCommits = source.SharedCommits,
-                CouplingDegree = source.CouplingDegree
-            };
-        }
-
-        private MergeLeadTimeRecord CloneMergeLeadTimeRecord(MergeLeadTimeRecord source)
-        {
-            return new MergeLeadTimeRecord
-            {
-                Hash = source.Hash,
-                Message = source.Message,
-                Author = source.Author,
-                Date = source.Date,
-                LeadTimeHours = source.LeadTimeHours,
-                FileCount = source.FileCount
-            };
-        }
-
-        private AnalysisResult CloneResultMetadata(AnalysisResult result)
-        {
-            return new AnalysisResult
-            {
-                SchemaVersion = result.SchemaVersion,
-                Tool = result.Tool,
-                Analysis = CloneAnalysisMetadata(result.Analysis),
-                Settings = result.Settings.Clone(),
-                Exclusions = result.Exclusions.Select(CloneExclusionSummary).ToList(),
-                Warnings = result.Warnings.ToList(),
-                Diagnostics = result.Diagnostics.Select(d => new Diagnostic
-                {
-                    Code = d.Code,
-                    Severity = d.Severity,
-                    Message = d.Message,
-                    Hint = d.Hint
-                }).ToList(),
-                Configuration = new AnalysisConfiguration
-                {
-                    Scoring = CloneScoringConfiguration(result.Configuration.Scoring),
-                    ConfiguredAliasCount = result.Configuration.ConfiguredAliasCount,
-                    ConfiguredBotCount = result.Configuration.ConfiguredBotCount,
-                    ConfiguredExcludeCount = result.Configuration.ConfiguredExcludeCount,
-                    ConfiguredAreaCount = result.Configuration.ConfiguredAreaCount,
-                    Identity = new IdentityConfigInfo
-                    {
-                        MergeOnEmail = result.Configuration.Identity.MergeOnEmail
-                    }
-                },
-                TemporalCoupling = result.TemporalCoupling?.Select(CloneTemporalCoupling).ToList(),
-                LeadTimes = result.LeadTimes == null ? null : new LeadTimesInfo
-                {
-                    AverageLeadTimeHours = result.LeadTimes.AverageLeadTimeHours,
-                    Merges = result.LeadTimes.Merges.Select(CloneMergeLeadTimeRecord).ToList()
-                }
-            };
-        }
-
         public AnalysisResult Anonymize(AnalysisResult result)
         {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+
+            var serialized = JsonSerializer.Serialize(result);
+            var cloned = JsonSerializer.Deserialize<AnalysisResult>(serialized) 
+                         ?? throw new InvalidOperationException("Failed to clone AnalysisResult via JSON serialization.");
+
             var cache = new IdentityAnonymizationCache();
-            var clonedResult = CloneResultMetadata(result);
 
-            // Map and clone contributors
-            clonedResult.Contributors = result.Contributors.Select(contributor =>
-                AnonymizeHumanContributorMetric(contributor, cache)
-            ).ToList();
+            // Anonymize human contributors
+            if (cloned.Contributors != null)
+            {
+                foreach (var contributor in cloned.Contributors)
+                {
+                    var identity = cache.AnonymizeHuman(contributor.Name, contributor.Email);
+                    contributor.Name = identity.Name;
+                    contributor.Email = identity.Email;
+                }
+            }
 
-            // Map and clone files
-            clonedResult.Files = result.Files.Select(file =>
-                AnonymizeFileMetric(file, cache)
-            ).ToList();
+            // Anonymize automation contributors
+            if (cloned.Automation != null)
+            {
+                foreach (var automation in cloned.Automation)
+                {
+                    var identity = cache.AnonymizeAutomation(automation.Name, automation.Email);
+                    automation.Name = identity.Name;
+                    automation.Email = identity.Email;
+                }
+            }
 
-            // Map and clone areas
-            clonedResult.Areas = result.Areas.Select(area =>
-                AnonymizeAreaMetric(area, cache)
-            ).ToList();
+            // Anonymize contributors in file metrics
+            if (cloned.Files != null)
+            {
+                foreach (var file in cloned.Files)
+                {
+                    if (file.Contributors != null)
+                    {
+                        foreach (var contributor in file.Contributors)
+                        {
+                            var identity = cache.AnonymizeHuman(contributor.Name, contributor.Email);
+                            contributor.Name = identity.Name;
+                            contributor.Email = identity.Email;
+                        }
+                    }
+                }
+            }
 
-            // Map and clone automation
-            clonedResult.Automation = result.Automation.Select(automation =>
-                MapToAutomationMetric(automation, cache.AnonymizeAutomation(automation.Name, automation.Email))
-            ).ToList();
+            // Anonymize contributors in area metrics
+            if (cloned.Areas != null)
+            {
+                foreach (var area in cloned.Areas)
+                {
+                    if (area.Contributors != null)
+                    {
+                        foreach (var contributor in area.Contributors)
+                        {
+                            var identity = cache.AnonymizeHuman(contributor.Name, contributor.Email);
+                            contributor.Name = identity.Name;
+                            contributor.Email = identity.Email;
+                        }
+                    }
+                }
+            }
 
-            return clonedResult;
+            return cloned;
         }
     }
 }

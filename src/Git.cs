@@ -72,14 +72,12 @@ namespace Gitic
                 }
                 return stdout;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex.Message.Contains("does not have any commits yet") ||
+                                       ex.Message.Contains("Not a valid object name HEAD") ||
+                                       ex.InnerException?.Message.Contains("does not have any commits yet") == true ||
+                                       ex.InnerException?.Message.Contains("Not a valid object name HEAD") == true)
             {
-                if (ex.Message.Contains("does not have any commits yet") ||
-                    ex.Message.Contains("Not a valid object name HEAD"))
-                {
-                    return "";
-                }
-                throw;
+                return "";
             }
         }
     }
@@ -98,6 +96,17 @@ namespace Gitic
     {
         Task<string?> GetRepositoryRootAsync(CancellationToken cancellationToken = default);
         Task<HashSet<string>> ListHeadFilesAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Deeper interface addition that retrieves and constructs a complete, self-contained GitCommitGraph.
+        /// Existing classes/mocks (like FakeGitClient in tests) get this automatically via default interface implementation,
+        /// avoiding build-breaking changes in other files while offering a high-leverage entry point for new callers.
+        /// </summary>
+        async Task<GitCommitGraph> GetCommitGraphAsync(GitHistoryExtractorOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            var history = await ExtractHistoryAsync(options, cancellationToken);
+            return new GitCommitGraph(history);
+        }
     }
 
     public class GitClient : IGitClient
@@ -146,6 +155,12 @@ namespace Gitic
 
             string stdout = await _executor.RunAsync(args.ToArray(), _repoRoot, cancellationToken);
             return _parser.ParseGitLog(stdout);
+        }
+
+        public async Task<GitCommitGraph> GetCommitGraphAsync(GitHistoryExtractorOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            var history = await ExtractHistoryAsync(options, cancellationToken);
+            return new GitCommitGraph(history);
         }
     }
 }

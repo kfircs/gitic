@@ -23,14 +23,19 @@ namespace Gitic
         List<Diagnostic> CollectDiagnostics(WarningContext context);
     }
 
-    public class EmailCollisionWarningRule : IWarningRule
+    public abstract class WarningRuleBase : IWarningRule
     {
-        public List<string> Collect(WarningContext context)
+        public virtual List<string> Collect(WarningContext context)
         {
             return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
         }
 
-        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        public abstract List<Diagnostic> CollectDiagnostics(WarningContext context);
+    }
+
+    public class EmailCollisionWarningRule : WarningRuleBase
+    {
+        public override List<Diagnostic> CollectDiagnostics(WarningContext context)
         {
             if ((context.AliasCount ?? 0) > 0)
             {
@@ -56,14 +61,9 @@ namespace Gitic
         }
     }
 
-    public class BotConfigWarningRule : IWarningRule
+    public class BotConfigWarningRule : WarningRuleBase
     {
-        public List<string> Collect(WarningContext context)
-        {
-            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
-        }
-
-        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        public override List<Diagnostic> CollectDiagnostics(WarningContext context)
         {
             if (context.SafeConfiguredBotCount == 0 && (context.AutomationMetrics?.Count ?? 0) > 0)
             {
@@ -82,14 +82,9 @@ namespace Gitic
         }
     }
 
-    public class LeadTimeWarningRule : IWarningRule
+    public class LeadTimeWarningRule : WarningRuleBase
     {
-        public List<string> Collect(WarningContext context)
-        {
-            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
-        }
-
-        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        public override List<Diagnostic> CollectDiagnostics(WarningContext context)
         {
             if (context.LeadTimes == null || context.LeadTimes.Merges.Count == 0)
             {
@@ -108,14 +103,9 @@ namespace Gitic
         }
     }
 
-    public class NoBotsWarningRule : IWarningRule
+    public class NoBotsWarningRule : WarningRuleBase
     {
-        public List<string> Collect(WarningContext context)
-        {
-            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
-        }
-
-        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        public override List<Diagnostic> CollectDiagnostics(WarningContext context)
         {
             if (context.SafeConfiguredBotCount == 0 && (context.AutomationMetrics?.Count ?? 0) == 0)
             {
@@ -134,14 +124,9 @@ namespace Gitic
         }
     }
 
-    public class TemporalCouplingWarningRule : IWarningRule
+    public class TemporalCouplingWarningRule : WarningRuleBase
     {
-        public List<string> Collect(WarningContext context)
-        {
-            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
-        }
-
-        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        public override List<Diagnostic> CollectDiagnostics(WarningContext context)
         {
             if (context.TemporalCoupling == null)
             {
@@ -164,19 +149,14 @@ namespace Gitic
         }
     }
 
-    public class GeneratedFileWarningRule : IWarningRule
+    public class GeneratedFileWarningRule : WarningRuleBase
     {
         private const int SingleTouchCount = 1;
         private const int HighChurnThreshold = 200;
         private const int SingleContributorCount = 1;
         private const double HighActivityShareThreshold = 0.99;
 
-        public List<string> Collect(WarningContext context)
-        {
-            return CollectDiagnostics(context).Select(d => d.ToString()).ToList();
-        }
-
-        public List<Diagnostic> CollectDiagnostics(WarningContext context)
+        public override List<Diagnostic> CollectDiagnostics(WarningContext context)
         {
             if (context.Files == null)
             {
@@ -235,6 +215,16 @@ namespace Gitic
         List<string> Collect(WarningContext context, List<string>? existingWarnings);
         List<Diagnostic> CollectDiagnostics(WarningContext context);
         List<Diagnostic> CollectDiagnostics(WarningContext context, List<string>? existingWarnings);
+
+        /// <summary>
+        /// Collects diagnostics and immediately reports them via the provided console reporter, handling quiet filtering, sorting, and formatting.
+        /// </summary>
+        void CollectAndReport(WarningContext context, IConsoleReporter reporter, List<string>? existingWarnings = null, bool quiet = false)
+        {
+            if (reporter == null) return;
+            var diagnostics = CollectDiagnostics(context, existingWarnings);
+            reporter.WriteDiagnostics(diagnostics, quiet);
+        }
     }
 
     public class WarningCollector : IWarningCollector
@@ -288,6 +278,13 @@ namespace Gitic
                 .ToList();
         }
 
+        public void CollectAndReport(WarningContext context, IConsoleReporter reporter, List<string>? existingWarnings = null, bool quiet = false)
+        {
+            if (reporter == null) return;
+            var diagnostics = CollectDiagnostics(context, existingWarnings);
+            reporter.WriteDiagnostics(diagnostics, quiet);
+        }
+
         private int GetSeverityOrder(string severity)
         {
             if (string.Equals(severity, "Critical", StringComparison.OrdinalIgnoreCase) ||
@@ -303,8 +300,60 @@ namespace Gitic
             return 3;
         }
 
+        private static string SafeSubstring(string? str, int startIndex)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+            if (startIndex < 0)
+            {
+                startIndex = 0;
+            }
+            if (startIndex >= str.Length)
+            {
+                return string.Empty;
+            }
+            return str.Substring(startIndex);
+        }
+
+        private static string SafeSubstring(string? str, int startIndex, int length)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+            if (startIndex < 0)
+            {
+                startIndex = 0;
+            }
+            if (startIndex >= str.Length)
+            {
+                return string.Empty;
+            }
+            if (length <= 0)
+            {
+                return string.Empty;
+            }
+            if (startIndex + length > str.Length)
+            {
+                length = str.Length - startIndex;
+            }
+            return str.Substring(startIndex, length);
+        }
+
         private Diagnostic ParseOrWrapWarning(string warning)
         {
+            if (string.IsNullOrEmpty(warning))
+            {
+                return new Diagnostic
+                {
+                    Code = "GITIC999",
+                    Severity = "Warning",
+                    Message = string.Empty
+                };
+            }
+
             if (warning.Contains("matched multiple configured areas"))
             {
                 int idx = warning.IndexOf("; using ");
@@ -314,8 +363,8 @@ namespace Gitic
                     {
                         Code = "GITIC007",
                         Severity = "Warning",
-                        Message = warning.Substring(0, idx),
-                        Hint = warning.Substring(idx + 2) // "using ..."
+                        Message = SafeSubstring(warning, 0, idx),
+                        Hint = SafeSubstring(warning, idx + 2) // "using ..."
                     };
                 }
                 return new Diagnostic

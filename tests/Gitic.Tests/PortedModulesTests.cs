@@ -164,6 +164,12 @@ namespace Gitic.Tests
         {
             public bool ValidateCalled { get; set; }
             public bool NormalizeCalled { get; set; }
+            public bool ValidateOverrideCalled { get; set; }
+
+            public void ValidateOverride(object? input, string source)
+            {
+                ValidateOverrideCalled = true;
+            }
 
             public void ValidateAttentionWeights(AttentionWeights attention, string source, List<string>? errors = null)
             {
@@ -1381,6 +1387,7 @@ __GITIC_NUMSTAT__
             var result = new AnalysisResult
             {
                 Analysis = new AnalysisMetadata { IncludedFileChangeCount = 1 },
+                Files = new List<FileMetric> { new FileMetric { Path = "src/main.cs" } },
                 Diagnostics = new List<Diagnostic>
                 {
                     new() { Code = "W1", Severity = "Critical", Message = "Critical Error!" },
@@ -1782,6 +1789,16 @@ __GITIC_NUMSTAT__
                         Warnings = new List<string> { "mock-pipeline-warning" },
                         IncludedFileChangeCount = 42
                     };
+                }
+
+                public AnalysisPipelineResult Run(
+                    List<GitCommitRecord> commits,
+                    GiticConfig? config = null,
+                    AnalysisSettings? settings = null,
+                    AnalysisCommand command = AnalysisCommand.Hotspots,
+                    CancellationToken cancellationToken = default)
+                {
+                    return Run(commits, new HashSet<string>(), config ?? new GiticConfig(), settings ?? new AnalysisSettings(), command, cancellationToken);
                 }
             }
 

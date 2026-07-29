@@ -30,26 +30,24 @@ namespace Gitic
     {
         private readonly List<YamlLine> _lines;
         private int _index = 0;
+
         public string Source { get; }
 
         public YamlTokenStream(List<YamlLine> lines, string source)
         {
-            _lines = lines;
-            Source = source;
+            _lines = lines ?? throw new ArgumentNullException(nameof(lines));
+            Source = source ?? throw new ArgumentNullException(nameof(source));
         }
 
-        public YamlLine? Peek()
-        {
-            if (_index < _lines.Count)
-            {
-                return _lines[_index];
-            }
-            return null;
-        }
+        public bool HasMore => _index < _lines.Count;
+
+        public YamlLine? Current => HasMore ? _lines[_index] : null;
+
+        public YamlLine? Peek() => Current;
 
         public YamlLine? Next()
         {
-            var line = Peek();
+            var line = Current;
             if (line != null)
             {
                 _index++;
@@ -59,23 +57,19 @@ namespace Gitic
 
         public void Consume()
         {
-            if (_index < _lines.Count)
+            if (HasMore)
             {
                 _index++;
             }
         }
 
-        public bool IsAtEnd()
-        {
-            return _index >= _lines.Count;
-        }
+        public bool IsAtEnd() => !HasMore;
 
         public int LineNumber()
         {
-            var line = Peek();
-            if (line != null)
+            if (Current != null)
             {
-                return line.LineNumber;
+                return Current.LineNumber;
             }
             if (_lines.Count > 0)
             {
@@ -101,11 +95,20 @@ namespace Gitic
 
         public YamlTokenizer(string source)
         {
-            _source = source;
+            _source = source ?? throw new ArgumentNullException(nameof(source));
         }
 
+        /// <summary>
+        /// Converts the input YAML content into a list of YamlLine structures.
+        /// Performs initial validation (e.g., checks for unsupported tabs in indentation).
+        /// </summary>
         public List<YamlLine> Tokenize(string content)
         {
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
             var lines = new List<YamlLine>();
             var rawLines = content.Replace("\r\n", "\n").Split('\n');
 
@@ -114,7 +117,10 @@ namespace Gitic
                 string rawLine = rawLines[i];
                 if (rawLine.Contains('\t'))
                 {
-                    throw new ConfigValidationError(new List<string> { $"{_source}:{i + 1}: tabs are not supported in YAML indentation." });
+                    throw new ConfigValidationError(new List<string> 
+                    { 
+                        $"{_source}:{i + 1}: tabs are not supported in YAML indentation." 
+                    });
                 }
 
                 string lineWithoutComment = StripYamlComment(rawLine).TrimEnd();
@@ -135,29 +141,32 @@ namespace Gitic
             return lines;
         }
 
+        /// <summary>
+        /// Finds the start index of a comment symbol ('#'), ignoring any '#' inside quotes.
+        /// </summary>
         private int FindCommentStartIndex(string line)
         {
-            bool inSingle = false;
-            bool inDouble = false;
+            bool inSingleQuotes = false;
+            bool inDoubleQuotes = false;
 
             for (int index = 0; index < line.Length; index++)
             {
                 char c = line[index];
-                char previous = index > 0 ? line[index - 1] : '\0';
+                char previousChar = index > 0 ? line[index - 1] : '\0';
 
-                if (c == '\'' && !inDouble)
+                if (c == '\'' && !inDoubleQuotes)
                 {
-                    inSingle = !inSingle;
+                    inSingleQuotes = !inSingleQuotes;
                     continue;
                 }
 
-                if (c == '"' && !inSingle && previous != '\\')
+                if (c == '"' && !inSingleQuotes && previousChar != '\\')
                 {
-                    inDouble = !inDouble;
+                    inDoubleQuotes = !inDoubleQuotes;
                     continue;
                 }
 
-                if (c == '#' && !inSingle && !inDouble)
+                if (c == '#' && !inSingleQuotes && !inDoubleQuotes)
                 {
                     return index;
                 }
@@ -184,12 +193,15 @@ namespace Gitic
 
         public YamlSubsetParser(string content, string source, IYamlTokenizer? tokenizer = null)
         {
-            Source = source;
+            Source = source ?? throw new ArgumentNullException(nameof(source));
             var activeTokenizer = tokenizer ?? new YamlTokenizer(source);
-            var lines = activeTokenizer.Tokenize(content);
+            var lines = activeTokenizer.Tokenize(content ?? string.Empty);
             _stream = new YamlTokenStream(lines, source);
         }
 
+        /// <summary>
+        /// Parses the token stream and returns the resulting dictionary/list hierarchy.
+        /// </summary>
         public object? Parse()
         {
             if (_stream.IsAtEnd())
@@ -202,6 +214,9 @@ namespace Gitic
             return ParseNode(initialIndent);
         }
 
+        /// <summary>
+        /// Parses a node at the expected indentation level.
+        /// </summary>
         private object? ParseNode(int indent)
         {
             var line = _stream.Peek();
@@ -210,10 +225,7 @@ namespace Gitic
                 return new Dictionary<string, object?>();
             }
 
-            if (line.Indent > indent)
-            {
-                throw _stream.Error(line, $"unexpected indentation level {line.Indent}; expected {indent}.");
-            }
+            VerifyIndentation(line, indent);
 
             if (line.Text.StartsWith("- "))
             {
@@ -223,6 +235,53 @@ namespace Gitic
             return ParseMapping(indent);
         }
 
+        /// <summary>
+        /// Parses a sequence block (YAML list) with items starting with "- ".
+        /// </summary>
+        private List<object?> ParseSequence(int indent)
+        {
+            var result = new List<object?>();
+
+            while (!_stream.IsAtEnd())
+            {
+                var line = _stream.Peek();
+                if (line == null || line.Indent < indent)
+                {
+                    break;
+                }
+
+                VerifyIndentation(line, indent);
+
+                if (!line.Text.StartsWith("- "))
+                {
+                    break;
+                }
+
+                string remainder = line.Text.Substring(2).Trim();
+                _stream.Consume();
+
+                if (remainder.Length == 0)
+                {
+                    result.Add(ParseEmptySequenceItem(indent));
+                    continue;
+                }
+
+                var splitResult = SplitMappingEntry(remainder);
+                if (splitResult == null)
+                {
+                    result.Add(ParseScalar(remainder));
+                    continue;
+                }
+
+                result.Add(ParseInlineMappingSequenceItem(remainder, indent, line.LineNumber));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Parses a mapping block (YAML dictionary) at the given indentation.
+        /// </summary>
         private Dictionary<string, object?> ParseMapping(int indent)
         {
             var result = new Dictionary<string, object?>();
@@ -230,20 +289,12 @@ namespace Gitic
             while (!_stream.IsAtEnd())
             {
                 var line = _stream.Peek();
-                if (line == null)
+                if (line == null || line.Indent < indent)
                 {
                     break;
                 }
 
-                if (line.Indent < indent)
-                {
-                    break;
-                }
-
-                if (line.Indent > indent)
-                {
-                    throw _stream.Error(line, $"unexpected indentation level {line.Indent}; expected {indent}.");
-                }
+                VerifyIndentation(line, indent);
 
                 if (line.Text.StartsWith("- "))
                 {
@@ -257,180 +308,142 @@ namespace Gitic
             return result;
         }
 
-        private List<object?> ParseSequence(int indent)
+        /// <summary>
+        /// Parses an empty sequence item, either producing null or parsing a nested node if indented deeper.
+        /// </summary>
+        private object? ParseEmptySequenceItem(int indent)
         {
-            var result = new List<object?>();
+            var next = _stream.Peek();
+            if (next == null || next.Indent <= indent)
+            {
+                return null;
+            }
+            return ParseNode(next.Indent);
+        }
+
+        /// <summary>
+        /// Parses a sequence item containing an inline mapping (e.g. "- key: value") 
+        /// and optionally multiple subsequent lines indented at itemIndent (indent + 2).
+        /// </summary>
+        private Dictionary<string, object?> ParseInlineMappingSequenceItem(string remainder, int indent, int lineNumber)
+        {
+            int itemIndent = indent + 2;
+            var item = new Dictionary<string, object?>();
+            ParseMappingEntryInto(item, remainder, itemIndent, lineNumber);
 
             while (!_stream.IsAtEnd())
             {
-                var line = _stream.Peek();
-                if (line == null)
+                var next = _stream.Peek();
+                if (next == null || next.Indent < itemIndent)
                 {
                     break;
                 }
 
-                if (line.Indent < indent)
+                if (next.Indent != itemIndent)
                 {
-                    break;
+                    throw _stream.Error(next, $"unexpected indentation level {next.Indent}; expected {itemIndent}.");
                 }
 
-                if (line.Indent > indent)
+                if (next.Text.StartsWith("- "))
                 {
-                    throw _stream.Error(line, $"unexpected indentation level {line.Indent}; expected {indent}.");
+                    throw _stream.Error(next, "sequence item cannot contain a sibling list entry without a mapping key.");
                 }
 
-                if (!line.Text.StartsWith("- "))
-                {
-                    break;
-                }
-
-                string remainder = line.Text.Substring(2).Trim();
                 _stream.Consume();
-
-                if (remainder.Length == 0)
-                {
-                    var next = _stream.Peek();
-                    if (next == null || next.Indent <= indent)
-                    {
-                        result.Add(null);
-                    }
-                    else
-                    {
-                        result.Add(ParseNode(next.Indent));
-                    }
-                    continue;
-                }
-
-                var mappingEntry = SplitMappingEntry(remainder);
-                if (mappingEntry == null)
-                {
-                    result.Add(ParseScalar(remainder));
-                    continue;
-                }
-
-                int itemIndent = indent + 2;
-                var item = new Dictionary<string, object?>();
-                ParseMappingEntryInto(item, remainder, itemIndent, line.LineNumber);
-
-                while (!_stream.IsAtEnd())
-                {
-                    var next = _stream.Peek();
-                    if (next == null)
-                    {
-                        break;
-                    }
-
-                    if (next.Indent < itemIndent)
-                    {
-                        break;
-                    }
-
-                    if (next.Indent != itemIndent)
-                    {
-                        throw _stream.Error(next, $"unexpected indentation level {next.Indent}; expected {itemIndent}.");
-                    }
-
-                    if (next.Text.StartsWith("- "))
-                    {
-                        throw _stream.Error(next, "sequence item cannot contain a sibling list entry without a mapping key.");
-                    }
-
-                    _stream.Consume();
-                    ParseMappingEntryInto(item, next.Text, itemIndent, next.LineNumber);
-                }
-
-                result.Add(item);
+                ParseMappingEntryInto(item, next.Text, itemIndent, next.LineNumber);
             }
 
-            return result;
+            return item;
         }
 
+        /// <summary>
+        /// Parses a single key-value entry from text and adds it to the destination dictionary.
+        /// </summary>
         private void ParseMappingEntryInto(
-            Dictionary<string, object?> target,
+            Dictionary<string, object?> destination,
             string text,
             int currentIndent,
             int lineNumber)
         {
-            var mappingEntry = SplitMappingEntry(text);
-            if (mappingEntry == null)
+            var splitResult = SplitMappingEntry(text);
+            if (splitResult == null)
             {
-                throw new ConfigValidationError(new List<string> { $"{Source}:{lineNumber}: expected a key/value mapping entry, got \"{text}\"." });
+                throw new ConfigValidationError(new List<string>
+                {
+                    $"{Source}:{lineNumber}: expected a key/value mapping entry, got \"{text}\"."
+                });
             }
 
-            string key = mappingEntry.Value.Key;
-            string val = mappingEntry.Value.Value;
+            string key = splitResult.Value.Key;
+            string rawValue = splitResult.Value.Value;
 
-            if (val.Length > 0)
+            if (rawValue.Length > 0)
             {
-                target[key] = ParseScalar(val);
+                destination[key] = ParseScalar(rawValue);
                 return;
             }
 
-            var next = _stream.Peek();
-            if (next == null || next.Indent <= currentIndent)
+            var nextLine = _stream.Peek();
+            if (nextLine == null || nextLine.Indent <= currentIndent)
             {
-                target[key] = null;
+                destination[key] = null;
                 return;
             }
 
-            target[key] = ParseNode(next.Indent);
+            destination[key] = ParseNode(nextLine.Indent);
         }
 
+        /// <summary>
+        /// Splits a mapping line of format "key: value" into a KeyValuePair.
+        /// Returns null if it is not a valid mapping entry.
+        /// </summary>
         private KeyValuePair<string, string>? SplitMappingEntry(string text)
         {
-            int separator = text.IndexOf(':');
-            if (separator <= 0)
+            int colonIndex = text.IndexOf(':');
+            if (colonIndex <= 0)
             {
                 return null;
             }
 
-            string key = text.Substring(0, separator).Trim();
-            if (key.Length == 0)
+            string key = text.Substring(0, colonIndex).Trim();
+            if (string.IsNullOrEmpty(key))
             {
                 return null;
             }
 
-            string val = text.Substring(separator + 1).Trim();
-            return new KeyValuePair<string, string>(key, val);
+            string value = text.Substring(colonIndex + 1).Trim();
+            return new KeyValuePair<string, string>(key, value);
         }
 
+        /// <summary>
+        /// Parses a raw string value into its appropriate type (e.g. bool, double, long, list, dict, null, or string).
+        /// </summary>
         private object? ParseScalar(string value)
         {
-            if (value == "[]")
+            switch (value)
             {
-                return new List<object?>();
-            }
-            if (value == "{}")
-            {
-                return new Dictionary<string, object?>();
-            }
-            if (value == "null" || value == "~")
-            {
-                return null;
-            }
-            if (value == "true")
-            {
-                return true;
-            }
-            if (value == "false")
-            {
-                return false;
+                case "[]": return new List<object?>();
+                case "{}": return new Dictionary<string, object?>();
+                case "null":
+                case "~": return null;
+                case "true": return true;
+                case "false": return false;
             }
 
             if (Regex.IsMatch(value, @"^[-+]?\d+(\.\d+)?$"))
             {
                 if (value.Contains('.'))
                 {
-                    if (double.TryParse(value, out double dVal))
+                    if (double.TryParse(value, out double doubleValue))
                     {
-                        return dVal;
+                        return doubleValue;
                     }
                 }
                 else
                 {
-                    if (long.TryParse(value, out long lVal))
+                    if (long.TryParse(value, out long longValue))
                     {
-                        return lVal;
+                        return longValue;
                     }
                 }
             }
@@ -444,8 +457,16 @@ namespace Gitic
             return value;
         }
 
+        /// <summary>
+        /// Safely strips outer quotes from a string and processes escape sequences if double-quoted.
+        /// </summary>
         private string Unquote(string value)
         {
+            if (value.Length < 2)
+            {
+                return value;
+            }
+
             char quote = value[0];
             string body = value.Substring(1, value.Length - 2);
 
@@ -460,6 +481,17 @@ namespace Gitic
                 .Replace("\\r", "\r")
                 .Replace("\\t", "\t")
                 .Replace("\\\\", "\\");
+        }
+
+        /// <summary>
+        /// Verifies that the line's indentation level does not exceed the expected level.
+        /// </summary>
+        private void VerifyIndentation(YamlLine line, int expectedIndent)
+        {
+            if (line.Indent > expectedIndent)
+            {
+                throw _stream.Error(line, $"unexpected indentation level {line.Indent}; expected {expectedIndent}.");
+            }
         }
     }
 

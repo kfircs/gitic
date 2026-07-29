@@ -24,6 +24,7 @@ namespace Gitic
         public string? MdPath { get; init; }
         public string? SvgPath { get; init; }
         public string? ConfigAction { get; init; }
+        public string? HelpText { get; init; }
     }
 
     public static class DefaultAnalysisSettings
@@ -47,15 +48,28 @@ namespace Gitic
     public interface ICommandLineParser
     {
         ParsedArgs Parse();
+        ICliCommand ParseToCommand();
     }
 
     public class CommandLineParser : ICommandLineParser
     {
         private readonly List<string> _args;
+        private readonly ICliCommandFactory _commandFactory;
 
-        public CommandLineParser(string[] args)
+        public CommandLineParser(string[] args) : this(args, new CliCommandFactoryImpl())
+        {
+        }
+
+        public CommandLineParser(string[] args, ICliCommandFactory commandFactory)
         {
             _args = args != null ? new List<string>(args) : new List<string>();
+            _commandFactory = commandFactory ?? new CliCommandFactoryImpl();
+        }
+
+        public ICliCommand ParseToCommand()
+        {
+            var parsed = Parse();
+            return _commandFactory.CreateCommand(parsed);
         }
 
         public ParsedArgs Parse()
@@ -255,7 +269,7 @@ Useful next steps:
                     Command = "help",
                     RepoPath = ".",
                     Settings = DefaultAnalysisSettings.Create(),
-                    HtmlPath = helpText
+                    HelpText = helpText
                 };
             }
 

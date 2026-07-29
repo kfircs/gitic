@@ -295,17 +295,57 @@ namespace Gitic
             }
         }
 
-        private ScoreBreakdown CalculateScoreBreakdown(
-            ItemAccumulator item,
-            ScoringContext context)
+        private class CommonMetrics
         {
-            return new ScoreBreakdown
+            public List<ContributorShare> Contributors { get; set; } = null!;
+            public ScoreBreakdown Breakdown { get; set; } = null!;
+            public double HeatScore { get; set; }
+            public double AttentionScore { get; set; }
+            public double ReworkRate { get; set; }
+            public string LastTouchedStr { get; set; } = null!;
+            public KnowledgeSiloMetric? KnowledgeSilo { get; set; }
+        }
+
+        private CommonMetrics CalculateCommonMetrics(
+            ItemAccumulator item,
+            ScoringContext context,
+            bool calculateSilo)
+        {
+            var contributors = CalculateContributorShares(item);
+            double reworkRate = item.Touches > 0 ? ScoringUtils.RoundRatio((double)item.BugFixTouches / item.Touches) : 0.0;
+
+            KnowledgeSiloMetric? knowledgeSilo = null;
+            double lowFamiliarityConcentration = 0.0;
+
+            if (calculateSilo)
             {
-                Touches = 0.0,
+                knowledgeSilo = _siloCalculator.CalculateKnowledgeSilo(contributors, _activeContributorKeys);
+                lowFamiliarityConcentration = knowledgeSilo.IsSilo ? knowledgeSilo.TopOwnerShare : 0.0;
+            }
+
+            var breakdown = new ScoreBreakdown
+            {
+                Touches = ScoringUtils.RoundRatio(item.Touches / context.MaxTouches),
                 Churn = ScoringUtils.RoundRatio(item.Churn / context.MaxChurn),
                 Recency = ScoringUtils.RoundRatio(_scoringUtilityService.CalculateRecencyScore(item.LastTouched) / context.MaxRecency),
                 ContributorSpread = item.Touches > 0 ? ScoringUtils.RoundRatio((double)item.ContributorCredits.Count / item.Touches) : 0.0,
-                LowFamiliarityConcentration = 0.0
+                LowFamiliarityConcentration = lowFamiliarityConcentration
+            };
+
+            double heatScore = ScoringUtils.CalculateHeatScore(breakdown);
+            double attentionScore = ScoringUtils.CalculateAttentionScore(breakdown, _config.Scoring.Attention);
+
+            string lastTouchedStr = DateTimeOffset.FromUnixTimeMilliseconds(item.LastTouched).UtcDateTime.ToString("yyyy-MM-dd");
+
+            return new CommonMetrics
+            {
+                Contributors = contributors,
+                Breakdown = breakdown,
+                HeatScore = heatScore,
+                AttentionScore = attentionScore,
+                ReworkRate = reworkRate,
+                LastTouchedStr = lastTouchedStr,
+                KnowledgeSilo = knowledgeSilo
             };
         }
 
@@ -337,28 +377,10 @@ namespace Gitic
 
             return items.Select(item =>
             {
-                var contributors = CalculateContributorShares(item);
-                var rawBreakdown = CalculateScoreBreakdown(item, context);
-                double reworkRate = item.Touches > 0 ? ScoringUtils.RoundRatio((double)item.BugFixTouches / item.Touches) : 0.0;
-                double touchesScore = ScoringUtils.RoundRatio(item.Touches / context.MaxTouches);
+                var common = CalculateCommonMetrics(item, context, calculateSilo: true);
 
                 double debtVolatility = _scoringUtilityService.CalculateDebtVolatility(item, context.MaxChurn, context.MaxNetLines);
-                double coordinationOverlap = _scoringUtilityService.CalculateCoordinationOverlap(contributors, item.Touches);
-                var knowledgeSilo = _siloCalculator.CalculateKnowledgeSilo(contributors, _activeContributorKeys);
-
-                var breakdown = new ScoreBreakdown
-                {
-                    Touches = touchesScore,
-                    Churn = rawBreakdown.Churn,
-                    Recency = rawBreakdown.Recency,
-                    ContributorSpread = rawBreakdown.ContributorSpread,
-                    LowFamiliarityConcentration = knowledgeSilo.IsSilo ? knowledgeSilo.TopOwnerShare : 0.0
-                };
-
-                double heatScore = ScoringUtils.CalculateHeatScore(breakdown);
-                double attentionScore = ScoringUtils.CalculateAttentionScore(breakdown, _config.Scoring.Attention);
-
-                string lastTouchedStr = DateTimeOffset.FromUnixTimeMilliseconds(item.LastTouched).UtcDateTime.ToString("yyyy-MM-dd");
+                double coordinationOverlap = _scoringUtilityService.CalculateCoordinationOverlap(common.Contributors, item.Touches);
 
                 var innerSymbols = item.Symbols
                     .Select(kv => new InnerSymbolMetric { Name = kv.Key, Touches = kv.Value })
@@ -375,17 +397,17 @@ namespace Gitic
                     Added = item.Added,
                     Deleted = item.Deleted,
                     Churn = item.Churn,
-                    LastTouched = lastTouchedStr,
-                    ContributorCount = contributors.Count,
-                    Contributors = contributors,
-                    HeatScore = heatScore,
-                    AttentionScore = attentionScore,
-                    ScoreBreakdown = breakdown,
+                    LastTouched = common.LastTouchedStr,
+                    ContributorCount = common.Contributors.Count,
+                    Contributors = common.Contributors,
+                    HeatScore = common.HeatScore,
+                    AttentionScore = common.AttentionScore,
+                    ScoreBreakdown = common.Breakdown,
                     InnerSymbols = innerSymbols,
                     DebtVolatility = debtVolatility,
-                    ReworkRate = reworkRate,
+                    ReworkRate = common.ReworkRate,
                     CoordinationOverlap = coordinationOverlap,
-                    KnowledgeSilo = knowledgeSilo
+                    KnowledgeSilo = common.KnowledgeSilo!
                 };
             }).ToList();
         }
@@ -396,24 +418,7 @@ namespace Gitic
 
             return items.Select(item =>
             {
-                var contributors = CalculateContributorShares(item);
-                var rawBreakdown = CalculateScoreBreakdown(item, context);
-                double reworkRate = item.Touches > 0 ? ScoringUtils.RoundRatio((double)item.BugFixTouches / item.Touches) : 0.0;
-                double touchesScore = ScoringUtils.RoundRatio(item.Touches / context.MaxTouches);
-
-                var breakdown = new ScoreBreakdown
-                {
-                    Touches = touchesScore,
-                    Churn = rawBreakdown.Churn,
-                    Recency = rawBreakdown.Recency,
-                    ContributorSpread = rawBreakdown.ContributorSpread,
-                    LowFamiliarityConcentration = 0.0
-                };
-
-                double heatScore = ScoringUtils.CalculateHeatScore(breakdown);
-                double attentionScore = ScoringUtils.CalculateAttentionScore(breakdown, _config.Scoring.Attention);
-
-                string lastTouchedStr = DateTimeOffset.FromUnixTimeMilliseconds(item.LastTouched).UtcDateTime.ToString("yyyy-MM-dd");
+                var common = CalculateCommonMetrics(item, context, calculateSilo: false);
 
                 return new AreaMetric
                 {
@@ -423,13 +428,13 @@ namespace Gitic
                     Deleted = item.Deleted,
                     Churn = item.Churn,
                     FileCount = item.Files.Count,
-                    LastTouched = lastTouchedStr,
-                    ContributorCount = contributors.Count,
-                    Contributors = contributors,
-                    HeatScore = heatScore,
-                    AttentionScore = attentionScore,
-                    ScoreBreakdown = breakdown,
-                    ReworkRate = reworkRate
+                    LastTouched = common.LastTouchedStr,
+                    ContributorCount = common.Contributors.Count,
+                    Contributors = common.Contributors,
+                    HeatScore = common.HeatScore,
+                    AttentionScore = common.AttentionScore,
+                    ScoreBreakdown = common.Breakdown,
+                    ReworkRate = common.ReworkRate
                 };
             }).ToList();
         }

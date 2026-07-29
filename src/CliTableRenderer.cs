@@ -122,6 +122,53 @@ namespace Gitic
             return path.Substring(0, keepStart) + "..." + path.Substring(path.Length - keepEnd);
         }
 
+        private struct CombinedContributor
+        {
+            public string Name { get; set; }
+            public string Email { get; set; }
+            public string Type { get; set; }
+            public double Activity { get; set; }
+            public double Share { get; set; }
+            public double Familiarity { get; set; }
+            public string TopAreas { get; set; }
+        }
+
+        private int GetConsoleWidth()
+        {
+            int consoleWidth = 80;
+            try
+            {
+                if (!Console.IsOutputRedirected)
+                {
+                    consoleWidth = Console.WindowWidth;
+                }
+            }
+            catch { }
+
+            if (consoleWidth < 40) consoleWidth = 40;
+            if (consoleWidth > 200) consoleWidth = 200;
+            return consoleWidth;
+        }
+
+        private List<string> GetVisibleColumns(int consoleWidth, Func<int, List<string>> defaultColumnsSelector)
+        {
+            if (!string.IsNullOrEmpty(_settings.Columns))
+            {
+                return _settings.Columns.Split(',')
+                    .Select(c => c.Trim().ToLower())
+                    .Where(c => !string.IsNullOrEmpty(c))
+                    .ToList();
+            }
+            return defaultColumnsSelector(consoleWidth);
+        }
+
+        private IConsoleTableBuilder CreateTableBuilder(List<string> visibleColumns)
+        {
+            return new ConsoleTableBuilder()
+                .WithConsoleWidth(GetConsoleWidth())
+                .WithVisibleColumns(visibleColumns);
+        }
+
         private string RenderTemporalCouplingTable(AnalysisResult result)
         {
             if (result.TemporalCoupling == null || result.TemporalCoupling.Count == 0)
@@ -129,116 +176,33 @@ namespace Gitic
                 return "No temporal coupling pairs found (requires >= 3 shared commits). Try widening the analysis window, modifying limits, or specifying --include-merges.\n";
             }
 
-            // 1. Determine terminal width
-            int consoleWidth = 80;
-            try
-            {
-                if (!Console.IsOutputRedirected)
-                {
-                    consoleWidth = Console.WindowWidth;
-                }
-            }
-            catch { }
+            int consoleWidth = GetConsoleWidth();
+            var visibleColumns = GetVisibleColumns(consoleWidth, _ => new List<string> { "file_a", "file_b", "shared", "coupling" });
 
-            if (consoleWidth < 40) consoleWidth = 40;
-            if (consoleWidth > 200) consoleWidth = 200;
+            var table = CreateTableBuilder(visibleColumns)
+                .AddColumnEx("file_a", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, minWidth: 12)
+                .AddColumnEx("file_b", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, minWidth: 12)
+                .AddColumnEx("shared", width: 8, align: "right")
+                .AddColumnEx("coupling", width: 10, align: "right");
 
-            // 2. Select columns to display
-            var visibleColumns = new List<string>();
-            if (!string.IsNullOrEmpty(_settings.Columns))
-            {
-                visibleColumns = _settings.Columns.Split(',')
-                    .Select(c => c.Trim().ToLower())
-                    .Where(c => !string.IsNullOrEmpty(c))
-                    .ToList();
-            }
-            else
-            {
-                // Default
-                visibleColumns = new List<string> { "file_a", "file_b", "shared", "coupling" };
-            }
-
-            // 3. Set column properties
-            var columnDefs = new Dictionary<string, (string align, int stdWidth)>
-            {
-                { "shared", ("right", 8) },
-                { "coupling", ("right", 10) }
-            };
-
-            int otherWidths = 0;
-            foreach (var col in visibleColumns)
-            {
-                if (col == "file_a" || col == "file_b") continue;
-                if (columnDefs.TryGetValue(col, out var def))
-                {
-                    otherWidths += def.stdWidth;
-                }
-            }
-
-            int spacing = visibleColumns.Count - 1;
-            int remainingWidth = consoleWidth - otherWidths - spacing;
-            if (remainingWidth < 24) remainingWidth = 24;
-
-            int fileAWidth = remainingWidth / 2;
-            int fileBWidth = remainingWidth - fileAWidth;
-
-            IConsoleTableBuilder table = new ConsoleTableBuilder();
-            foreach (var col in visibleColumns)
-            {
-                if (col == "file_a")
-                {
-                    table.AddColumn("file_a", fileAWidth, "left");
-                }
-                else if (col == "file_b")
-                {
-                    table.AddColumn("file_b", fileBWidth, "left");
-                }
-                else if (columnDefs.TryGetValue(col, out var def))
-                {
-                    table.AddColumn(col, def.stdWidth, def.align);
-                }
-            }
-
-            // 4. Limit and Render
             int limit = _settings.Limit ?? 20;
-            var listToRender = result.TemporalCoupling.Take(limit).ToList();
-
-            foreach (var item in listToRender)
+            foreach (var item in result.TemporalCoupling.Take(limit))
             {
-                var rowCells = new List<string>();
-                foreach (var col in visibleColumns)
+                double couplingVal = item.CouplingDegree;
+                string displayVal = $"{Math.Round(couplingVal * 100)}%";
+                string formattedCoupling = couplingVal >= 0.7
+                    ? _termFormatter.FormatHeat(100.0, displayVal)
+                    : couplingVal >= 0.5
+                        ? _termFormatter.FormatAttention(50.0, displayVal)
+                        : displayVal;
+
+                table.AddRow(new Dictionary<string, string>
                 {
-                    if (col == "file_a")
-                    {
-                        rowCells.Add(TruncatePath(item.FileA, fileAWidth));
-                    }
-                    else if (col == "file_b")
-                    {
-                        rowCells.Add(TruncatePath(item.FileB, fileBWidth));
-                    }
-                    else if (col == "shared")
-                    {
-                        rowCells.Add(item.SharedCommits.ToString());
-                    }
-                    else if (col == "coupling")
-                    {
-                        double couplingVal = item.CouplingDegree;
-                        string displayVal = $"{Math.Round(couplingVal * 100)}%";
-                        if (couplingVal >= 0.7)
-                        {
-                            rowCells.Add(_termFormatter.FormatHeat(100.0, displayVal));
-                        }
-                        else if (couplingVal >= 0.5)
-                        {
-                            rowCells.Add(_termFormatter.FormatAttention(50.0, displayVal));
-                        }
-                        else
-                        {
-                            rowCells.Add(displayVal);
-                        }
-                    }
-                }
-                table.AddRow(rowCells);
+                    { "file_a", item.FileA },
+                    { "file_b", item.FileB },
+                    { "shared", item.SharedCommits.ToString() },
+                    { "coupling", formattedCoupling }
+                });
             }
 
             return table.Render();
@@ -246,289 +210,108 @@ namespace Gitic
 
         private string RenderLeadTimeTable(AnalysisResult result)
         {
-            if (result.LeadTimes == null || result.LeadTimes.Merges.Count == 0)
+            if (result.LeadTimes?.Merges == null || result.LeadTimes.Merges.Count == 0)
             {
                 return "No merge commits in the analysis window; branch lead time is unmeasured. Run with --include-merges or widen the window to measure lead time.\n";
             }
 
-            // 1. Determine terminal width
-            int consoleWidth = 80;
-            try
+            int consoleWidth = GetConsoleWidth();
+            var visibleColumns = GetVisibleColumns(consoleWidth, cw =>
             {
-                if (!Console.IsOutputRedirected)
+                if (cw < 60)
                 {
-                    consoleWidth = Console.WindowWidth;
+                    return new List<string> { "hash", "lead_time" };
                 }
-            }
-            catch { }
-
-            if (consoleWidth < 40) consoleWidth = 40;
-            if (consoleWidth > 200) consoleWidth = 200;
-
-            // 2. Select columns to display
-            var visibleColumns = new List<string>();
-            if (!string.IsNullOrEmpty(_settings.Columns))
-            {
-                visibleColumns = _settings.Columns.Split(',')
-                    .Select(c => c.Trim().ToLower())
-                    .Where(c => !string.IsNullOrEmpty(c))
-                    .ToList();
-            }
-            else
-            {
-                // Default based on terminal width
-                if (consoleWidth < 60)
+                if (cw < 100)
                 {
-                    visibleColumns = new List<string> { "hash", "lead_time" };
+                    return new List<string> { "hash", "date", "lead_time", "author" };
                 }
-                else if (consoleWidth < 100)
-                {
-                    visibleColumns = new List<string> { "hash", "date", "lead_time", "author" };
-                }
-                else
-                {
-                    visibleColumns = new List<string> { "hash", "date", "lead_time", "author", "files", "message" };
-                }
-            }
+                return new List<string> { "hash", "date", "lead_time", "author", "files", "message" };
+            });
 
-            // 3. Set column properties
-            var columnDefs = new Dictionary<string, (string align, int stdWidth)>
-            {
-                { "hash", ("left", 8) },
-                { "date", ("left", 20) },
-                { "lead_time", ("right", 15) },
-                { "author", ("left", 15) },
-                { "files", ("right", 8) },
-                { "message", ("left", 30) }
-            };
+            var table = CreateTableBuilder(visibleColumns)
+                .AddColumnEx("hash", width: 8, align: "left")
+                .AddColumnEx("date", width: 20, align: "left")
+                .AddColumnEx("lead_time", width: 15, align: "right")
+                .AddColumnEx("author", width: 15, align: "left")
+                .AddColumnEx("files", width: 8, align: "right")
+                .AddColumnEx("message", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Standard, minWidth: 10);
 
-            int otherWidths = 0;
-            foreach (var col in visibleColumns)
-            {
-                if (col == "message") continue;
-                if (columnDefs.TryGetValue(col, out var def))
-                {
-                    otherWidths += def.stdWidth;
-                }
-            }
-
-            int spacing = visibleColumns.Count - 1;
-            int messageWidth = consoleWidth - otherWidths - spacing;
-            if (messageWidth < 10) messageWidth = 10;
-
-            IConsoleTableBuilder table = new ConsoleTableBuilder();
-            foreach (var col in visibleColumns)
-            {
-                if (col == "message")
-                {
-                    table.AddColumn("message", messageWidth, "left");
-                }
-                else if (columnDefs.TryGetValue(col, out var def))
-                {
-                    table.AddColumn(col, def.stdWidth, def.align);
-                }
-            }
-
-            // 4. Limit and Render
             int limit = _settings.Limit ?? 20;
-            var listToRender = result.LeadTimes.Merges.Take(limit).ToList();
-
-            foreach (var m in listToRender)
+            foreach (var m in result.LeadTimes.Merges.Take(limit))
             {
-                var rowCells = new List<string>();
-                foreach (var col in visibleColumns)
+                string hash = m.Hash.Length > 7 ? m.Hash.Substring(0, 7) : m.Hash;
+                string date = m.Date.Length > 19 ? m.Date.Substring(0, 19) : m.Date;
+                string author = m.Author.Length > 15 ? m.Author.Substring(0, 12) + "..." : m.Author;
+                string msg = m.Message.Replace("\r", "").Replace("\n", " ").Trim();
+
+                table.AddRow(new Dictionary<string, string>
                 {
-                    if (col == "hash")
-                    {
-                        rowCells.Add(m.Hash.Length > 7 ? m.Hash.Substring(0, 7) : m.Hash);
-                    }
-                    else if (col == "date")
-                    {
-                        rowCells.Add(m.Date.Length > 19 ? m.Date.Substring(0, 19) : m.Date);
-                    }
-                    else if (col == "lead_time")
-                    {
-                        rowCells.Add($"{m.LeadTimeHours:F1} hours");
-                    }
-                    else if (col == "author")
-                    {
-                        rowCells.Add(m.Author.Length > 15 ? m.Author.Substring(0, 12) + "..." : m.Author);
-                    }
-                    else if (col == "files")
-                    {
-                        rowCells.Add(m.FileCount.ToString());
-                    }
-                    else if (col == "message")
-                    {
-                        string msg = m.Message.Replace("\r", "").Replace("\n", " ").Trim();
-                        rowCells.Add(msg.Length > messageWidth ? msg.Substring(0, messageWidth - 3) + "..." : msg);
-                    }
-                }
-                table.AddRow(rowCells);
+                    { "hash", hash },
+                    { "date", date },
+                    { "lead_time", $"{m.LeadTimeHours:F1} hours" },
+                    { "author", author },
+                    { "files", m.FileCount.ToString() },
+                    { "message", msg }
+                });
             }
 
-            string avgLeadTimeStr = $"Average Lead Time: {result.LeadTimes.AverageLeadTimeHours:F1} hours\n\n";
-            return avgLeadTimeStr + table.Render();
+            string tableRendered = table.Render();
+            string prependString = $"Average Lead Time: {result.LeadTimes.AverageLeadTimeHours:F1} hours\n\n";
+            return prependString + tableRendered;
         }
 
         private string RenderHotspotTable(AnalysisResult result)
         {
-            // 1. Determine terminal width
-            int consoleWidth = 80;
-            try
+            if (result.Files == null || result.Files.Count == 0)
             {
-                if (!Console.IsOutputRedirected)
-                {
-                    consoleWidth = Console.WindowWidth;
-                }
-            }
-            catch { }
-
-            // Bounded terminal width between 40 and 200
-            if (consoleWidth < 40) consoleWidth = 40;
-            if (consoleWidth > 200) consoleWidth = 200;
-
-            // 2. Select columns to display
-            var visibleColumns = new List<string>();
-            if (!string.IsNullOrEmpty(_settings.Columns))
-            {
-                visibleColumns = _settings.Columns.Split(',')
-                    .Select(c => c.Trim().ToLower())
-                    .Where(c => !string.IsNullOrEmpty(c))
-                    .ToList();
-            }
-            else
-            {
-                // Default based on terminal width
-                if (consoleWidth < 60)
-                {
-                    visibleColumns = new List<string> { "file", "attention" };
-                }
-                else if (consoleWidth < 100)
-                {
-                    visibleColumns = new List<string> { "file", "attention", "heat", "reasons" };
-                }
-                else
-                {
-                    visibleColumns = new List<string> { "file", "attention", "heat", "ownership", "rework", "coordination", "reasons" };
-                }
+                return string.Empty;
             }
 
-            // 3. Set column properties (alignment and standard width)
-            var columnDefs = new Dictionary<string, (string align, int stdWidth)>
+            int consoleWidth = GetConsoleWidth();
+            var visibleColumns = GetVisibleColumns(consoleWidth, cw =>
             {
-                { "file", ("left", 20) }, // will be adjusted dynamically
-                { "attention", ("right", 10) },
-                { "heat", ("right", 6) },
-                { "churn", ("right", 6) },
-                { "contributors", ("right", 12) },
-                { "ownership", ("right", 9) },
-                { "rework", ("right", 8) },
-                { "coordination", ("right", 12) },
-                { "reasons", ("left", 25) }
-            };
-
-            // Calculate other columns width sum
-            int otherWidths = 0;
-            int colCount = 0;
-            foreach (var col in visibleColumns)
-            {
-                if (col == "file") continue;
-                if (columnDefs.TryGetValue(col, out var def))
+                if (cw < 60)
                 {
-                    otherWidths += def.stdWidth;
-                    colCount++;
+                    return new List<string> { "file", "attention" };
                 }
-            }
-
-            // Allocate remaining width to file column
-            int spacing = visibleColumns.Count - 1;
-            int fileWidth = consoleWidth - otherWidths - spacing;
-            if (fileWidth < 12) fileWidth = 12; // Min file width
-
-            // Re-adjust reasons if width is very large
-            int reasonsWidth = 25;
-            if (visibleColumns.Contains("reasons"))
-            {
-                int totalAllocated = fileWidth + otherWidths + spacing;
-                if (totalAllocated < consoleWidth)
+                if (cw < 100)
                 {
-                    reasonsWidth += (consoleWidth - totalAllocated);
+                    return new List<string> { "file", "attention", "heat", "reasons" };
                 }
-            }
+                return new List<string> { "file", "attention", "heat", "ownership", "rework", "coordination", "reasons" };
+            });
 
-            IConsoleTableBuilder table = new ConsoleTableBuilder();
-            foreach (var col in visibleColumns)
-            {
-                if (col == "file")
-                {
-                    table.AddColumn("file", fileWidth, "left");
-                }
-                else if (col == "reasons")
-                {
-                    table.AddColumn("reasons", reasonsWidth, "left");
-                }
-                else if (columnDefs.TryGetValue(col, out var def))
-                {
-                    table.AddColumn(col, def.stdWidth, def.align);
-                }
-            }
+            var table = CreateTableBuilder(visibleColumns)
+                .AddColumnEx("file", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, minWidth: 12)
+                .AddColumnEx("attention", width: 10, align: "right")
+                .AddColumnEx("heat", width: 6, align: "right")
+                .AddColumnEx("churn", width: 6, align: "right")
+                .AddColumnEx("contributors", width: 12, align: "right")
+                .AddColumnEx("ownership", width: 9, align: "right")
+                .AddColumnEx("rework", width: 8, align: "right")
+                .AddColumnEx("coordination", width: 12, align: "right")
+                .AddColumnEx("reasons", width: 25, align: "left");
 
-            // 4. Sort and Limit data model
             int limit = _settings.Limit ?? 20;
-            var filesToRender = result.Files.Take(limit).ToList();
-
-            foreach (var file in filesToRender)
+            foreach (var file in result.Files.Take(limit))
             {
-                var rowCells = new List<string>();
-                foreach (var col in visibleColumns)
+                double share = file.KnowledgeSilo?.TopOwnerShare ?? 0;
+                double rework = file.ReworkRate ?? 0;
+                double coord = file.CoordinationOverlap ?? 0;
+
+                table.AddRow(new Dictionary<string, string>
                 {
-                    if (col == "file")
-                    {
-                        rowCells.Add(TruncatePath(file.Path, fileWidth));
-                    }
-                    else if (col == "attention")
-                    {
-                        rowCells.Add(_termFormatter.FormatAttention(file.AttentionScore, file.AttentionScore.ToString("F1")));
-                    }
-                    else if (col == "heat")
-                    {
-                        rowCells.Add(_termFormatter.FormatHeat(file.HeatScore, file.HeatScore.ToString("F1")));
-                    }
-                    else if (col == "churn")
-                    {
-                        rowCells.Add(file.Churn.ToString());
-                    }
-                    else if (col == "contributors")
-                    {
-                        rowCells.Add(file.ContributorCount.ToString());
-                    }
-                    else if (col == "ownership")
-                    {
-                        double share = file.KnowledgeSilo?.TopOwnerShare ?? 0;
-                        rowCells.Add($"{Math.Round(share * 100)}%");
-                    }
-                    else if (col == "rework")
-                    {
-                        double rework = file.ReworkRate ?? 0;
-                        rowCells.Add($"{Math.Round(rework * 100)}%");
-                    }
-                    else if (col == "coordination")
-                    {
-                        double coord = file.CoordinationOverlap ?? 0;
-                        rowCells.Add(Math.Round(coord).ToString());
-                    }
-                    else if (col == "reasons")
-                    {
-                        string scoreReasons = ScoreReasons(file.ScoreBreakdown);
-                        if (scoreReasons.Length > reasonsWidth)
-                        {
-                            scoreReasons = scoreReasons.Substring(0, reasonsWidth - 3) + "...";
-                        }
-                        rowCells.Add(scoreReasons);
-                    }
-                }
-                table.AddRow(rowCells);
+                    { "file", file.Path },
+                    { "attention", _termFormatter.FormatAttention(file.AttentionScore, file.AttentionScore.ToString("F1")) },
+                    { "heat", _termFormatter.FormatHeat(file.HeatScore, file.HeatScore.ToString("F1")) },
+                    { "churn", file.Churn.ToString() },
+                    { "contributors", file.ContributorCount.ToString() },
+                    { "ownership", $"{Math.Round(share * 100)}%" },
+                    { "rework", $"{Math.Round(rework * 100)}%" },
+                    { "coordination", Math.Round(coord).ToString() },
+                    { "reasons", ScoreReasons(file.ScoreBreakdown) }
+                });
             }
 
             return table.Render();
@@ -536,147 +319,49 @@ namespace Gitic
 
         private string RenderAreaTable(AnalysisResult result)
         {
-            // 1. Determine terminal width
-            int consoleWidth = 80;
-            try
+            if (result.Areas == null || result.Areas.Count == 0)
             {
-                if (!Console.IsOutputRedirected)
-                {
-                    consoleWidth = Console.WindowWidth;
-                }
-            }
-            catch { }
-
-            if (consoleWidth < 40) consoleWidth = 40;
-            if (consoleWidth > 200) consoleWidth = 200;
-
-            // 2. Select columns to display
-            var visibleColumns = new List<string>();
-            if (!string.IsNullOrEmpty(_settings.Columns))
-            {
-                visibleColumns = _settings.Columns.Split(',')
-                    .Select(c => c.Trim().ToLower())
-                    .Where(c => !string.IsNullOrEmpty(c))
-                    .ToList();
-            }
-            else
-            {
-                // Default based on terminal width
-                if (consoleWidth < 60)
-                {
-                    visibleColumns = new List<string> { "area", "attention" };
-                }
-                else if (consoleWidth < 100)
-                {
-                    visibleColumns = new List<string> { "area", "attention", "heat", "reasons" };
-                }
-                else
-                {
-                    visibleColumns = new List<string> { "area", "attention", "heat", "ownership", "rework", "contributors", "reasons" };
-                }
+                return string.Empty;
             }
 
-            // 3. Set column properties
-            var columnDefs = new Dictionary<string, (string align, int stdWidth)>
+            int consoleWidth = GetConsoleWidth();
+            var visibleColumns = GetVisibleColumns(consoleWidth, cw =>
             {
-                { "area", ("left", 20) }, // dynamically adjusted
-                { "attention", ("right", 10) },
-                { "heat", ("right", 6) },
-                { "ownership", ("left", 24) },
-                { "rework", ("right", 8) },
-                { "contributors", ("right", 12) },
-                { "reasons", ("left", 25) }
-            };
-
-            // Calculate other columns width sum
-            int otherWidths = 0;
-            int colCount = 0;
-            foreach (var col in visibleColumns)
-            {
-                if (col == "area") continue;
-                if (columnDefs.TryGetValue(col, out var def))
+                if (cw < 60)
                 {
-                    otherWidths += def.stdWidth;
-                    colCount++;
+                    return new List<string> { "area", "attention" };
                 }
-            }
-
-            int spacing = visibleColumns.Count - 1;
-            int areaWidth = consoleWidth - otherWidths - spacing;
-            if (areaWidth < 12) areaWidth = 12;
-
-            int reasonsWidth = 25;
-            if (visibleColumns.Contains("reasons"))
-            {
-                int totalAllocated = areaWidth + otherWidths + spacing;
-                if (totalAllocated < consoleWidth)
+                if (cw < 100)
                 {
-                    reasonsWidth += (consoleWidth - totalAllocated);
+                    return new List<string> { "area", "attention", "heat", "reasons" };
                 }
-            }
+                return new List<string> { "area", "attention", "heat", "ownership", "rework", "contributors", "reasons" };
+            });
 
-            IConsoleTableBuilder table = new ConsoleTableBuilder();
-            foreach (var col in visibleColumns)
-            {
-                if (col == "area")
-                {
-                    table.AddColumn("area", areaWidth, "left");
-                }
-                else if (col == "reasons")
-                {
-                    table.AddColumn("reasons", reasonsWidth, "left");
-                }
-                else if (columnDefs.TryGetValue(col, out var def))
-                {
-                    table.AddColumn(col, def.stdWidth, def.align);
-                }
-            }
+            var table = CreateTableBuilder(visibleColumns)
+                .AddColumnEx("area", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, minWidth: 12)
+                .AddColumnEx("attention", width: 10, align: "right")
+                .AddColumnEx("heat", width: 6, align: "right")
+                .AddColumnEx("ownership", width: 24, align: "left")
+                .AddColumnEx("rework", width: 8, align: "right")
+                .AddColumnEx("contributors", width: 12, align: "right")
+                .AddColumnEx("reasons", width: 25, align: "left");
 
-            // 4. Sort and Limit Areas (from the result model)
             int limit = _settings.Limit ?? 20;
-            var areasToRender = result.Areas.Take(limit).ToList();
-
-            foreach (var area in areasToRender)
+            foreach (var area in result.Areas.Take(limit))
             {
-                var rowCells = new List<string>();
-                foreach (var col in visibleColumns)
+                double rework = area.ReworkRate ?? 0;
+
+                table.AddRow(new Dictionary<string, string>
                 {
-                    if (col == "area")
-                    {
-                        rowCells.Add(TruncatePath(area.Area, areaWidth));
-                    }
-                    else if (col == "attention")
-                    {
-                        rowCells.Add(_termFormatter.FormatAttention(area.AttentionScore, area.AttentionScore.ToString("F1")));
-                    }
-                    else if (col == "heat")
-                    {
-                        rowCells.Add(_termFormatter.FormatHeat(area.HeatScore, area.HeatScore.ToString("F1")));
-                    }
-                    else if (col == "ownership")
-                    {
-                        rowCells.Add(TopContributor(area.Contributors));
-                    }
-                    else if (col == "rework")
-                    {
-                        double rework = area.ReworkRate ?? 0;
-                        rowCells.Add($"{Math.Round(rework * 100)}%");
-                    }
-                    else if (col == "contributors")
-                    {
-                        rowCells.Add(area.ContributorCount.ToString());
-                    }
-                    else if (col == "reasons")
-                    {
-                        string scoreReasons = ScoreReasons(area.ScoreBreakdown);
-                        if (scoreReasons.Length > reasonsWidth)
-                        {
-                            scoreReasons = scoreReasons.Substring(0, reasonsWidth - 3) + "...";
-                        }
-                        rowCells.Add(scoreReasons);
-                    }
-                }
-                table.AddRow(rowCells);
+                    { "area", area.Area },
+                    { "attention", _termFormatter.FormatAttention(area.AttentionScore, area.AttentionScore.ToString("F1")) },
+                    { "heat", _termFormatter.FormatHeat(area.HeatScore, area.HeatScore.ToString("F1")) },
+                    { "ownership", TopContributor(area.Contributors) },
+                    { "rework", $"{Math.Round(rework * 100)}%" },
+                    { "contributors", area.ContributorCount.ToString() },
+                    { "reasons", ScoreReasons(area.ScoreBreakdown) }
+                });
             }
 
             return table.Render();
@@ -684,39 +369,48 @@ namespace Gitic
 
         private string RenderContributorTable(AnalysisResult result)
         {
-            // 1. Determine terminal width
-            int consoleWidth = 80;
-            try
+            var combined = new List<CombinedContributor>();
+
+            double totalAllActivity = (result.Contributors?.Sum(c => c.TotalActivity) ?? 0) + (result.Automation?.Sum(c => c.TotalActivity) ?? 0);
+
+            if (result.Contributors != null)
             {
-                if (!Console.IsOutputRedirected)
+                foreach (var h in result.Contributors)
                 {
-                    consoleWidth = Console.WindowWidth;
+                    double share = totalAllActivity > 0 ? (h.TotalActivity / totalAllActivity) : 0;
+                    double familiarity = h.Areas.Count > 0 ? h.Areas.Average(a => a.FamiliarityScore) : 0;
+                    string topAreas = string.Join(", ", h.Areas.Take(2).Select(a => a.Area));
+                    combined.Add(new CombinedContributor
+                    {
+                        Name = h.Name,
+                        Email = h.Email,
+                        Type = "human",
+                        Activity = h.TotalActivity,
+                        Share = share,
+                        Familiarity = familiarity,
+                        TopAreas = topAreas
+                    });
                 }
             }
-            catch { }
 
-            if (consoleWidth < 40) consoleWidth = 40;
-            if (consoleWidth > 200) consoleWidth = 200;
-
-            // 2. Combine and compute human + bot metrics
-            var combined = new List<(string name, string email, string type, double activity, double share, double familiarity, string topAreas)>();
-
-            double totalAllActivity = result.Contributors.Sum(c => c.TotalActivity) + result.Automation.Sum(c => c.TotalActivity);
-
-            foreach (var h in result.Contributors)
+            if (result.Automation != null)
             {
-                double share = totalAllActivity > 0 ? (h.TotalActivity / totalAllActivity) : 0;
-                double familiarity = h.Areas.Count > 0 ? h.Areas.Average(a => a.FamiliarityScore) : 0;
-                string topAreas = string.Join(", ", h.Areas.Take(2).Select(a => a.Area));
-                combined.Add((h.Name, h.Email, "human", h.TotalActivity, share, familiarity, topAreas));
-            }
-
-            foreach (var b in result.Automation)
-            {
-                double share = totalAllActivity > 0 ? (b.TotalActivity / totalAllActivity) : 0;
-                double familiarity = b.Areas.Count > 0 ? b.Areas.Average(a => a.FamiliarityScore) : 0;
-                string topAreas = string.Join(", ", b.Areas.Take(2).Select(a => a.Area));
-                combined.Add((b.Name, b.Email, "bot", b.TotalActivity, share, familiarity, topAreas));
+                foreach (var b in result.Automation)
+                {
+                    double share = totalAllActivity > 0 ? (b.TotalActivity / totalAllActivity) : 0;
+                    double familiarity = b.Areas.Count > 0 ? b.Areas.Average(a => a.FamiliarityScore) : 0;
+                    string topAreas = string.Join(", ", b.Areas.Take(2).Select(a => a.Area));
+                    combined.Add(new CombinedContributor
+                    {
+                        Name = b.Name,
+                        Email = b.Email,
+                        Type = "bot",
+                        Activity = b.TotalActivity,
+                        Share = share,
+                        Familiarity = familiarity,
+                        TopAreas = topAreas
+                    });
+                }
             }
 
             // Apply custom Sorting
@@ -725,148 +419,57 @@ namespace Gitic
                 string sortField = _settings.Sort.ToLower();
                 if (sortField == "name" || sortField == "contributor")
                 {
-                    combined = combined.OrderBy(c => c.name).ToList();
+                    combined = combined.OrderBy(c => c.Name).ToList();
                 }
                 else if (sortField == "activity" || sortField == "share")
                 {
-                    combined = combined.OrderByDescending(c => c.activity).ToList();
+                    combined = combined.OrderByDescending(c => c.Activity).ToList();
                 }
                 else if (sortField == "familiarity")
                 {
-                    combined = combined.OrderByDescending(c => c.familiarity).ToList();
+                    combined = combined.OrderByDescending(c => c.Familiarity).ToList();
                 }
             }
             else
             {
                 // Default sorting by activity
-                combined = combined.OrderByDescending(c => c.activity).ToList();
+                combined = combined.OrderByDescending(c => c.Activity).ToList();
             }
 
-            // 3. Select columns to display
-            var visibleColumns = new List<string>();
-            if (!string.IsNullOrEmpty(_settings.Columns))
+            int consoleWidth = GetConsoleWidth();
+            var visibleColumns = GetVisibleColumns(consoleWidth, cw =>
             {
-                visibleColumns = _settings.Columns.Split(',')
-                    .Select(c => c.Trim().ToLower())
-                    .Where(c => !string.IsNullOrEmpty(c))
-                    .ToList();
-            }
-            else
-            {
-                // Default based on terminal width
-                if (consoleWidth < 60)
+                if (cw < 60)
                 {
-                    visibleColumns = new List<string> { "contributor", "activity" };
+                    return new List<string> { "contributor", "activity" };
                 }
-                else if (consoleWidth < 100)
+                if (cw < 100)
                 {
-                    visibleColumns = new List<string> { "contributor", "type", "activity", "share", "top areas" };
+                    return new List<string> { "contributor", "type", "activity", "share", "top areas" };
                 }
-                else
-                {
-                    visibleColumns = new List<string> { "contributor", "type", "activity", "share", "familiarity", "top areas" };
-                }
-            }
+                return new List<string> { "contributor", "type", "activity", "share", "familiarity", "top areas" };
+            });
 
-            // 4. Set column properties
-            var columnDefs = new Dictionary<string, (string align, int stdWidth)>
-            {
-                { "contributor", ("left", 24) }, // adjusted dynamically
-                { "type", ("left", 8) },
-                { "activity", ("right", 10) },
-                { "share", ("right", 8) },
-                { "familiarity", ("right", 11) },
-                { "top areas", ("left", 30) } // adjusted dynamically
-            };
+            var table = CreateTableBuilder(visibleColumns)
+                .AddColumnEx("contributor", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, stretchRatio: 0.45, minWidth: 12)
+                .AddColumnEx("type", width: 8, align: "left")
+                .AddColumnEx("activity", width: 10, align: "right")
+                .AddColumnEx("share", width: 8, align: "right")
+                .AddColumnEx("familiarity", width: 11, align: "right")
+                .AddColumnEx("top areas", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, stretchRatio: 0.55, minWidth: 12);
 
-            // Calculate other columns width sum
-            int otherWidths = 0;
-            int colCount = 0;
-            foreach (var col in visibleColumns)
-            {
-                if (col == "contributor" || col == "top areas") continue;
-                if (columnDefs.TryGetValue(col, out var def))
-                {
-                    otherWidths += def.stdWidth;
-                    colCount++;
-                }
-            }
-
-            int spacing = visibleColumns.Count - 1;
-            int availableForStretch = consoleWidth - otherWidths - spacing;
-            if (availableForStretch < 20) availableForStretch = 20;
-
-            int contributorWidth = 24;
-            int topAreasWidth = 30;
-
-            if (visibleColumns.Contains("contributor") && visibleColumns.Contains("top areas"))
-            {
-                contributorWidth = (int)(availableForStretch * 0.45);
-                topAreasWidth = availableForStretch - contributorWidth;
-                if (contributorWidth < 12) contributorWidth = 12;
-                if (topAreasWidth < 12) topAreasWidth = 12;
-            }
-            else if (visibleColumns.Contains("contributor"))
-            {
-                contributorWidth = availableForStretch;
-            }
-            else if (visibleColumns.Contains("top areas"))
-            {
-                topAreasWidth = availableForStretch;
-            }
-
-            IConsoleTableBuilder table = new ConsoleTableBuilder();
-            foreach (var col in visibleColumns)
-            {
-                if (col == "contributor")
-                {
-                    table.AddColumn("contributor", contributorWidth, "left");
-                }
-                else if (col == "top areas")
-                {
-                    table.AddColumn("top areas", topAreasWidth, "left");
-                }
-                else if (columnDefs.TryGetValue(col, out var def))
-                {
-                    table.AddColumn(col, def.stdWidth, def.align);
-                }
-            }
-
-            // 5. Apply Limit and Render
             int limit = _settings.Limit ?? 20;
-            var listToRender = combined.Take(limit).ToList();
-
-            foreach (var item in listToRender)
+            foreach (var item in combined.Take(limit))
             {
-                var rowCells = new List<string>();
-                foreach (var col in visibleColumns)
+                table.AddRow(new Dictionary<string, string>
                 {
-                    if (col == "contributor")
-                    {
-                        rowCells.Add(TruncatePath(item.name, contributorWidth));
-                    }
-                    else if (col == "type")
-                    {
-                        rowCells.Add(item.type);
-                    }
-                    else if (col == "activity")
-                    {
-                        rowCells.Add(item.activity.ToString("F0"));
-                    }
-                    else if (col == "share")
-                    {
-                        rowCells.Add($"{Math.Round(item.share * 100)}%");
-                    }
-                    else if (col == "familiarity")
-                    {
-                        rowCells.Add($"{Math.Round(item.familiarity)}%");
-                    }
-                    else if (col == "top areas")
-                    {
-                        rowCells.Add(TruncatePath(item.topAreas, topAreasWidth));
-                    }
-                }
-                table.AddRow(rowCells);
+                    { "contributor", item.Name },
+                    { "type", item.Type },
+                    { "activity", item.Activity.ToString("F0") },
+                    { "share", $"{Math.Round(item.Share * 100)}%" },
+                    { "familiarity", $"{Math.Round(item.Familiarity)}%" },
+                    { "top areas", item.TopAreas }
+                });
             }
 
             return table.Render();
@@ -881,19 +484,19 @@ namespace Gitic
 
             var contributor = result.Contributors[0];
             IConsoleTableBuilder table = new ConsoleTableBuilder()
-                .AddColumn("area", 28, "left")
-                .AddColumn("familiarity", 11, "right")
-                .AddColumn("activity", 8, "right")
-                .AddColumn("share");
+                .AddColumnEx("area", width: 28, align: "left")
+                .AddColumnEx("familiarity", width: 11, align: "right")
+                .AddColumnEx("activity", width: 8, align: "right")
+                .AddColumnEx("share");
 
             foreach (var area in contributor.Areas)
             {
-                table.AddRow(new List<string>
+                table.AddRow(new Dictionary<string, string>
                 {
-                    area.Area,
-                    area.FamiliarityScore.ToString(),
-                    area.Activity.ToString(),
-                    $"{Math.Round(area.ActivityShare * 100)}%"
+                    { "area", area.Area },
+                    { "familiarity", area.FamiliarityScore.ToString() },
+                    { "activity", area.Activity.ToString() },
+                    { "share", $"{Math.Round(area.ActivityShare * 100)}%" }
                 });
             }
 

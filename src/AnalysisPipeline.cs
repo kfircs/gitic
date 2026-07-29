@@ -13,6 +13,13 @@ namespace Gitic
             AnalysisSettings settings,
             AnalysisCommand command,
             System.Threading.CancellationToken cancellationToken = default);
+
+        AnalysisPipelineResult Run(
+            List<GitCommitRecord> commits,
+            GiticConfig? config = null,
+            AnalysisSettings? settings = null,
+            AnalysisCommand command = AnalysisCommand.Hotspots,
+            System.Threading.CancellationToken cancellationToken = default);
     }
 
     public class AnalysisPipelineResult
@@ -27,6 +34,10 @@ namespace Gitic
         public List<string> Warnings { get; set; } = new();
         public List<Diagnostic> Diagnostics { get; set; } = new();
         public int IncludedFileChangeCount { get; set; }
+
+        public int TotalWarningCount => Warnings?.Count ?? 0;
+        public bool HasWarnings => TotalWarningCount > 0;
+        public bool HasDiagnostics => (Diagnostics?.Count ?? 0) > 0;
     }
 
     public class AnalysisPipeline : IAnalysisPipeline
@@ -64,6 +75,24 @@ namespace Gitic
             _pathClassifierFactory = pathClassifierFactory ?? ((headFiles, excludes, includeDeleted, requestedPath) => new PathClassifier(headFiles, excludes, includeDeleted, requestedPath));
             _changeAccumulatorFactory = changeAccumulatorFactory ?? ((config, settings, pathClassifier, identityRegistry) => new ChangeAccumulator(config, settings, pathClassifier, identityRegistry));
             _scoringEngineFactory = scoringEngineFactory ?? ((config, activeContributorKeys, depth) => new FamiliarityScoringEngine(config, activeContributorKeys, depth));
+        }
+
+        public AnalysisPipelineResult Run(
+            List<GitCommitRecord> commits,
+            GiticConfig? config = null,
+            AnalysisSettings? settings = null,
+            AnalysisCommand command = AnalysisCommand.Hotspots,
+            System.Threading.CancellationToken cancellationToken = default)
+        {
+            var actualConfig = config ?? GiticConfig.Default;
+            var actualSettings = settings ?? new AnalysisSettings();
+            return Run(
+                commits,
+                new HashSet<string>(),
+                actualConfig,
+                actualSettings,
+                command,
+                cancellationToken);
         }
 
         public AnalysisPipelineResult Run(

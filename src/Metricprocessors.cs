@@ -17,295 +17,46 @@ namespace Gitic
 
     public class MetricProcessorService : IMetricProcessorService
     {
-        private const long MsPerDay = 86400000L;
-        private const long ActiveContributorDays = 90L;
-        private const long ActiveContributorLookbackMs = ActiveContributorDays * MsPerDay;
-        private const double TopQuarterFraction = 0.25;
+        private readonly IMetricsEngine _metricsEngine;
+
+        public MetricProcessorService(IMetricsEngine? metricsEngine = null)
+        {
+            _metricsEngine = metricsEngine ?? new MetricsEngine();
+        }
 
         public List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items)
         {
-            return RenderContributorAccumulatorList(items);
+            return _metricsEngine.RenderContributors(items);
         }
 
         public List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items)
         {
-            return RenderContributorAccumulatorList(items)
-                .Select(m => new AutomationMetric
-                {
-                    Name = m.Name,
-                    Email = m.Email,
-                    TotalActivity = m.TotalActivity,
-                    Areas = m.Areas
-                }).ToList();
-        }
-
-        private List<ContributorMetric> RenderContributorAccumulatorList(List<ContributorAccumulator> items)
-        {
-            return items
-                .Select(item => new ContributorMetric
-                {
-                    Name = item.Identity.Name,
-                    Email = item.Identity.Email,
-                    TotalActivity = ScoringUtils.RoundRatio(item.TotalActivity),
-                    Areas = ContributorAreas(item)
-                })
-                .OrderByDescending(c => c.TotalActivity)
-                .ToList();
-        }
-
-        private List<ContributorAreaMetric> ContributorAreas(ContributorAccumulator item)
-        {
-            return item.Areas
-                .Select(kv =>
-                {
-                    string area = kv.Key;
-                    double activity = kv.Value;
-                    double total = item.TotalActivity;
-                    double share = total > 0 ? activity / total : 0.0;
-                    return new ContributorAreaMetric
-                    {
-                        Area = area,
-                        Activity = ScoringUtils.RoundRatio(activity),
-                        ActivityShare = ScoringUtils.RoundRatio(share),
-                        FamiliarityScore = ScoringUtils.RoundRatio(Math.Sqrt(share) * 100.0)
-                    };
-                })
-                .OrderByDescending(c => c.Activity)
-                .ToList();
+            return _metricsEngine.RenderAutomation(items);
         }
 
         public List<FileMetric> SortFilesForCommand(List<FileMetric> files, AnalysisCommand command)
         {
-            if (command == AnalysisCommand.Areas)
-            {
-                return files.OrderByDescending(f => f.HeatScore).ToList();
-            }
-            return files
-                .OrderByDescending(f => f.Lines ?? 0)
-                .ThenByDescending(f => f.Size ?? 0)
-                .ThenByDescending(f => f.AttentionScore)
-                .ToList();
+            return _metricsEngine.SortFilesForCommand(files, command);
         }
 
         public List<AreaMetric> SortAreasForCommand(List<AreaMetric> areas, AnalysisCommand command)
         {
-            if (command == AnalysisCommand.Hotspots)
-            {
-                return areas.OrderByDescending(a => a.AttentionScore).ToList();
-            }
-            return areas.OrderByDescending(a => a.HeatScore).ToList();
+            return _metricsEngine.SortAreasForCommand(areas, command);
         }
 
-        public List<ContributorMetric> SortContributorsForCommand(
-            List<ContributorMetric> contributors,
-            AnalysisCommand command)
+        public List<ContributorMetric> SortContributorsForCommand(List<ContributorMetric> contributors, AnalysisCommand command)
         {
-            return contributors.OrderByDescending(c => c.TotalActivity).ToList();
+            return _metricsEngine.SortContributorsForCommand(contributors, command);
         }
 
         public void SortMetrics(AnalysisResult result, AnalysisCommand command)
         {
-            if (result == null) return;
-            
-            if (command == AnalysisCommand.Areas && result.Settings != null && !string.IsNullOrEmpty(result.Settings.Sort))
-            {
-                string sortField = result.Settings.Sort.ToLower();
-                if (sortField == "attention")
-                {
-                    result.Areas = result.Areas.OrderByDescending(a => a.AttentionScore).ToList();
-                }
-                else if (sortField == "heat")
-                {
-                    result.Areas = result.Areas.OrderByDescending(a => a.HeatScore).ToList();
-                }
-                else if (sortField == "churn")
-                {
-                    result.Areas = result.Areas.OrderByDescending(a => a.Churn).ToList();
-                }
-                else if (sortField == "contributors")
-                {
-                    result.Areas = result.Areas.OrderByDescending(a => a.ContributorCount).ToList();
-                }
-                else
-                {
-                    result.Areas = SortAreasForCommand(result.Areas, command);
-                }
-            }
-            else
-            {
-                result.Areas = SortAreasForCommand(result.Areas, command);
-            }
-            
-            if (command == AnalysisCommand.Hotspots && result.Settings != null && !string.IsNullOrEmpty(result.Settings.Sort))
-            {
-                string sortField = result.Settings.Sort.ToLower();
-                if (sortField == "attention")
-                {
-                    result.Files = result.Files.OrderByDescending(f => f.AttentionScore).ToList();
-                }
-                else if (sortField == "heat")
-                {
-                    result.Files = result.Files.OrderByDescending(f => f.HeatScore).ToList();
-                }
-                else if (sortField == "churn")
-                {
-                    result.Files = result.Files.OrderByDescending(f => f.Churn).ToList();
-                }
-                else if (sortField == "rework")
-                {
-                    result.Files = result.Files.OrderByDescending(f => f.ReworkRate ?? 0).ToList();
-                }
-                else if (sortField == "coordination")
-                {
-                    result.Files = result.Files.OrderByDescending(f => f.CoordinationOverlap ?? 0).ToList();
-                }
-                else if (sortField == "lines")
-                {
-                    result.Files = result.Files.OrderByDescending(f => f.Lines ?? 0).ToList();
-                }
-                else
-                {
-                    result.Files = SortFilesForCommand(result.Files, command);
-                }
-            }
-            else
-            {
-                result.Files = SortFilesForCommand(result.Files, command);
-            }
-
-            result.Contributors = SortContributorsForCommand(result.Contributors, command);
-
-            if (command == AnalysisCommand.TemporalCoupling)
-            {
-                if (result.TemporalCoupling != null)
-                {
-                    if (result.Settings != null && !string.IsNullOrEmpty(result.Settings.Sort))
-                    {
-                        string sortField = result.Settings.Sort.ToLower();
-                        if (sortField == "coupling" || sortField == "coupling_degree" || sortField == "degree")
-                        {
-                            result.TemporalCoupling = result.TemporalCoupling
-                                .OrderByDescending(tc => tc.CouplingDegree)
-                                .ThenByDescending(tc => tc.SharedCommits)
-                                .ThenBy(tc => tc.FileA)
-                                .ToList();
-                        }
-                        else if (sortField == "shared" || sortField == "shared_commits" || sortField == "commits")
-                        {
-                            result.TemporalCoupling = result.TemporalCoupling
-                                .OrderByDescending(tc => tc.SharedCommits)
-                                .ThenByDescending(tc => tc.CouplingDegree)
-                                .ThenBy(tc => tc.FileA)
-                                .ToList();
-                        }
-                        else if (sortField == "file" || sortField == "filea" || sortField == "file_a")
-                        {
-                            result.TemporalCoupling = result.TemporalCoupling
-                                .OrderBy(tc => tc.FileA)
-                                .ThenBy(tc => tc.FileB)
-                                .ToList();
-                        }
-                        else
-                        {
-                            result.TemporalCoupling = result.TemporalCoupling
-                                .OrderByDescending(tc => tc.CouplingDegree)
-                                .ThenByDescending(tc => tc.SharedCommits)
-                                .ThenBy(tc => tc.FileA)
-                                .ToList();
-                        }
-                    }
-                    else
-                    {
-                        result.TemporalCoupling = result.TemporalCoupling
-                            .OrderByDescending(tc => tc.CouplingDegree)
-                            .ThenByDescending(tc => tc.SharedCommits)
-                            .ThenBy(tc => tc.FileA)
-                            .ToList();
-                    }
-                }
-            }
-
-            if (command == AnalysisCommand.LeadTime)
-            {
-                if (result.LeadTimes != null && result.LeadTimes.Merges != null)
-                {
-                    if (result.Settings != null && !string.IsNullOrEmpty(result.Settings.Sort))
-                    {
-                        string sortField = result.Settings.Sort.ToLower();
-                        if (sortField == "lead_time" || sortField == "leadtime" || sortField == "time" || sortField == "hours")
-                        {
-                            result.LeadTimes.Merges = result.LeadTimes.Merges
-                                .OrderByDescending(m => m.LeadTimeHours)
-                                .ThenByDescending(m => m.Date)
-                                .ToList();
-                        }
-                        else if (sortField == "date" || sortField == "time_stamp")
-                        {
-                            result.LeadTimes.Merges = result.LeadTimes.Merges
-                                .OrderByDescending(m => m.Date)
-                                .ThenByDescending(m => m.LeadTimeHours)
-                                .ToList();
-                        }
-                        else if (sortField == "files" || sortField == "file_count" || sortField == "count")
-                        {
-                            result.LeadTimes.Merges = result.LeadTimes.Merges
-                                .OrderByDescending(m => m.FileCount)
-                                .ThenByDescending(m => m.LeadTimeHours)
-                                .ToList();
-                        }
-                        else if (sortField == "author")
-                        {
-                            result.LeadTimes.Merges = result.LeadTimes.Merges
-                                .OrderBy(m => m.Author)
-                                .ThenByDescending(m => m.LeadTimeHours)
-                                .ToList();
-                        }
-                        else
-                        {
-                            result.LeadTimes.Merges = result.LeadTimes.Merges
-                                .OrderByDescending(m => m.LeadTimeHours)
-                                .ThenByDescending(m => m.Date)
-                                .ToList();
-                        }
-                    }
-                    else
-                    {
-                        result.LeadTimes.Merges = result.LeadTimes.Merges
-                            .OrderByDescending(m => m.LeadTimeHours)
-                            .ThenByDescending(m => m.Date)
-                            .ToList();
-                    }
-                }
-            }
+            _metricsEngine.SortMetrics(result, command);
         }
 
         public HashSet<string> GetActiveContributorKeys(List<GitCommitRecord> commits)
         {
-            var activeKeys = new HashSet<string>();
-            if (commits.Count == 0)
-            {
-                return activeKeys;
-            }
-
-            long maxTimestamp = commits.Max(c => c.Timestamp);
-            long ninetyDaysAgo = maxTimestamp - ActiveContributorLookbackMs;
-
-            var sortedCommits = commits.OrderByDescending(c => c.Timestamp).ToList();
-            int topQuarterCount = Math.Max(1, (int)Math.Floor(commits.Count * TopQuarterFraction));
-
-            for (int i = 0; i < sortedCommits.Count; i++)
-            {
-                var commit = sortedCommits[i];
-                if (i < topQuarterCount || commit.Timestamp >= ninetyDaysAgo)
-                {
-                    activeKeys.Add(IdentityUtils.IdentityKey(commit.Author));
-                    foreach (var co in commit.CoAuthors)
-                    {
-                        activeKeys.Add(IdentityUtils.IdentityKey(co));
-                    }
-                }
-            }
-            return activeKeys;
+            return _metricsEngine.GetActiveContributorKeys(commits);
         }
     }
 }

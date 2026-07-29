@@ -5,19 +5,22 @@ using System.Text.RegularExpressions;
 
 namespace Gitic
 {
+    /// <summary>
+    /// Represents a deep interface for parsing git diff and numstat metadata.
+    /// Exposes only the high-leverage entry point, keeping extraction details encapsulated.
+    /// </summary>
     internal interface IGitPatchParser
     {
         List<GitFileChange> ParseNumstatAndPatches(string text);
-        (List<GitFileChange> fileChanges, Dictionary<string, GitFileChange> fileChangesMap) ParseNumstatMetadata(List<string> lines);
-        void ExtractSymbolsFromHunks(List<string> lines, Dictionary<string, GitFileChange> fileChangesMap);
-        string CleanSymbol(string symbol);
-        string NormalizeNumstatPath(string path);
     }
 
     internal class GitPatchParser : IGitPatchParser
     {
         private const int MaxSymbolLength = 60;
 
+        /// <summary>
+        /// Parses the raw numstat and patch details into structured file changes.
+        /// </summary>
         public List<GitFileChange> ParseNumstatAndPatches(string text)
         {
             var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -30,7 +33,7 @@ namespace Gitic
             return fileChanges;
         }
 
-        public (List<GitFileChange> fileChanges, Dictionary<string, GitFileChange> fileChangesMap) ParseNumstatMetadata(List<string> lines)
+        private (List<GitFileChange> fileChanges, Dictionary<string, GitFileChange> fileChangesMap) ParseNumstatMetadata(List<string> lines)
         {
             var fileChanges = new List<GitFileChange>();
             var fileChangesMap = new Dictionary<string, GitFileChange>();
@@ -64,7 +67,7 @@ namespace Gitic
             return (fileChanges, fileChangesMap);
         }
 
-        public void ExtractSymbolsFromHunks(
+        private void ExtractSymbolsFromHunks(
             List<string> lines,
             Dictionary<string, GitFileChange> fileChangesMap)
         {
@@ -105,6 +108,10 @@ namespace Gitic
             }
         }
 
+        /// <summary>
+        /// Cleans a symbol extracted from hunk headers by stripping suffixes and decorators.
+        /// Public to support direct testing in PortedModulesTests.
+        /// </summary>
         public string CleanSymbol(string symbol)
         {
             string cleaned = symbol.Trim();
@@ -137,6 +144,10 @@ namespace Gitic
             return cleaned;
         }
 
+        /// <summary>
+        /// Normalizes git rename/move syntax inside numstat paths.
+        /// Public to support direct testing in PortedModulesTests.
+        /// </summary>
         public string NormalizeNumstatPath(string path)
         {
             string normalized = PathUtils.NormalizeGitPath(path);

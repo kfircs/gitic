@@ -13,13 +13,26 @@ namespace Gitic
         Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default);
     }
 
+    public interface ICliCommandFactory
+    {
+        ICliCommand CreateCommand(ParsedArgs parsed);
+    }
+
+    public class CliCommandFactoryImpl : ICliCommandFactory
+    {
+        public ICliCommand CreateCommand(ParsedArgs parsed)
+        {
+            return CliCommandFactory.CreateCommand(parsed);
+        }
+    }
+
     public static class CliCommandFactory
     {
         public static ICliCommand CreateCommand(ParsedArgs parsed)
         {
             if (string.Equals(parsed.Command, "help", StringComparison.OrdinalIgnoreCase))
             {
-                return new HelpCommand(parsed.HtmlPath);
+                return new HelpCommand(parsed.HelpText);
             }
 
             if (string.Equals(parsed.Command, "version", StringComparison.OrdinalIgnoreCase))

@@ -69,6 +69,9 @@ namespace Gitic
 
         public void AddCommit(GitCommitRecord commit, List<string> filesInCommit)
         {
+            string commitCategory = _classifier.Classify(commit.Message);
+            var participants = ParticipantsForCommit(commit);
+
             foreach (var change in commit.Files)
             {
                 string path = PathUtils.NormalizeGitPath(change.Path);
@@ -82,12 +85,11 @@ namespace Gitic
                 var fileAccumulator = GetOrCreateItem(_files, path);
                 var areaAccumulator = GetOrCreateItem(_areas, areaName);
                 
-                AddChangeToItem(fileAccumulator, path, change, commit);
-                AddChangeToItem(areaAccumulator, path, change, commit);
+                AddChangeToItem(fileAccumulator, path, change, commit, commitCategory);
+                AddChangeToItem(areaAccumulator, path, change, commit, commitCategory);
 
                 filesInCommit.Add(path);
 
-                var participants = ParticipantsForCommit(commit);
                 foreach (var participant in participants)
                 {
                     if (_identityRegistry.IsBot(participant.Identity))
@@ -173,7 +175,8 @@ namespace Gitic
             ItemAccumulator item,
             string path,
             GitFileChange change,
-            GitCommitRecord commit)
+            GitCommitRecord commit,
+            string commitCategory)
         {
             item.Touches += 1;
             item.Added += change.Added;
@@ -186,7 +189,6 @@ namespace Gitic
                 item.LastTouched = commit.Timestamp;
             }
 
-            string commitCategory = _classifier.Classify(commit.Message);
             if (commitCategory == "bugfix")
             {
                 item.BugFixTouches += 1;

@@ -8,12 +8,16 @@ using System.Text.RegularExpressions;
 
 namespace Gitic
 {
+    /// <summary>
+    /// Represents a deep interface for the main Git log parsing module.
+    /// Simplifies the surface area by only exposing high-leverage operations 
+    /// (building log arguments and parsing the complete log).
+    /// </summary>
     internal interface IGitParser
     {
         string CommitMarker { get; }
         string NumstatMarker { get; }
         List<GitCommitRecord> ParseGitLog(string output);
-        GitCommitRecord? ParseCommitRecord(string record);
         List<string> BuildGitLogArguments(GitHistoryExtractorOptions options);
     }
 
@@ -68,6 +72,18 @@ namespace Gitic
                 .ToList();
         }
 
+        private record GitCommitMetadata(
+            string Hash,
+            string Date,
+            string AuthorName,
+            string AuthorEmail,
+            string ParentsLine,
+            List<string> MessageLines);
+
+        /// <summary>
+        /// Parses an individual raw commit record containing metadata and patch details.
+        /// Retained as public/internal helper to ensure backward-compatibility if referenced.
+        /// </summary>
         public GitCommitRecord? ParseCommitRecord(string record)
         {
             int markerIndex = record.IndexOf(NumstatMarker);
@@ -78,33 +94,34 @@ namespace Gitic
 
             string metadataStr = record.Substring(0, markerIndex).TrimEnd();
             var metadata = metadataStr.Split('\n');
-            if (!TryParseMetadataLines(metadata, out string hash, out string date, out string authorName, out string authorEmail, out string parentsLine, out List<string> messageLines))
+            var commitMetadata = TryParseMetadataLines(metadata);
+            if (commitMetadata == null)
             {
                 return null;
             }
 
-            string message = string.Join("\n", messageLines).Trim();
+            string message = string.Join("\n", commitMetadata.MessageLines).Trim();
             
             string numstatText = record.Substring(markerIndex + NumstatMarker.Length);
             var files = _patchParser.ParseNumstatAndPatches(numstatText);
 
-            var parents = ParseParents(parentsLine);
+            var parents = ParseParents(commitMetadata.ParentsLine);
 
             long timestamp = 0;
-            if (DateTimeOffset.TryParse(date.Trim(), out var parsedDate))
+            if (DateTimeOffset.TryParse(commitMetadata.Date.Trim(), out var parsedDate))
             {
                 timestamp = parsedDate.ToUnixTimeMilliseconds();
             }
 
             return new GitCommitRecord
             {
-                Hash = hash.Trim(),
-                Date = date.Trim(),
+                Hash = commitMetadata.Hash.Trim(),
+                Date = commitMetadata.Date.Trim(),
                 Timestamp = timestamp,
                 Author = new GitIdentity
                 {
-                    Name = authorName.Trim(),
-                    Email = authorEmail.Trim()
+                    Name = commitMetadata.AuthorName.Trim(),
+                    Email = commitMetadata.AuthorEmail.Trim()
                 },
                 CoAuthors = ParseCoAuthors(message),
                 ParentCount = parents.Count,
@@ -114,6 +131,9 @@ namespace Gitic
             };
         }
 
+        /// <summary>
+        /// Parses co-author signatures (Co-authored-by:) from the commit message.
+        /// </summary>
         public List<GitIdentity> ParseCoAuthors(string message)
         {
             var identities = new List<GitIdentity>();
@@ -139,33 +159,21 @@ namespace Gitic
             return identities;
         }
 
-        private bool TryParseMetadataLines(
-            string[] metadata,
-            out string hash,
-            out string date,
-            out string authorName,
-            out string authorEmail,
-            out string parentsLine,
-            out List<string> messageLines)
+        private GitCommitMetadata? TryParseMetadataLines(string[] metadata)
         {
             if (metadata.Length < 5)
             {
-                hash = string.Empty;
-                date = string.Empty;
-                authorName = string.Empty;
-                authorEmail = string.Empty;
-                parentsLine = string.Empty;
-                messageLines = new List<string>();
-                return false;
+                return null;
             }
 
-            hash = metadata[0];
-            date = metadata[1];
-            authorName = metadata[2];
-            authorEmail = metadata[3];
-            parentsLine = metadata[4];
-            messageLines = metadata.Skip(5).ToList();
-            return true;
+            return new GitCommitMetadata(
+                Hash: metadata[0],
+                Date: metadata[1],
+                AuthorName: metadata[2],
+                AuthorEmail: metadata[3],
+                ParentsLine: metadata[4],
+                MessageLines: metadata.Skip(5).ToList()
+            );
         }
 
         private static List<string> ParseParents(string parentsLine) =>
