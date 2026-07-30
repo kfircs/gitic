@@ -156,11 +156,5 @@ namespace Gitic
             string stdout = await _executor.RunAsync(args.ToArray(), _repoRoot, cancellationToken);
             return _parser.ParseGitLog(stdout);
         }
-
-        public async Task<GitCommitGraph> GetCommitGraphAsync(GitHistoryExtractorOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            var history = await ExtractHistoryAsync(options, cancellationToken);
-            return new GitCommitGraph(history);
-        }
     }
 }
