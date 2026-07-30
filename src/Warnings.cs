@@ -4,6 +4,24 @@ using System.Linq;
 
 namespace Gitic
 {
+    public static class Warnings
+    {
+        public static int GetSeverityOrder(string severity)
+        {
+            if (string.Equals(severity, "Critical", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(severity, "Error", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(severity, "Failure", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+            if (string.Equals(severity, "Warning", StringComparison.OrdinalIgnoreCase))
+            {
+                return 2;
+            }
+            return 3;
+        }
+    }
+
     public class WarningContext
     {
         public List<EmailCollision>? EmailCollisions { get; set; }
@@ -272,7 +290,7 @@ namespace Gitic
             return list
                 .GroupBy(d => new { d.Code, d.Message })
                 .Select(g => g.First())
-                .OrderBy(d => GetSeverityOrder(d.Severity))
+                .OrderBy(d => Warnings.GetSeverityOrder(d.Severity))
                 .ThenBy(d => d.Code)
                 .ThenBy(d => d.Message)
                 .ToList();
@@ -283,21 +301,6 @@ namespace Gitic
             if (reporter == null) return;
             var diagnostics = CollectDiagnostics(context, existingWarnings);
             reporter.WriteDiagnostics(diagnostics, quiet);
-        }
-
-        private int GetSeverityOrder(string severity)
-        {
-            if (string.Equals(severity, "Critical", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(severity, "Error", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(severity, "Failure", StringComparison.OrdinalIgnoreCase))
-            {
-                return 1;
-            }
-            if (string.Equals(severity, "Warning", StringComparison.OrdinalIgnoreCase))
-            {
-                return 2;
-            }
-            return 3;
         }
 
         private static string SafeSubstring(string? str, int startIndex)

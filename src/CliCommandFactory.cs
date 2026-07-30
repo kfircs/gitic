@@ -293,7 +293,7 @@ Options:
                 {
                     var grouped = diagnosticsToShow
                         .GroupBy(d => d.Severity.ToUpperInvariant())
-                        .OrderBy(g => GetSeverityOrder(g.Key));
+                        .OrderBy(g => Warnings.GetSeverityOrder(g.Key));
 
                     foreach (var group in grouped)
                     {
@@ -317,21 +317,6 @@ Options:
             }
 
             return Cli.CliSuccess(tableOutput, stderrOutput);
-        }
-
-        private int GetSeverityOrder(string severity)
-        {
-            if (string.Equals(severity, "Critical", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(severity, "Error", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(severity, "Failure", StringComparison.OrdinalIgnoreCase))
-            {
-                return 1;
-            }
-            if (string.Equals(severity, "Warning", StringComparison.OrdinalIgnoreCase))
-            {
-                return 2;
-            }
-            return 3;
         }
     }
 
