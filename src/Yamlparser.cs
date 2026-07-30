@@ -4,21 +4,6 @@ using System.Text.RegularExpressions;
 
 namespace Gitic
 {
-    public class ConfigValidationError : Exception
-    {
-        public List<string> Details { get; }
-
-        public ConfigValidationError(List<string> details) : base(string.Join("\n", details))
-        {
-            Details = details;
-        }
-
-        public ConfigValidationError(string message) : base(message)
-        {
-            Details = new List<string> { message };
-        }
-    }
-
     public class YamlLine
     {
         public int Indent { get; set; }
