@@ -10,6 +10,7 @@ namespace Gitic
     internal interface IIdentityKeyGenerator
     {
         string IdentityKey(GitIdentity identity);
+        string IdentityKey(string name, string email);
     }
 
     internal class DefaultIdentityKeyGenerator : IIdentityKeyGenerator
@@ -17,9 +18,14 @@ namespace Gitic
         public string IdentityKey(GitIdentity identity)
         {
             if (identity == null) return string.Empty;
-            string name = identity.Name?.ToLowerInvariant() ?? string.Empty;
-            string email = identity.Email?.ToLowerInvariant() ?? string.Empty;
-            return $"{name} <{email}>";
+            return IdentityKey(identity.Name, identity.Email);
+        }
+
+        public string IdentityKey(string name, string email)
+        {
+            string normalizedName = name?.ToLowerInvariant() ?? string.Empty;
+            string normalizedEmail = email?.ToLowerInvariant() ?? string.Empty;
+            return $"{normalizedName} <{normalizedEmail}>";
         }
     }
 
@@ -37,7 +43,9 @@ namespace Gitic
 
         public static string IdentityKey(string name, string email)
         {
-            return IdentityKeyGenerator.Default.IdentityKey(new GitIdentity { Name = name, Email = email });
+            string normalizedName = name?.ToLowerInvariant() ?? string.Empty;
+            string normalizedEmail = email?.ToLowerInvariant() ?? string.Empty;
+            return $"{normalizedName} <{normalizedEmail}>";
         }
 
         public static bool SameIdentity(GitIdentity left, GitIdentity right)
@@ -265,7 +273,7 @@ namespace Gitic
 
         public string IdentityKey(string name, string email)
         {
-            return _keyGenerator.IdentityKey(new GitIdentity { Name = name, Email = email });
+            return _keyGenerator.IdentityKey(name, email);
         }
 
         public GitIdentity ResolveAlias(GitIdentity identity)

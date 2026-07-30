@@ -380,6 +380,11 @@ namespace Gitic.Tests
             {
                 return identity.Name.ToLowerInvariant();
             }
+
+            public string IdentityKey(string name, string email)
+            {
+                return name?.ToLowerInvariant() ?? string.Empty;
+            }
         }
 
         [Fact]
