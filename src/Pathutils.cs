@@ -119,5 +119,28 @@ namespace Gitic
             }
             return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
+
+        public static string TruncatePath(string path, int maxLength)
+        {
+            if (string.IsNullOrEmpty(path) || path.Length <= maxLength)
+            {
+                return path;
+            }
+
+            if (maxLength <= 5)
+            {
+                return path.Substring(path.Length - maxLength);
+            }
+
+            int keepEnd = maxLength / 2;
+            int keepStart = maxLength - keepEnd - 3; // -3 for "..."
+
+            if (keepStart <= 0)
+            {
+                return "..." + path.Substring(path.Length - (maxLength - 3));
+            }
+
+            return path.Substring(0, keepStart) + "..." + path.Substring(path.Length - keepEnd);
+        }
     }
 }

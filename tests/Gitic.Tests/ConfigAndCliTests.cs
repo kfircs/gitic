@@ -712,10 +712,10 @@ bin/
         [Fact]
         public void TestTruncatePath_MiddleTruncation()
         {
-            Assert.Equal("src/foo/ba...z/MyClass.cs", CliTableRenderer.TruncatePath("src/foo/bar/baz/MyClass.cs", 25));
-            Assert.Equal("src/MyClass.cs", CliTableRenderer.TruncatePath("src/MyClass.cs", 25));
-            Assert.Equal("s", CliTableRenderer.TruncatePath("src/MyClass.cs", 1));
-            Assert.Equal("s.cs", CliTableRenderer.TruncatePath("src/MyClass.cs", 4));
+            Assert.Equal("src/foo/ba...z/MyClass.cs", PathUtils.TruncatePath("src/foo/bar/baz/MyClass.cs", 25));
+            Assert.Equal("src/MyClass.cs", PathUtils.TruncatePath("src/MyClass.cs", 25));
+            Assert.Equal("s", PathUtils.TruncatePath("src/MyClass.cs", 1));
+            Assert.Equal("s.cs", PathUtils.TruncatePath("src/MyClass.cs", 4));
         }
 
         [Fact]

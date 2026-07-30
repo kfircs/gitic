@@ -96,29 +96,6 @@ namespace Gitic
             return clean.Substring(0, length);
         }
 
-        public static string TruncatePath(string path, int maxLength)
-        {
-            if (string.IsNullOrEmpty(path) || path.Length <= maxLength)
-            {
-                return path;
-            }
-
-            if (maxLength <= 5)
-            {
-                return path.Substring(path.Length - maxLength);
-            }
-
-            int keepEnd = maxLength / 2;
-            int keepStart = maxLength - keepEnd - 3; // -3 for "..."
-
-            if (keepStart <= 0)
-            {
-                return "..." + path.Substring(path.Length - (maxLength - 3));
-            }
-
-            return path.Substring(0, keepStart) + "..." + path.Substring(path.Length - keepEnd);
-        }
-
         public IConsoleTableBuilder WithConsoleWidth(int width)
         {
             _consoleWidth = width;
@@ -302,7 +279,7 @@ namespace Gitic
                     // Truncate cell value if necessary
                     if (col.Truncation == TruncationStyle.Path)
                     {
-                        cell = TruncatePath(cell, width);
+                        cell = PathUtils.TruncatePath(cell, width);
                     }
                     else if (col.Truncation == TruncationStyle.Standard)
                     {
