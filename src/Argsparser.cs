@@ -220,10 +220,20 @@ Useful next steps:
             leadTimeCommand.Arguments.Add(leadTimeRepoPathArg);
             rootCommand.Subcommands.Add(leadTimeCommand);
 
+            var geReportRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+            var geReportCommand = new Command("ge-report", "Generate Gemini Enterprise Report in Markdown with SVGs");
+            geReportCommand.Arguments.Add(geReportRepoPathArg);
+            rootCommand.Subcommands.Add(geReportCommand);
+
             var configCommand = new Command("config", "Generate a starter config file");
             var actionArg = new Argument<string>("action") { Description = "The config action (e.g., init)", DefaultValueFactory = _ => "init" };
             configCommand.Arguments.Add(actionArg);
             rootCommand.Subcommands.Add(configCommand);
+
+            var wizardRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+            var wizardCommand = new Command("wizard", "Interactive TUI wizard to generate customized reports");
+            wizardCommand.Arguments.Add(wizardRepoPathArg);
+            rootCommand.Subcommands.Add(wizardCommand);
 
             var versionCommand = new Command("version", "Show version information");
             rootCommand.Subcommands.Add(versionCommand);
@@ -236,8 +246,9 @@ Useful next steps:
                     var lower = arg.ToLower();
                     if (lower == "hotspots" || lower == "areas" || lower == "contributors" || 
                         lower == "contributor" || lower == "report" || lower == "config" || lower == "version" || lower == "help" ||
-                        lower == "temporal-coupling" || lower == "lead-time")
+                        lower == "temporal-coupling" || lower == "lead-time" || lower == "ge-report" || lower == "--ge-report")
                     {
+                        if (lower == "--ge-report") return "ge-report";
                         return lower;
                     }
                 }
@@ -388,6 +399,16 @@ Useful next steps:
             else if (commandName == "report")
             {
                 repoPath = parseResult.GetValue(reportRepoPathArg) ?? ".";
+                settings.IncludeMerges = true;
+            }
+            else if (commandName == "ge-report")
+            {
+                repoPath = parseResult.GetValue(geReportRepoPathArg) ?? ".";
+                settings.IncludeMerges = true;
+            }
+            else if (commandName == "wizard")
+            {
+                repoPath = parseResult.GetValue(wizardRepoPathArg) ?? ".";
                 settings.IncludeMerges = true;
             }
             else if (commandName == "contributor")

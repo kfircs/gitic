@@ -70,6 +70,11 @@ namespace Gitic
                 return new ReportCommand(parsed);
             }
 
+            if (string.Equals(parsed.Command, "wizard", StringComparison.OrdinalIgnoreCase))
+            {
+                return new WizardCommand(parsed);
+            }
+
             if (string.Equals(parsed.Command, "temporal-coupling", StringComparison.OrdinalIgnoreCase))
             {
                 return new TemporalCouplingCommand(parsed);
@@ -78,6 +83,11 @@ namespace Gitic
             if (string.Equals(parsed.Command, "lead-time", StringComparison.OrdinalIgnoreCase))
             {
                 return new LeadTimeCommand(parsed);
+            }
+
+            if (string.Equals(parsed.Command, "ge-report", StringComparison.OrdinalIgnoreCase))
+            {
+                return new GeReportCommand(parsed);
             }
 
             throw new CommandLineParseError($"Unknown command: {parsed.Command}");
@@ -487,6 +497,21 @@ Options:
             string reportOutput = outputSb.ToString();
             reporter?.Write(reportOutput);
             return Cli.CliSuccess(reportOutput);
+        }
+    }
+
+    public class GeReportCommand : BaseAnalysisCommand
+    {
+        public GeReportCommand(ParsedArgs parsed) : base(parsed) { }
+        protected override AnalysisCommand CommandType => AnalysisCommand.GeReport;
+
+        protected override async Task<CliResult> ProcessResultAsync(AnalysisResult result, IConsoleReporter? reporter, CancellationToken cancellationToken = default)
+        {
+            var geRenderer = new GeReportRenderer();
+            string mdContent = await geRenderer.RenderAsync(result, cancellationToken);
+            
+            reporter?.Write(mdContent);
+            return Cli.CliSuccess(mdContent);
         }
     }
 }

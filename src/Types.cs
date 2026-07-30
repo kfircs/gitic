@@ -16,15 +16,17 @@ namespace Gitic
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum AnalysisCommand
     {
+        Unknown,
         Hotspots,
         Areas,
         Contributors,
         Contributor,
         Report,
         TemporalCoupling,
-        LeadTime
+        LeadTime,
+        GeReport,
+        Wizard
     }
-
     public class AnalysisSettings
     {
         [JsonPropertyName("json")]
@@ -437,6 +439,93 @@ namespace Gitic
         }
     }
 
+    public class CuratedReports
+    {
+        [JsonPropertyName("work_classification")]
+        public WorkClassificationMetrics WorkClassification { get; set; } = new();
+
+        [JsonPropertyName("onboarding")]
+        public List<DeveloperOnboardingMetric> Onboarding { get; set; } = new();
+
+        [JsonPropertyName("code_rot")]
+        public CodeRotMetric CodeRot { get; set; } = new();
+
+        [JsonPropertyName("review_collaboration")]
+        public ReviewCollaborationMetric ReviewCollaboration { get; set; } = new();
+
+        [JsonPropertyName("ai_code_strain")]
+        public AiCodeStrainMetric AiCodeStrain { get; set; } = new();
+    }
+
+    public class WorkClassificationMetrics
+    {
+        [JsonPropertyName("features")]
+        public int Features { get; set; }
+
+        [JsonPropertyName("bugs")]
+        public int Bugs { get; set; }
+
+        [JsonPropertyName("technical_debt")]
+        public int TechnicalDebt { get; set; }
+
+        [JsonPropertyName("chores")]
+        public int Chores { get; set; }
+
+        [JsonPropertyName("unclassified")]
+        public int Unclassified { get; set; }
+    }
+
+    public class DeveloperOnboardingMetric
+    {
+        [JsonPropertyName("developer")]
+        public string Developer { get; set; } = string.Empty;
+
+        [JsonPropertyName("first_commit_date")]
+        public string FirstCommitDate { get; set; } = string.Empty;
+
+        [JsonPropertyName("days_active")]
+        public int DaysActive { get; set; }
+    }
+
+    public class CodeRotMetric
+    {
+        [JsonPropertyName("zombie_files")]
+        public int ZombieFileCount { get; set; }
+
+        [JsonPropertyName("zombie_lines")]
+        public int ZombieLines { get; set; }
+    }
+
+    public class ReviewCollaborationMetric
+    {
+        [JsonPropertyName("reviewer_silos")]
+        public int ReviewerSilos { get; set; }
+
+        [JsonPropertyName("collaboration_pairs")]
+        public List<ReviewPair> Pairs { get; set; } = new();
+    }
+
+    public class ReviewPair
+    {
+        [JsonPropertyName("author")]
+        public string Author { get; set; } = string.Empty;
+
+        [JsonPropertyName("reviewer")]
+        public string Reviewer { get; set; } = string.Empty;
+
+        [JsonPropertyName("pr_count")]
+        public int PrCount { get; set; }
+    }
+
+    public class AiCodeStrainMetric
+    {
+        [JsonPropertyName("high_volume_commits")]
+        public int HighVolumeCommits { get; set; }
+
+        [JsonPropertyName("review_velocity_warning")]
+        public bool ReviewVelocityWarning { get; set; }
+    }
+
     public class AnalysisResult
     {
         [JsonPropertyName("schema_version")]
@@ -471,6 +560,9 @@ namespace Gitic
 
         [JsonPropertyName("lead_times")]
         public LeadTimesInfo? LeadTimes { get; set; }
+
+        [JsonPropertyName("curated_reports")]
+        public CuratedReports? CuratedReports { get; set; }
 
         [JsonPropertyName("configuration")]
         public AnalysisConfiguration Configuration { get; set; } = new();

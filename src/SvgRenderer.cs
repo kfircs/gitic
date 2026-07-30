@@ -336,6 +336,178 @@ namespace Gitic
             sb.AppendLine("</svg>");
             return sb.ToString();
         }
+        public static string GenerateGeTreemapSvg(AnalysisResult result)
+        {
+            var sb = new StringBuilder();
+            int width = 800;
+            int height = 500;
+            sb.AppendLine($"<svg viewBox=\"0 0 {width} {height}\" width=\"100%\" height=\"auto\" xmlns=\"http://www.w3.org/2000/svg\" style=\"background-color:#0f172a; border-radius:8px; border:1px solid #1e293b; font-family:system-ui, -apple-system, sans-serif;\">");
+
+            sb.AppendLine("  <defs>");
+            sb.AppendLine("    <linearGradient id=\"treeGrad\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">");
+            sb.AppendLine("      <stop offset=\"0%\" stop-color=\"#1e293b\" stop-opacity=\"0.8\" />");
+            sb.AppendLine("      <stop offset=\"100%\" stop-color=\"#0f172a\" stop-opacity=\"0.8\" />");
+            sb.AppendLine("    </linearGradient>");
+            sb.AppendLine("  </defs>");
+
+            sb.AppendLine("  <rect width=\"100%\" height=\"100%\" fill=\"url(#treeGrad)\" rx=\"8\" />");
+            sb.AppendLine($"  <text x=\"20\" y=\"30\" fill=\"#f1f5f9\" font-size=\"14\" font-weight=\"bold\">📂 Codebase Treemap: Modular &amp; Team Insights</text>");
+            sb.AppendLine($"  <text x=\"20\" y=\"50\" fill=\"#94a3b8\" font-size=\"11\">Size = File Count | Color = Ownership Concentration (Red = Single Owner/Bus Factor, Green = Shared)</text>");
+
+            // Simple Treemap Layout Algorithm for areas
+            var areas = result.Areas.Where(a => a.FileCount > 0).OrderByDescending(a => a.FileCount).Take(20).ToList();
+            if (areas.Count == 0)
+            {
+                sb.AppendLine("  <text x=\"400\" y=\"250\" fill=\"#64748b\" font-size=\"14\" text-anchor=\"middle\">No directory areas found.</text>");
+            }
+            else
+            {
+                double totalFiles = areas.Sum(a => a.FileCount);
+                double currentX = 20;
+                double currentY = 70;
+                double currentWidth = width - 40;
+                double currentHeight = height - 90;
+                
+                foreach (var area in areas)
+                {
+                    double ratio = area.FileCount / totalFiles;
+                    double areaArea = ratio * (currentWidth * currentHeight);
+                    
+                    bool isVerticalSplit = currentWidth >= currentHeight;
+                    
+                    double rectW, rectH;
+                    if (isVerticalSplit)
+                    {
+                        rectW = areaArea / currentHeight;
+                        rectH = currentHeight;
+                    }
+                    else
+                    {
+                        rectW = currentWidth;
+                        rectH = areaArea / currentWidth;
+                    }
+
+                    // Avoid floating point glitches
+                    if (rectW < 1) rectW = 1;
+                    if (rectH < 1) rectH = 1;
+                    
+                    // Ownership bus factor logic
+                    double topOwnership = 0.0;
+                    if (area.Contributors != null && area.Contributors.Count > 0)
+                    {
+                        topOwnership = area.Contributors.Max(c => c.ActivityShare);
+                    }
+                    
+                    string color;
+                    if (topOwnership > 0.8) color = "#ef4444"; // Red: High bus factor
+                    else if (topOwnership > 0.5) color = "#f59e0b"; // Orange: Med bus factor
+                    else color = "#10b981"; // Green: Shared ownership
+
+                    sb.AppendLine($"  <rect x=\"{currentX:F1}\" y=\"{currentY:F1}\" width=\"{rectW:F1}\" height=\"{rectH:F1}\" fill=\"{color}\" fill-opacity=\"0.6\" stroke=\"#0f172a\" stroke-width=\"2\">");
+                    string topOwnerName = area.Contributors?.OrderByDescending(c => c.ActivityShare).FirstOrDefault()?.Name ?? "Unknown";
+                    string tooltip = $"{area.Area}\nFiles: {area.FileCount}\nTop Owner: {topOwnerName} ({topOwnership*100:F0}%)";
+                    sb.AppendLine($"    <title>{EscapeXml(tooltip)}</title>");
+                    sb.AppendLine("  </rect>");
+
+                    if (rectW > 50 && rectH > 30)
+                    {
+                        string label = area.Area;
+                        if (label.Length * 6 > rectW) label = label.Substring(0, Math.Max(0, (int)(rectW / 6))) + "..";
+                        sb.AppendLine($"  <text x=\"{currentX + 5:F1}\" y=\"{currentY + 15:F1}\" fill=\"#f8fafc\" font-size=\"10\" font-weight=\"bold\" pointer-events=\"none\">{EscapeXml(label)}</text>");
+                    }
+
+                    if (isVerticalSplit)
+                    {
+                        currentX += rectW;
+                        currentWidth -= rectW;
+                    }
+                    else
+                    {
+                        currentY += rectH;
+                        currentHeight -= rectH;
+                    }
+                    totalFiles -= area.FileCount;
+                }
+            }
+            
+            sb.AppendLine("</svg>");
+            return sb.ToString();
+        }
+
+        public static string GenerateGeTemporalCouplingSvg(AnalysisResult result)
+        {
+            var sb = new StringBuilder();
+            int width = 800;
+            int height = 500;
+            sb.AppendLine($"<svg viewBox=\"0 0 {width} {height}\" width=\"100%\" height=\"auto\" xmlns=\"http://www.w3.org/2000/svg\" style=\"background-color:#0f172a; border-radius:8px; border:1px solid #1e293b; font-family:system-ui, -apple-system, sans-serif;\">");
+            
+            sb.AppendLine("  <rect width=\"100%\" height=\"100%\" fill=\"#0f172a\" rx=\"8\" />");
+            sb.AppendLine($"  <text x=\"20\" y=\"30\" fill=\"#f1f5f9\" font-size=\"14\" font-weight=\"bold\">🔗 Temporal / Change Coupling Node Graph</text>");
+            sb.AppendLine($"  <text x=\"20\" y=\"50\" fill=\"#94a3b8\" font-size=\"11\">Files that repeatedly change together (Nodes = Files, Line Thickness = Coupling Degree)</text>");
+
+            if (result.TemporalCoupling == null || result.TemporalCoupling.Count == 0)
+            {
+                sb.AppendLine("  <text x=\"400\" y=\"250\" fill=\"#64748b\" font-size=\"14\" text-anchor=\"middle\">No temporal coupling data found.</text>");
+            }
+            else
+            {
+                var couplings = result.TemporalCoupling.Take(30).ToList();
+                var nodes = new HashSet<string>();
+                foreach(var c in couplings)
+                {
+                    nodes.Add(c.FileA);
+                    nodes.Add(c.FileB);
+                }
+
+                var nodeList = nodes.ToList();
+                var positions = new Dictionary<string, (double x, double y)>();
+                
+                double centerX = width / 2.0;
+                double centerY = (height + 60) / 2.0;
+                double radiusX = width * 0.4;
+                double radiusY = height * 0.35;
+                
+                for(int i = 0; i < nodeList.Count; i++)
+                {
+                    double angle = (i * 2 * Math.PI) / nodeList.Count;
+                    double x = centerX + radiusX * Math.Cos(angle);
+                    double y = centerY + radiusY * Math.Sin(angle);
+                    positions[nodeList[i]] = (x, y);
+                }
+
+                // Draw edges
+                foreach(var c in couplings)
+                {
+                    if(positions.TryGetValue(c.FileA, out var pA) && positions.TryGetValue(c.FileB, out var pB))
+                    {
+                        double strokeWidth = 1.0 + (c.CouplingDegree * 5.0);
+                        double opacity = 0.3 + (c.CouplingDegree * 0.5);
+                        sb.AppendLine($"  <line x1=\"{pA.x:F1}\" y1=\"{pA.y:F1}\" x2=\"{pB.x:F1}\" y2=\"{pB.y:F1}\" stroke=\"#ef4444\" stroke-width=\"{strokeWidth:F1}\" opacity=\"{opacity:F2}\">");
+                        string tooltip = $"{c.FileA} ↔ {c.FileB}\nCoupling Degree: {c.CouplingDegree*100:F1}%\nShared Commits: {c.SharedCommits}";
+                        sb.AppendLine($"    <title>{EscapeXml(tooltip)}</title>");
+                        sb.AppendLine("  </line>");
+                    }
+                }
+
+                // Draw nodes
+                foreach(var n in nodeList)
+                {
+                    var p = positions[n];
+                    sb.AppendLine($"  <circle cx=\"{p.x:F1}\" cy=\"{p.y:F1}\" r=\"6\" fill=\"#3b82f6\" stroke=\"#1e293b\" stroke-width=\"2\">");
+                    sb.AppendLine($"    <title>{EscapeXml(n)}</title>");
+                    sb.AppendLine("  </circle>");
+                    
+                    string label = Path.GetFileName(n);
+                    double labelOffset = 10;
+                    string textAnchor = p.x > centerX ? "start" : "end";
+                    double tx = p.x > centerX ? p.x + labelOffset : p.x - labelOffset;
+                    sb.AppendLine($"  <text x=\"{tx:F1}\" y=\"{p.y + 4:F1}\" fill=\"#f8fafc\" font-size=\"9\" text-anchor=\"{textAnchor}\">{EscapeXml(label)}</text>");
+                }
+            }
+            
+            sb.AppendLine("</svg>");
+            return sb.ToString();
+        }
     }
 
     public class SvgSummaryRenderer : IReportRenderer

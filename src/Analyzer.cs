@@ -75,6 +75,8 @@ namespace Gitic
             var provider = input.FileStatsProvider ?? new DiskFileStatsProvider();
             var fileMetrics = await provider.EnrichFileMetricsAsync(input.RepoRoot, pipelineResult.Files);
 
+            var curatedReportsEngine = new CuratedReportsEngine();
+
             var result = new AnalysisResult
             {
                 SchemaVersion = "1.0",
@@ -95,6 +97,7 @@ namespace Gitic
                 Automation = pipelineResult.Automation,
                 TemporalCoupling = pipelineResult.TemporalCouplings,
                 LeadTimes = pipelineResult.LeadTimes,
+                CuratedReports = curatedReportsEngine.Calculate(commits, fileMetrics, pipelineResult.LeadTimes),
                 Configuration = new AnalysisConfiguration
                 {
                     Scoring = new ScoringConfiguration
