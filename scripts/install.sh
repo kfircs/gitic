@@ -3,10 +3,16 @@
 
 set -e
 
+# Get the directory of this script, then the project root
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+cd "$PROJECT_ROOT"
+
 echo "Building and packing Gitic..."
 dotnet pack -c Release
 
-PACKAGE_PATH="../nupkg"
+PACKAGE_PATH="$PROJECT_ROOT/nupkg"
 VERSION="0.1.0"
 
 echo "Uninstalling any existing global tool..."
