@@ -40,6 +40,20 @@ namespace Gitic
         public bool HasDiagnostics => (Diagnostics?.Count ?? 0) > 0;
     }
 
+    public class PipelineDependencies
+    {
+        public ITemporalCouplingEngine? TemporalCouplingEngine { get; set; }
+        public ILeadTimeEngine? LeadTimeEngine { get; set; }
+        public IMetricProcessorService? MetricProcessorService { get; set; }
+        public IFamiliarityScoringEngine? ScoringEngine { get; set; }
+        public IWarningCollector? WarningCollector { get; set; }
+        public IIdentityRegistry? IdentityRegistry { get; set; }
+        public IChangeAccumulator? Accumulator { get; set; }
+        public Func<HashSet<string>, List<ExcludeRule>, bool, string?, IPathClassifier>? PathClassifierFactory { get; set; }
+        public Func<GiticConfig, AnalysisSettings, IPathClassifier, IIdentityRegistry, IChangeAccumulator>? ChangeAccumulatorFactory { get; set; }
+        public Func<GiticConfig, HashSet<string>, int, IFamiliarityScoringEngine>? ScoringEngineFactory { get; set; }
+    }
+
     public class AnalysisPipeline : IAnalysisPipeline
     {
         private readonly ITemporalCouplingEngine? _temporalCouplingEngine;
@@ -53,28 +67,19 @@ namespace Gitic
         private readonly Func<GiticConfig, AnalysisSettings, IPathClassifier, IIdentityRegistry, IChangeAccumulator> _changeAccumulatorFactory;
         private readonly Func<GiticConfig, HashSet<string>, int, IFamiliarityScoringEngine> _scoringEngineFactory;
 
-        public AnalysisPipeline(
-            ITemporalCouplingEngine? temporalCouplingEngine = null,
-            ILeadTimeEngine? leadTimeEngine = null,
-            IMetricProcessorService? metricProcessorService = null,
-            IFamiliarityScoringEngine? scoringEngine = null,
-            IWarningCollector? warningCollector = null,
-            IIdentityRegistry? identityRegistry = null,
-            IChangeAccumulator? accumulator = null,
-            Func<HashSet<string>, List<ExcludeRule>, bool, string?, IPathClassifier>? pathClassifierFactory = null,
-            Func<GiticConfig, AnalysisSettings, IPathClassifier, IIdentityRegistry, IChangeAccumulator>? changeAccumulatorFactory = null,
-            Func<GiticConfig, HashSet<string>, int, IFamiliarityScoringEngine>? scoringEngineFactory = null)
+        public AnalysisPipeline(PipelineDependencies? deps = null)
         {
-            _temporalCouplingEngine = temporalCouplingEngine;
-            _leadTimeEngine = leadTimeEngine ?? new LeadTimeEngine();
-            _metricProcessorService = metricProcessorService ?? new MetricProcessorService();
-            _scoringEngine = scoringEngine;
-            _warningCollector = warningCollector ?? new WarningCollector();
-            _identityRegistry = identityRegistry;
-            _accumulator = accumulator;
-            _pathClassifierFactory = pathClassifierFactory ?? ((headFiles, excludes, includeDeleted, requestedPath) => new PathClassifier(headFiles, excludes, includeDeleted, requestedPath));
-            _changeAccumulatorFactory = changeAccumulatorFactory ?? ((config, settings, pathClassifier, identityRegistry) => new ChangeAccumulator(config, settings, pathClassifier, identityRegistry));
-            _scoringEngineFactory = scoringEngineFactory ?? ((config, activeContributorKeys, depth) => new FamiliarityScoringEngine(config, activeContributorKeys, depth));
+            deps ??= new PipelineDependencies();
+            _temporalCouplingEngine = deps.TemporalCouplingEngine;
+            _leadTimeEngine = deps.LeadTimeEngine ?? new LeadTimeEngine();
+            _metricProcessorService = deps.MetricProcessorService ?? new MetricProcessorService();
+            _scoringEngine = deps.ScoringEngine;
+            _warningCollector = deps.WarningCollector ?? new WarningCollector();
+            _identityRegistry = deps.IdentityRegistry;
+            _accumulator = deps.Accumulator;
+            _pathClassifierFactory = deps.PathClassifierFactory ?? ((headFiles, excludes, includeDeleted, requestedPath) => new PathClassifier(headFiles, excludes, includeDeleted, requestedPath));
+            _changeAccumulatorFactory = deps.ChangeAccumulatorFactory ?? ((config, settings, pathClassifier, identityRegistry) => new ChangeAccumulator(config, settings, pathClassifier, identityRegistry));
+            _scoringEngineFactory = deps.ScoringEngineFactory ?? ((config, activeContributorKeys, depth) => new FamiliarityScoringEngine(config, activeContributorKeys, depth));
         }
 
         public AnalysisPipelineResult Run(

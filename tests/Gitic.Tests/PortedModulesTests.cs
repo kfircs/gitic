@@ -1922,7 +1922,7 @@ __GITIC_NUMSTAT__
                 var command = AnalysisCommand.Hotspots;
 
                 var mockAccumulator = new MockChangeAccumulator();
-                var pipeline = new AnalysisPipeline(accumulator: mockAccumulator);
+                var pipeline = new AnalysisPipeline(new PipelineDependencies { Accumulator = mockAccumulator });
 
                 var result = pipeline.Run(
                     commits,
@@ -2629,7 +2629,7 @@ __GITIC_NUMSTAT__
             public void TestAnalysisPipeline_UsesInjectedScoringEngine()
             {
                 var mockScoring = new MockFamiliarityScoringEngine();
-                var pipeline = new AnalysisPipeline(scoringEngine: mockScoring);
+                var pipeline = new AnalysisPipeline(new PipelineDependencies { ScoringEngine = mockScoring });
                 
                 var commits = new List<GitCommitRecord>
                 {
@@ -2658,7 +2658,7 @@ __GITIC_NUMSTAT__
             public void TestAnalysisPipeline_UsesInjectedWarningCollector()
             {
                 var mockWarningCollector = new MockWarningCollector();
-                var pipeline = new AnalysisPipeline(warningCollector: mockWarningCollector);
+                var pipeline = new AnalysisPipeline(new PipelineDependencies { WarningCollector = mockWarningCollector });
                 
                 var commits = new List<GitCommitRecord>
                 {
@@ -2683,7 +2683,7 @@ __GITIC_NUMSTAT__
             public void TestAnalysisPipeline_UsesInjectedIdentityRegistry()
             {
                 var mockRegistry = new MockIdentityRegistry();
-                var pipeline = new AnalysisPipeline(identityRegistry: mockRegistry);
+                var pipeline = new AnalysisPipeline(new PipelineDependencies { IdentityRegistry = mockRegistry });
                 
                 var commits = new List<GitCommitRecord>
                 {
