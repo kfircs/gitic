@@ -206,16 +206,14 @@ Options:
 
         protected abstract AnalysisCommand CommandType { get; }
 
-        public async Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
+        private async Task<AnalysisResult> ExecuteAnalysisAsync(IConsoleReporter? reporter, CancellationToken cancellationToken)
         {
             var gitClient = new GitClient(Parsed.RepoPath);
             string? repoRoot = await gitClient.GetRepositoryRootAsync(cancellationToken);
             if (repoRoot == null)
             {
-                string errMsg = $"Path {Parsed.RepoPath} is not inside a Git repository.\n" +
-                                "Run gitic from a Git worktree or pass the path to one.\n";
-                reporter?.WriteError(errMsg);
-                return Cli.CliFailure(errMsg);
+                throw new InvalidOperationException($"Path {Parsed.RepoPath} is not inside a Git repository.\n" +
+                                "Run gitic from a Git worktree or pass the path to one.\n");
             }
 
             bool isInteractiveHuman = !Console.IsErrorRedirected &&
@@ -237,10 +235,20 @@ Options:
             };
 
             IRepositoryAnalyzer analyzer = new RepositoryAnalyzer();
+            return await analyzer.AnalyzeAsync(input, cancellationToken);
+        }
+
+        public async Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
+        {
             AnalysisResult result;
             try
             {
-                result = await analyzer.AnalyzeAsync(input, cancellationToken);
+                result = await ExecuteAnalysisAsync(reporter, cancellationToken);
+            }
+            catch (InvalidOperationException ex)
+            {
+                reporter?.WriteError(ex.Message);
+                return Cli.CliFailure(ex.Message);
             }
             catch (ConfigValidationError error)
             {

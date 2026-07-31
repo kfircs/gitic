@@ -79,16 +79,7 @@ namespace Gitic
                 return Cli.CliFailure($"Path {_parsed.RepoPath} is not inside a Git repository.");
             }
 
-            var analyzer = new RepositoryAnalyzer();
-            var input = new AnalyzeInput
-            {
-                RepoRoot = repoRoot,
-                Command = AnalysisCommand.GeReport, // using GeReport to trigger all needed data gathering
-                Settings = _parsed.Settings
-            };
-            input.Settings.IncludeMerges = true;
-
-            var result = await analyzer.AnalyzeAsync(input, cancellationToken);
+            var result = await ExecuteAnalysisAsync(repoRoot, cancellationToken);
 
             string extension = formatType == 0 ? "md" : "html";
             string filename = $"gitic_report_{DateTime.Now:yyyyMMdd_HHmmss}.{extension}";
@@ -104,6 +95,20 @@ namespace Gitic
 
             Console.WriteLine($"\n✅ Report generated successfully at: {targetPath}");
             return Cli.CliSuccess($"Report generated at {targetPath}");
+        }
+
+        private async Task<AnalysisResult> ExecuteAnalysisAsync(string repoRoot, CancellationToken cancellationToken)
+        {
+            var analyzer = new RepositoryAnalyzer();
+            var input = new AnalyzeInput
+            {
+                RepoRoot = repoRoot,
+                Command = AnalysisCommand.GeReport, // using GeReport to trigger all needed data gathering
+                Settings = _parsed.Settings
+            };
+            input.Settings.IncludeMerges = true;
+
+            return await analyzer.AnalyzeAsync(input, cancellationToken);
         }
 
         private string GenerateCustomMarkdown(AnalysisResult result, List<string> sections)
