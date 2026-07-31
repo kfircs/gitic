@@ -1,0 +1,116 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags (e.g. v0.1.0)
+
+jobs:
+  gate:
+    name: Run Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          include-prerelease: true
+      - run: dotnet restore Gitic.slnx
+      - run: dotnet test Gitic.slnx -c Release
+
+  publish-binaries:
+    name: Compile & Publish Binaries
+    needs: gate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            output_name: gitic
+          - os: macos-latest
+            rid: osx-x64
+            output_name: gitic-osx-intel
+          - os: macos-latest
+            rid: osx-arm64
+            output_name: gitic-osx-arm
+          - os: windows-latest
+            rid: win-x64
+            output_name: gitic.exe
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          include-prerelease: true
+
+      - name: Publish Single File Binary
+        run: |
+          dotnet publish Gitic.csproj -c Release -r ${{ matrix.rid }} -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -o ./publish
+
+      - name: Rename Binary
+        shell: bash
+        run: |
+          mv ./publish/${{ matrix.output_name == 'gitic' && 'gitic' || matrix.output_name == 'gitic.exe' && 'gitic.exe' || 'gitic' }} ./publish/${{ matrix.output_name }} || true
+
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}
+          path: ./publish/${{ matrix.output_name }}
+
+  publish-nuget:
+    name: Build NuGet Package
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          include-prerelease: true
+
+      - name: Pack NuGet Tool
+        run: dotnet pack Gitic.csproj -c Release
+
+      - name: Upload NuGet Package Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: ./nupkg/*.nupkg
+
+  create-release:
+    name: Create GitHub Release
+    needs: [publish-binaries, publish-nuget]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./release-artifacts
+
+      - name: Flatten Artifacts Structure
+        run: |
+          mkdir ./out
+          find ./release-artifacts -type f -exec cp {} ./out/ \;
+          ls -l ./out
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./out/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to NuGet.org
+        if: env.NUGET_API_KEY != ''
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push "./out/*.nupkg" --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate

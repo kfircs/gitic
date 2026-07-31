@@ -1,0 +1,38 @@
+name: 🐛 Bug Report
+description: Report a bug in Gitic to help us improve.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please fill out the details below.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide a clear and concise description of the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Explain how we can reproduce this.
+      placeholder: |
+        1. Run `gitic` in repo X
+        2. Select option Y...
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment Info
+      description: OS version, Shell, .NET version (if applicable).
+      placeholder: macOS 14.5, Zsh, .NET 10.0
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log Output or Screenshots
+      description: Paste any error messages, stack traces, or command outputs.
