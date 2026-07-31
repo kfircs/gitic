@@ -154,11 +154,11 @@ excludes:
         [Fact]
         public void TestCommandLineParser_Success()
         {
-            string[] args = { "hotspots", "--json", "--depth", "5", "--all-time", "/path/to/repo" };
+            string[] args = { "--json", "--depth", "5", "--all-time", "/path/to/repo" };
             var parser = new CommandLineParser(args);
             var parsed = parser.Parse();
 
-            Assert.Equal("hotspots", parsed.Command);
+            Assert.Equal("wizard", parsed.Command);
             Assert.True(parsed.Settings.Json);
             Assert.Equal(5, parsed.Settings.Depth);
             Assert.True(parsed.Settings.AllTime);
@@ -168,7 +168,7 @@ excludes:
         [Fact]
         public void TestCommandLineParser_DepthValidation()
         {
-            string[] args = { "hotspots", "--depth", "11" };
+            string[] args = { "--depth", "11" };
             var parser = new CommandLineParser(args);
             Assert.Throws<CommandLineParseError>(() => parser.Parse());
         }
@@ -176,17 +176,16 @@ excludes:
         [Fact]
         public void TestCommandLineValidator_IsCommand()
         {
-            // Valid commands (case-insensitive)
-            new CommandLineParser(new[] { "hotspots" }).Parse();
-            new CommandLineParser(new[] { "Hotspots" }).Parse();
-            new CommandLineParser(new[] { "areas" }).Parse();
-            new CommandLineParser(new[] { "contributors" }).Parse();
-            new CommandLineParser(new[] { "contributor", "some_contributor" }).Parse();
-            new CommandLineParser(new[] { "report" }).Parse();
-            new CommandLineParser(new[] { "config" }).Parse();
+            // Verifies that gitic parses with or without repo_path argument
+            var parsed1 = new CommandLineParser(new string[] { }).Parse();
+            Assert.Equal("wizard", parsed1.Command);
+            Assert.Equal(".", parsed1.RepoPath);
 
-            // Invalid commands
-            Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "unknown_command" }).Parse());
+            var parsed2 = new CommandLineParser(new[] { "/some/repo" }).Parse();
+            Assert.Equal("wizard", parsed2.Command);
+            Assert.Equal("/some/repo", parsed2.RepoPath);
+
+            // Empty or null argument errors are still thrown
             Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new string[] { "" }).Parse());
             Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new string[] { null! }).Parse());
         }
@@ -195,21 +194,21 @@ excludes:
         public void TestCommandLineValidator_ValidateDepth()
         {
             // Valid depth values
-            Assert.Equal(1, new CommandLineParser(new[] { "hotspots", "--depth", "1" }).Parse().Settings.Depth);
-            Assert.Equal(5, new CommandLineParser(new[] { "hotspots", "--depth", "5" }).Parse().Settings.Depth);
-            Assert.Equal(10, new CommandLineParser(new[] { "hotspots", "--depth", "10" }).Parse().Settings.Depth);
+            Assert.Equal(1, new CommandLineParser(new[] { "--depth", "1" }).Parse().Settings.Depth);
+            Assert.Equal(5, new CommandLineParser(new[] { "--depth", "5" }).Parse().Settings.Depth);
+            Assert.Equal(10, new CommandLineParser(new[] { "--depth", "10" }).Parse().Settings.Depth);
 
             // Invalid depth values
-            var ex1 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "0" }).Parse());
+            var ex1 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "--depth", "0" }).Parse());
             Assert.Equal("--depth must be an integer between 1 and 10.", ex1.Message);
 
-            var ex2 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "-3" }).Parse());
+            var ex2 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "--depth", "-3" }).Parse());
             Assert.Equal("--depth must be an integer between 1 and 10.", ex2.Message);
 
-            var ex3 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "notaninteger" }).Parse());
+            var ex3 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "--depth", "notaninteger" }).Parse());
             Assert.Equal("--depth must be an integer between 1 and 10.", ex3.Message);
 
-            var ex4 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "hotspots", "--depth", "11" }).Parse());
+            var ex4 = Assert.Throws<CommandLineParseError>(() => new CommandLineParser(new[] { "--depth", "11" }).Parse());
             Assert.Equal("--depth must be an integer between 1 and 10.", ex4.Message);
         }
 
@@ -260,34 +259,10 @@ excludes:
         [Fact]
         public async Task TestCli_RunCliAsync_HandlesExceptionGracefully()
         {
-            string repoPath = "sessions-db";
-            string current = Directory.GetCurrentDirectory();
-            while (!string.IsNullOrEmpty(current))
-            {
-                string candidate = Path.Combine(current, "sessions-db");
-                if (Directory.Exists(candidate) && Directory.Exists(Path.Combine(candidate, ".git")))
-                {
-                    repoPath = candidate;
-                    break;
-                }
-                
-                string? parent = Path.GetDirectoryName(current);
-                if (parent == null || parent == current) break;
-                
-                string siblingCandidate = Path.Combine(parent, "sessions-db");
-                if (Directory.Exists(siblingCandidate) && Directory.Exists(Path.Combine(siblingCandidate, ".git")))
-                {
-                    repoPath = siblingCandidate;
-                    break;
-                }
-                
-                current = parent;
-            }
-
-            string[] args = { "report", repoPath, "--html", "/nonexistent_directory_for_testing/report.html" };
+            string[] args = { "--depth", "11" };
             var result = await Cli.RunCliAsync(args);
-            Assert.Equal(1, result.ExitCode);
-            Assert.Contains("Error:", result.Stderr);
+            Assert.Equal(2, result.ExitCode);
+            Assert.Contains("--depth must be an integer between 1 and 10.", result.Stderr);
         }
 
         [Fact]
@@ -305,21 +280,10 @@ excludes:
 
             var runResult = await Cli.RunCliAsync(helpArgs);
             Assert.Equal(0, runResult.ExitCode);
-            Assert.Contains("Usage:", runResult.Stdout);
-            Assert.Contains("Commands:", runResult.Stdout);
+            Assert.Contains("Gitic Strategic Codebase Analysis", runResult.Stdout);
             Assert.Contains("Options:", runResult.Stdout);
-            Assert.Contains("temporal-coupling", runResult.Stdout);
-            Assert.Contains("lead-time", runResult.Stdout);
-
-            var tcArgs = new[] { "temporal-coupling", "." };
-            var tcParser = new CommandLineParser(tcArgs);
-            var tcParsed = tcParser.Parse();
-            Assert.Equal("temporal-coupling", tcParsed.Command);
-
-            var ltArgs = new[] { "lead-time", "." };
-            var ltParser = new CommandLineParser(ltArgs);
-            var ltParsed = ltParser.Parse();
-            Assert.Equal("lead-time", ltParsed.Command);
+            Assert.Contains("--since", runResult.Stdout);
+            Assert.Contains("--depth", runResult.Stdout);
         }
 
         [Fact]
@@ -552,8 +516,7 @@ bin/
             var reporter = new MockConsoleReporter();
             var runResult = await Cli.RunCliAsync(new string[0], reporter);
             Assert.Equal(2, runResult.ExitCode);
-            Assert.Contains("Gitic: Strategic Codebase Analysis", runResult.Stderr);
-            Assert.Contains("Useful next steps:", runResult.Stderr);
+            Assert.Contains("Interactive TUI cannot be run", runResult.Stderr);
         }
 
         [Fact]
@@ -616,7 +579,7 @@ bin/
             Directory.CreateDirectory(tempDir);
             try
             {
-                var runResult = await Cli.RunCliAsync(new[] { "hotspots", tempDir });
+                var runResult = await Cli.RunCliAsync(new[] { tempDir, "--json" });
                 Assert.Equal(1, runResult.ExitCode);
                 Assert.Contains("is not inside a Git repository", runResult.Stderr);
             }
@@ -632,17 +595,13 @@ bin/
         [Fact]
         public async Task TestCli_InvalidUsageExitCodes()
         {
-            var runResult1 = await Cli.RunCliAsync(new[] { "hotspots", "--color", "invalid-color-value" });
+            var runResult1 = await Cli.RunCliAsync(new[] { "--color", "invalid-color-value" });
             Assert.Equal(2, runResult1.ExitCode);
             Assert.Contains("--color must be", runResult1.Stderr);
 
-            var runResult2 = await Cli.RunCliAsync(new[] { "hotspots", "--format", "invalid-format-value" });
+            var runResult2 = await Cli.RunCliAsync(new[] { "--format", "invalid-format-value" });
             Assert.Equal(2, runResult2.ExitCode);
             Assert.Contains("--format must be", runResult2.Stderr);
-
-            var runResult3 = await Cli.RunCliAsync(new[] { "config", "invalid-action" });
-            Assert.Equal(2, runResult3.ExitCode);
-            Assert.Contains("config requires an action", runResult3.Stderr);
         }
 
         [Fact]

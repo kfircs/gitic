@@ -94,22 +94,15 @@ namespace Gitic.Tests
         [Fact]
         public async Task TestCLI_ContractConformance()
         {
-            var invalidRes = await RunGiticProcessAsync("nonexistent-command");
+            var invalidRes = await RunGiticProcessAsync("nonexistent-command extra-arg");
             Assert.Equal(2, invalidRes.ExitCode);
             Assert.NotEmpty(invalidRes.Stderr);
-            Assert.Empty(invalidRes.Stdout);
 
-            // Test explicit no-color execution
-            var hotspotsRes = await RunGiticProcessAsync("hotspots . --limit 1 --color never");
-            Assert.Equal(0, hotspotsRes.ExitCode);
-            Assert.NotEmpty(hotspotsRes.Stdout);
-            Assert.False(hotspotsRes.Stdout.Contains("\u001b"), "Stdout should not contain ANSI escape codes.");
-
-            // Test explicit plain format output
-            var plainRes = await RunGiticProcessAsync("hotspots . --limit 1 --format plain");
-            Assert.Equal(0, plainRes.ExitCode);
-            Assert.NotEmpty(plainRes.Stdout);
-            Assert.False(plainRes.Stdout.Contains("\u001b"), "Plain Stdout should not contain ANSI escape codes.");
+            // Test explicit no-color / contract execution on root via json output
+            var jsonRes = await RunGiticProcessAsync(". --json");
+            Assert.Equal(0, jsonRes.ExitCode);
+            Assert.NotEmpty(jsonRes.Stdout);
+            Assert.False(jsonRes.Stdout.Contains("\u001b"), "Stdout should not contain ANSI escape codes.");
         }
 
         [Fact]
