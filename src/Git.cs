@@ -18,12 +18,12 @@ namespace Gitic
 
     public interface IGitExecutor
     {
-        Task<string> RunAsync(string[] args, string cwd, CancellationToken cancellationToken = default);
+        IAsyncEnumerable<string> RunAsync(string[] args, string cwd, CancellationToken cancellationToken = default);
     }
 
     public class ExecFileGitExecutor : IGitExecutor
     {
-        public async Task<string> RunAsync(string[] args, string cwd, CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<string> RunAsync(string[] args, string cwd, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var allArgs = new List<string> { "-C", cwd };
             allArgs.AddRange(args);
@@ -54,30 +54,47 @@ namespace Gitic
                 catch { /* Ignore */ }
             });
 
+            bool failed = false;
+            string? stderrOutput = null;
+
             try
             {
                 process.Start();
-                string stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-                string stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
+
+                while (true)
+                {
+                    string? line = await process.StandardOutput.ReadLineAsync(cancellationToken);
+                    if (line == null)
+                    {
+                        break;
+                    }
+                    yield return line;
+                }
+
                 await process.WaitForExitAsync(cancellationToken);
 
                 if (process.ExitCode != 0)
                 {
-                    if (stderr.Contains("does not have any commits yet") ||
-                        stderr.Contains("Not a valid object name HEAD"))
+                    stderrOutput = await process.StandardError.ReadToEndAsync(cancellationToken);
+                    if (stderrOutput.Contains("does not have any commits yet") ||
+                        stderrOutput.Contains("Not a valid object name HEAD"))
                     {
-                        return "";
+                        yield break;
                     }
-                    throw new Exception($"Git command failed with exit code {process.ExitCode}: {stderr}");
+                    failed = true;
                 }
-                return stdout;
             }
             catch (Exception ex) when (ex.Message.Contains("does not have any commits yet") ||
                                        ex.Message.Contains("Not a valid object name HEAD") ||
                                        ex.InnerException?.Message.Contains("does not have any commits yet") == true ||
                                        ex.InnerException?.Message.Contains("Not a valid object name HEAD") == true)
             {
-                return "";
+                yield break;
+            }
+
+            if (failed)
+            {
+                throw new Exception($"Git command failed with exit code {process.ExitCode}: {stderrOutput}");
             }
         }
     }
@@ -127,7 +144,12 @@ namespace Gitic
         {
             try
             {
-                string stdout = await _executor.RunAsync(new[] { "rev-parse", "--show-toplevel" }, _repoRoot, cancellationToken);
+                var sb = new StringBuilder();
+                await foreach (var line in _executor.RunAsync(new[] { "rev-parse", "--show-toplevel" }, _repoRoot, cancellationToken))
+                {
+                    sb.AppendLine(line);
+                }
+                string stdout = sb.ToString();
                 string trimmed = stdout.Trim();
                 return trimmed.Length > 0 ? trimmed : null;
             }
@@ -139,13 +161,16 @@ namespace Gitic
 
         public async Task<HashSet<string>> ListHeadFilesAsync(CancellationToken cancellationToken = default)
         {
-            string stdout = await _executor.RunAsync(new[] { "ls-tree", "-r", "--name-only", "HEAD" }, _repoRoot, cancellationToken);
-            return new HashSet<string>(
-                stdout
-                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(line => PathUtils.NormalizeGitPath(line.Trim()))
-                    .Where(line => line.Length > 0)
-            );
+            var files = new HashSet<string>();
+            await foreach (var line in _executor.RunAsync(new[] { "ls-tree", "-r", "--name-only", "HEAD" }, _repoRoot, cancellationToken))
+            {
+                string trimmed = PathUtils.NormalizeGitPath(line.Trim());
+                if (trimmed.Length > 0)
+                {
+                    files.Add(trimmed);
+                }
+            }
+            return files;
         }
 
         public async Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null, CancellationToken cancellationToken = default)
@@ -153,7 +178,12 @@ namespace Gitic
             var opt = options ?? new GitHistoryExtractorOptions();
             var args = _parser.BuildGitLogArguments(opt);
 
-            string stdout = await _executor.RunAsync(args.ToArray(), _repoRoot, cancellationToken);
+            var sb = new StringBuilder();
+            await foreach (var line in _executor.RunAsync(args.ToArray(), _repoRoot, cancellationToken))
+            {
+                sb.AppendLine(line);
+            }
+            string stdout = sb.ToString();
             return _parser.ParseGitLog(stdout);
         }
     }

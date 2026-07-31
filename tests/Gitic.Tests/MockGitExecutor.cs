@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,14 +19,24 @@ namespace Gitic
             _outputs[key] = output;
         }
 
-        public Task<string> RunAsync(string[] args, string cwd, CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<string> RunAsync(string[] args, string cwd, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             _calls.Add(args);
             var key = GetKey(args);
             if (_outputs.TryGetValue(key, out string? value))
             {
-                return Task.FromResult(value);
+                using var reader = new StringReader(value);
+                while (true)
+                {
+                    string? line = await reader.ReadLineAsync(cancellationToken);
+                    if (line == null)
+                    {
+                        break;
+                    }
+                    yield return line;
+                }
+                yield break;
             }
             throw new Exception($"Unexpected Git command in MockGitExecutor: git {key}");
         }
