@@ -85,16 +85,13 @@ namespace Gitic
 
             if (_args.Count == 0)
             {
-                throw new CommandLineParseError(
-@"Gitic: Strategic Codebase Analysis
-A tool to analyze Git repositories and identify code hotspots, contributor ownership, areas, and temporal coupling.
-
-Usage:
-  gitic <command> [repo_path] [options]
-
-Useful next steps:
-  1. Run 'gitic hotspots' to identify high-complexity/high-churn files in the current repository.
-  2. Run 'gitic --help' to see all available commands and options.");
+                // Default to launching the TUI Wizard/Dashboard
+                return new ParsedArgs
+                {
+                    Command = "wizard",
+                    RepoPath = ".",
+                    Settings = DefaultAnalysisSettings.Create()
+                };
             }
 
             // 1. Build the command model
@@ -153,7 +150,6 @@ Useful next steps:
             var mdOption = new Option<string>("--md") { Description = "Output Markdown summary report to path", Recursive = true, HelpName = "path" };
             var svgOption = new Option<string>("--svg") { Description = "Output SVG reports to path", Recursive = true, HelpName = "path" };
 
-            // Gitic-004 options placeholder
             var limitOption = new Option<int?>("--limit") { Description = "Limit results to top N items", Recursive = true };
             var sortOption = new Option<string>("--sort") { Description = "Sort results by field", Recursive = true };
             var columnsOption = new Option<string>("--columns") { Description = "Select columns to show", Recursive = true };
@@ -182,86 +178,14 @@ Useful next steps:
             rootCommand.Options.Add(columnsOption);
             rootCommand.Options.Add(quietOption);
 
-            // Subcommands
-            var hotspotsRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-            var hotspotsCommand = new Command("hotspots", "Identify code hotspots with high complexity/churn");
-            hotspotsCommand.Arguments.Add(hotspotsRepoPathArg);
-            rootCommand.Subcommands.Add(hotspotsCommand);
+            // Single root argument for repository path
+            var repoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+            rootCommand.Arguments.Add(repoPathArg);
 
-            var areasRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-            var areasCommand = new Command("areas", "Analyze code ownership and changes across directories");
-            areasCommand.Arguments.Add(areasRepoPathArg);
-            rootCommand.Subcommands.Add(areasCommand);
-
-            var contributorsRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-            var contributorsCommand = new Command("contributors", "Show contributor metrics and profiles");
-            contributorsCommand.Arguments.Add(contributorsRepoPathArg);
-            rootCommand.Subcommands.Add(contributorsCommand);
-
-            var contributorRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-            var contributorCommand = new Command("contributor", "Analyze a specific contributor's details");
-            var nameArg = new Argument<string>("name") { Description = "The contributor name" };
-            contributorCommand.Arguments.Add(nameArg);
-            contributorCommand.Arguments.Add(contributorRepoPathArg);
-            rootCommand.Subcommands.Add(contributorCommand);
-
-            var reportRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-            var reportCommand = new Command("report", "Generate reports (visual HTML, Markdown, and/or SVG)");
-            reportCommand.Arguments.Add(reportRepoPathArg);
-            rootCommand.Subcommands.Add(reportCommand);
-
-            var temporalCouplingRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-            var temporalCouplingCommand = new Command("temporal-coupling", "Analyze temporal coupling between files");
-            temporalCouplingCommand.Arguments.Add(temporalCouplingRepoPathArg);
-            rootCommand.Subcommands.Add(temporalCouplingCommand);
-
-            var leadTimeRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-            var leadTimeCommand = new Command("lead-time", "Measure code change and merge lead times");
-            leadTimeCommand.Arguments.Add(leadTimeRepoPathArg);
-            rootCommand.Subcommands.Add(leadTimeCommand);
-
-            var geReportRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-            var geReportCommand = new Command("ge-report", "Generate Gemini Enterprise Report in Markdown with SVGs");
-            geReportCommand.Arguments.Add(geReportRepoPathArg);
-            rootCommand.Subcommands.Add(geReportCommand);
-
-            var configCommand = new Command("config", "Generate a starter config file");
-            var actionArg = new Argument<string>("action") { Description = "The config action (e.g., init)", DefaultValueFactory = _ => "init" };
-            configCommand.Arguments.Add(actionArg);
-            rootCommand.Subcommands.Add(configCommand);
-
-            var wizardRepoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-            var wizardCommand = new Command("wizard", "Interactive TUI wizard to generate customized reports");
-            wizardCommand.Arguments.Add(wizardRepoPathArg);
-            rootCommand.Subcommands.Add(wizardCommand);
-
-            var versionCommand = new Command("version", "Show version information");
-            rootCommand.Subcommands.Add(versionCommand);
-
-            // Case-insensitivity normalization for the command name
-            var normalizedArgs = _args.Select((arg, idx) => 
+            // Intercept help/version checks at the very beginning
+            if (_args.Contains("--help") || _args.Contains("-h") || _args.Contains("help"))
             {
-                if (idx == 0 && arg != null)
-                {
-                    var lower = arg.ToLower();
-                    if (lower == "hotspots" || lower == "areas" || lower == "contributors" || 
-                        lower == "contributor" || lower == "report" || lower == "config" || lower == "version" || lower == "help" ||
-                        lower == "temporal-coupling" || lower == "lead-time" || lower == "ge-report" || lower == "--ge-report")
-                    {
-                        if (lower == "--ge-report") return "ge-report";
-                        return lower;
-                    }
-                }
-                return arg;
-            })
-            .Where(arg => arg != null)
-            .Select(arg => arg!)
-            .ToList();
-
-            // Intercept help/version checks at the very beginning to avoid unrelated secondary parsing errors
-            if (_args.Contains("--help") || _args.Contains("-h") || normalizedArgs.Contains("help"))
-            {
-                var pr = rootCommand.Parse(normalizedArgs);
+                var pr = rootCommand.Parse(_args);
                 using var stdoutWriter = new StringWriter();
                 using var stderrWriter = new StringWriter();
                 pr.Invoke(new InvocationConfiguration
@@ -275,6 +199,14 @@ Useful next steps:
                     helpText = stderrWriter.ToString();
                 }
 
+                helpText = 
+@"Gitic Strategic Codebase Analysis
+A high-speed interactive TUI tool to analyze Git repositories.
+
+Running 'gitic' launches the Interactive TUI Dashboard by default.
+
+" + helpText;
+
                 return new ParsedArgs
                 {
                     Command = "help",
@@ -284,7 +216,7 @@ Useful next steps:
                 };
             }
 
-            if (_args.Contains("--version") || _args.Contains("-v") || normalizedArgs.Contains("version"))
+            if (_args.Contains("--version") || _args.Contains("-v") || _args.Contains("version"))
             {
                 return new ParsedArgs
                 {
@@ -294,8 +226,8 @@ Useful next steps:
                 };
             }
 
-            // Parse the normalized arguments
-            var parseResult = rootCommand.Parse(normalizedArgs);
+            // Parse the arguments
+            var parseResult = rootCommand.Parse(_args);
 
             // Handle invalid usage or unrecognized elements
             if (parseResult.Errors.Any())
@@ -317,13 +249,7 @@ Useful next steps:
                 throw new CommandLineParseError($"{errors}\nTry running 'gitic --help' for usage.");
             }
 
-            // Check if root command has been invoked without subcommands
-            if (parseResult.CommandResult.Command == rootCommand)
-            {
-                throw new CommandLineParseError("A command is required.\nTry running 'gitic --help' for usage.");
-            }
-
-            string commandName = parseResult.CommandResult.Command.Name;
+            string commandName = "wizard"; // Running gitic directly opens the TUI Wizard
 
             var settings = DefaultAnalysisSettings.Create();
 
@@ -372,58 +298,9 @@ Useful next steps:
             settings.Columns = parseResult.GetValue(columnsOption);
             settings.Quiet = parseResult.GetValue(quietOption);
 
-            string repoPath = ".";
+            string repoPath = parseResult.GetValue(repoPathArg) ?? ".";
             string? contributorName = null;
             string? configAction = null;
-
-            if (commandName == "hotspots")
-            {
-                repoPath = parseResult.GetValue(hotspotsRepoPathArg) ?? ".";
-            }
-            else if (commandName == "areas")
-            {
-                repoPath = parseResult.GetValue(areasRepoPathArg) ?? ".";
-            }
-            else if (commandName == "contributors")
-            {
-                repoPath = parseResult.GetValue(contributorsRepoPathArg) ?? ".";
-            }
-            else if (commandName == "temporal-coupling")
-            {
-                repoPath = parseResult.GetValue(temporalCouplingRepoPathArg) ?? ".";
-            }
-            else if (commandName == "lead-time")
-            {
-                repoPath = parseResult.GetValue(leadTimeRepoPathArg) ?? ".";
-            }
-            else if (commandName == "report")
-            {
-                repoPath = parseResult.GetValue(reportRepoPathArg) ?? ".";
-                settings.IncludeMerges = true;
-            }
-            else if (commandName == "ge-report")
-            {
-                repoPath = parseResult.GetValue(geReportRepoPathArg) ?? ".";
-                settings.IncludeMerges = true;
-            }
-            else if (commandName == "wizard")
-            {
-                repoPath = parseResult.GetValue(wizardRepoPathArg) ?? ".";
-                settings.IncludeMerges = true;
-            }
-            else if (commandName == "contributor")
-            {
-                contributorName = parseResult.GetValue(nameArg);
-                repoPath = parseResult.GetValue(contributorRepoPathArg) ?? ".";
-                if (string.IsNullOrEmpty(contributorName))
-                {
-                    throw new CommandLineParseError("contributor requires a contributor name.");
-                }
-            }
-            else if (commandName == "config")
-            {
-                configAction = parseResult.GetValue(actionArg) ?? "init";
-            }
 
             string? htmlPath = parseResult.GetValue(htmlOption);
             string? mdPath = parseResult.GetValue(mdOption);
