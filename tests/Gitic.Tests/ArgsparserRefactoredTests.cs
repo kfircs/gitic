@@ -40,7 +40,7 @@ namespace Gitic.Tests
             var parser = new CommandLineParser(helpArgs);
             var parsed = parser.Parse();
 
-            var command = CliCommandFactory.CreateCommand(parsed);
+            var command = new CliCommandFactoryImpl().CreateCommand(parsed);
             Assert.IsType<HelpCommand>(command);
 
             var reporter = new MockConsoleReporter();

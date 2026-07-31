@@ -47,10 +47,10 @@ namespace Gitic
             Console.CancelKeyPress += cancelHandler;
 
             ICommandLineParser parser = new CommandLineParser(args);
-            ParsedArgs parsed;
+            ICliCommand command;
             try
             {
-                parsed = parser.Parse();
+                command = parser.ParseToCommand();
             }
             catch (CommandLineParseError error)
             {
@@ -61,7 +61,6 @@ namespace Gitic
 
             try
             {
-                ICliCommand command = CliCommandFactory.CreateCommand(parsed);
                 return await command.ExecuteAsync(reporter, cts.Token);
             }
             catch (OperationCanceledException)

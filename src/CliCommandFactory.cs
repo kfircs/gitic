@@ -22,14 +22,6 @@ namespace Gitic
     {
         public ICliCommand CreateCommand(ParsedArgs parsed)
         {
-            return CliCommandFactory.CreateCommand(parsed);
-        }
-    }
-
-    public static class CliCommandFactory
-    {
-        public static ICliCommand CreateCommand(ParsedArgs parsed)
-        {
             if (string.Equals(parsed.Command, "help", StringComparison.OrdinalIgnoreCase))
             {
                 return new HelpCommand(parsed.HelpText);
