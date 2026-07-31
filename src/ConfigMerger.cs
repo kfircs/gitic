@@ -43,8 +43,54 @@ namespace Gitic
         public GiticConfig CloneConfig(GiticConfig config)
         {
             if (config == null) return new GiticConfig();
-            var json = JsonSerializer.Serialize(config);
-            return JsonSerializer.Deserialize<GiticConfig>(json) ?? new GiticConfig();
+            return new GiticConfig
+            {
+                Aliases = config.Aliases?.Select(a => new AliasRule
+                {
+                    Canonical = a.Canonical != null ? new GitIdentity { Name = a.Canonical.Name, Email = a.Canonical.Email } : new GitIdentity(),
+                    Identities = a.Identities?.Select(id => new GitIdentity { Name = id.Name, Email = id.Email }).ToList() ?? new List<GitIdentity>()
+                }).ToList() ?? new List<AliasRule>(),
+                
+                Bots = config.Bots?.Select(b => new BotRule
+                {
+                    Name = b.Name,
+                    Email = b.Email,
+                    Pattern = b.Pattern
+                }).ToList() ?? new List<BotRule>(),
+
+                Excludes = config.Excludes?.Select(e => new ExcludeRule
+                {
+                    Pattern = e.Pattern,
+                    Category = e.Category
+                }).ToList() ?? new List<ExcludeRule>(),
+
+                Areas = config.Areas?.Select(area => new NamedArea
+                {
+                    Name = area.Name,
+                    Paths = area.Paths?.ToList() ?? new List<string>()
+                }).ToList() ?? new List<NamedArea>(),
+
+                Scoring = config.Scoring != null ? new ScoringConfig
+                {
+                    Attention = config.Scoring.Attention != null ? new AttentionWeights
+                    {
+                        Churn = config.Scoring.Attention.Churn,
+                        Recency = config.Scoring.Attention.Recency,
+                        ContributorSpread = config.Scoring.Attention.ContributorSpread,
+                        LowFamiliarityConcentration = config.Scoring.Attention.LowFamiliarityConcentration
+                    } : new AttentionWeights()
+                } : new ScoringConfig(),
+
+                Identity = config.Identity != null ? new IdentityConfig
+                {
+                    MergeOnEmail = config.Identity.MergeOnEmail
+                } : new IdentityConfig(),
+
+                Metrics = config.Metrics != null ? new MetricsConfig
+                {
+                    TemporalCouplingMaxCommitFileCount = config.Metrics.TemporalCouplingMaxCommitFileCount
+                } : new MetricsConfig()
+            };
         }
 
         public GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfigOverrides? overrideConfig = null)
