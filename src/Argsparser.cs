@@ -7,13 +7,6 @@ using System.Linq;
 
 namespace Gitic
 {
-    public class CommandLineParseError : Exception
-    {
-        public CommandLineParseError(string message) : base(message)
-        {
-        }
-    }
-
     public static class DefaultAnalysisSettings
     {
         public static AnalysisSettings Create() => new()
@@ -30,12 +23,6 @@ namespace Gitic
             Format = "human",
             Color = "auto"
         };
-    }
-
-    public interface ICommandLineParser
-    {
-        ParsedArgs Parse();
-        ICliCommand ParseToCommand();
     }
 
     public class CommandLineParser : ICommandLineParser
