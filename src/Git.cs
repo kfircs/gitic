@@ -56,6 +56,7 @@ namespace Gitic
 
             bool failed = false;
             string? stderrOutput = null;
+            var lines = new List<string>();
 
             try
             {
@@ -68,7 +69,7 @@ namespace Gitic
                     {
                         break;
                     }
-                    yield return line;
+                    lines.Add(line);
                 }
 
                 await process.WaitForExitAsync(cancellationToken);
@@ -79,9 +80,12 @@ namespace Gitic
                     if (stderrOutput.Contains("does not have any commits yet") ||
                         stderrOutput.Contains("Not a valid object name HEAD"))
                     {
-                        yield break;
+                        // No-op, just yield what we have (nothing)
                     }
-                    failed = true;
+                    else
+                    {
+                        failed = true;
+                    }
                 }
             }
             catch (Exception ex) when (ex.Message.Contains("does not have any commits yet") ||
@@ -89,12 +93,17 @@ namespace Gitic
                                        ex.InnerException?.Message.Contains("does not have any commits yet") == true ||
                                        ex.InnerException?.Message.Contains("Not a valid object name HEAD") == true)
             {
-                yield break;
+                // Swallow and yield nothing
             }
 
             if (failed)
             {
                 throw new Exception($"Git command failed with exit code {process.ExitCode}: {stderrOutput}");
+            }
+
+            foreach (var line in lines)
+            {
+                yield return line;
             }
         }
     }

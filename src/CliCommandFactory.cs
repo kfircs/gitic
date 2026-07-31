@@ -413,11 +413,11 @@ Options:
                     string dir = Path.GetDirectoryName(targetPath) ?? ".";
                     string tempPath = Path.Combine(dir, $".report.html.{Path.GetRandomFileName()}.tmp");
                     
+                    tempFiles.Add((tempPath, targetPath));
                     using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
                     {
                         await htmlRenderer.RenderToStreamAsync(result, fs, cancellationToken);
                     }
-                    tempFiles.Add((tempPath, targetPath));
                     outputSb.Append($"Wrote HTML report to {targetPath}\n");
                 }
                 if (Parsed.MdPath != null)
