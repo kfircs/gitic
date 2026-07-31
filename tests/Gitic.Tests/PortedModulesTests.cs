@@ -1895,6 +1895,12 @@ __GITIC_NUMSTAT__
                 public void PrepareIdentityMerging(List<GitCommitRecord> commits) => PrepareIdentityMergingCalled = true;
                 public List<EmailCollision> GetEmailCollisions() => new();
                 public void AddCommit(GitCommitRecord commit, List<string> filesInCommit) => AddCommitCalled = true;
+                public List<List<string>> ProcessCommits(List<GitCommitRecord> commits)
+                {
+                    PrepareIdentityMergingCalled = true;
+                    AddCommitCalled = true;
+                    return commits.Select(_ => new List<string>()).ToList();
+                }
                 public IReadOnlyDictionary<string, ItemAccumulator> GetFiles() { GetFilesCalled = true; return new Dictionary<string, ItemAccumulator>(); }
                 public IReadOnlyDictionary<string, ItemAccumulator> GetAreas() { GetAreasCalled = true; return new Dictionary<string, ItemAccumulator>(); }
                 public IReadOnlyDictionary<string, ContributorAccumulator> GetContributors() { GetContributorsCalled = true; return new Dictionary<string, ContributorAccumulator>(); }

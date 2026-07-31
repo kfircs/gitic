@@ -9,6 +9,7 @@ namespace Gitic
         void PrepareIdentityMerging(List<GitCommitRecord> commits);
         List<EmailCollision> GetEmailCollisions();
         void AddCommit(GitCommitRecord commit, List<string> filesInCommit);
+        List<List<string>> ProcessCommits(List<GitCommitRecord> commits);
         IReadOnlyDictionary<string, ItemAccumulator> GetFiles();
         IReadOnlyDictionary<string, ItemAccumulator> GetAreas();
         IReadOnlyDictionary<string, ContributorAccumulator> GetContributors();
@@ -60,6 +61,20 @@ namespace Gitic
                     _identityRegistry.RegisterRealIdentity(co);
                 }
             }
+        }
+
+        public List<List<string>> ProcessCommits(List<GitCommitRecord> commits)
+        {
+            PrepareIdentityMerging(commits);
+
+            var allIncludedCommits = new List<List<string>>();
+            foreach (var commit in commits)
+            {
+                var filesInCommit = new List<string>();
+                AddCommit(commit, filesInCommit);
+                allIncludedCommits.Add(filesInCommit);
+            }
+            return allIncludedCommits;
         }
 
         public List<EmailCollision> GetEmailCollisions()
