@@ -396,7 +396,6 @@ Options:
                 if (Parsed.HtmlPath != null)
                 {
                     var htmlRenderer = new HtmlRenderer();
-                    string htmlContent = await htmlRenderer.RenderAsync(result, cancellationToken);
                     string targetPath = Parsed.HtmlPath;
                     if (Directory.Exists(targetPath))
                     {
@@ -406,7 +405,10 @@ Options:
                     string dir = Path.GetDirectoryName(targetPath) ?? ".";
                     string tempPath = Path.Combine(dir, $".report.html.{Path.GetRandomFileName()}.tmp");
                     
-                    await File.WriteAllTextAsync(tempPath, htmlContent, cancellationToken);
+                    using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
+                    {
+                        await htmlRenderer.RenderToStreamAsync(result, fs, cancellationToken);
+                    }
                     tempFiles.Add((tempPath, targetPath));
                     outputSb.Append($"Wrote HTML report to {targetPath}\n");
                 }
