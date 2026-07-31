@@ -120,5 +120,43 @@ namespace Gitic.Tests
             Assert.Contains("human", output);
             Assert.Contains("bot", output);
         }
+
+        [Fact]
+        public async Task TestRefactored_HotspotsTable_WithBordersAndBanner()
+        {
+            var result = new AnalysisResult
+            {
+                Analysis = new AnalysisMetadata 
+                { 
+                    IncludedFileChangeCount = 5,
+                    RepoRoot = "/test/repo",
+                    CommitCount = 10,
+                    Command = AnalysisCommand.Hotspots
+                },
+                Settings = new AnalysisSettings { Format = "human", Color = "always" },
+                Files = new List<FileMetric>
+                {
+                    new() { Path = "src/A.cs", AttentionScore = 85.0, HeatScore = 90.0, Churn = 100, ContributorCount = 2, ScoreBreakdown = new ScoreBreakdown() }
+                }
+            };
+
+            var renderer = new CliTableRenderer(AnalysisCommand.Hotspots, result.Settings);
+            string output = await renderer.RenderAsync(result);
+
+            // 1. Verify ASCII art banner and header details exist
+            Assert.Contains("___ _ _", output);
+            Assert.Contains("Strategic Codebase Analysis", output);
+            Assert.Contains("Repository: /test/repo", output);
+            Assert.Contains("Commits: 10 | Files: 5", output);
+
+            // 2. Verify Box-Drawing borders exist in human format
+            Assert.Contains("┌", output);
+            Assert.Contains("─", output);
+            Assert.Contains("│", output);
+            Assert.Contains("└", output);
+
+            // 3. Verify ANSI colors are utilized for headers in color always mode
+            Assert.Contains("\x1b[1;36m", output); // cyan header coloring
+        }
     }
 }

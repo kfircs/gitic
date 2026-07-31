@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Gitic
@@ -72,31 +73,78 @@ namespace Gitic
                 return Task.FromResult("No commits matched the selected analysis window. Try --all-time or a wider --since value.\n");
             }
 
+            string content = "";
             if (_command == AnalysisCommand.Contributors)
             {
-                return Task.FromResult(RenderContributorTable(result));
+                content = RenderContributorTable(result);
             }
-            if (_command == AnalysisCommand.Contributor)
+            else if (_command == AnalysisCommand.Contributor)
             {
-                return Task.FromResult(RenderSingleContributorTable(result));
+                content = RenderSingleContributorTable(result);
             }
-            if (_command == AnalysisCommand.Areas)
+            else if (_command == AnalysisCommand.Areas)
             {
-                return Task.FromResult(RenderAreaTable(result));
+                content = RenderAreaTable(result);
             }
-            if (_command == AnalysisCommand.TemporalCoupling)
+            else if (_command == AnalysisCommand.TemporalCoupling)
             {
-                return Task.FromResult(RenderTemporalCouplingTable(result));
+                content = RenderTemporalCouplingTable(result);
             }
-            if (_command == AnalysisCommand.LeadTime)
+            else if (_command == AnalysisCommand.LeadTime)
             {
-                return Task.FromResult(RenderLeadTimeTable(result));
+                content = RenderLeadTimeTable(result);
+            }
+            else
+            {
+                content = RenderHotspotTable(result);
             }
 
-            // Default fallback to hotspots
+            if (string.Equals(_settings.Format, "human", StringComparison.OrdinalIgnoreCase))
             {
-                return Task.FromResult(RenderHotspotTable(result));
+                return Task.FromResult(GetBanner(result) + content);
             }
+
+            return Task.FromResult(content);
+        }
+
+        private string GetBanner(AnalysisResult result)
+        {
+            bool useColor = _termFormatter.IsColorEnabled;
+            
+            string cCyan = useColor ? "\x1b[1;36m" : "";
+            string cReset = useColor ? "\x1b[0m" : "";
+            string cBold = useColor ? "\x1b[1m" : "";
+            string cDim = useColor ? "\x1b[2m" : "";
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"{cCyan}   ___ _ _   _      {cReset}");
+            sb.AppendLine($"{cCyan}  / __(_) |_(_) ___ {cReset}  {cBold}Strategic Codebase Analysis{cReset}");
+            sb.AppendLine($"{cCyan} / _\\ | | __| |/ __|{cReset}  {cDim}Repository: {result.Analysis.RepoRoot}{cReset}");
+            sb.AppendLine($"{cCyan}/ /   | | |_| | (__ {cReset}  {cDim}Commits: {result.Analysis.CommitCount} | Files: {result.Analysis.IncludedFileChangeCount}{cReset}");
+            sb.AppendLine($"{cCyan}\\/    |_|\\__|_|\\___|{cReset}");
+            
+            var parts = new List<string>();
+            if (result.Settings.AllTime)
+            {
+                parts.Add("Window: All Time");
+            }
+            else
+            {
+                string sinceStr = string.IsNullOrEmpty(result.Settings.Since) ? "Any" : result.Settings.Since;
+                parts.Add($"Window: Since {sinceStr}");
+            }
+
+            if (!string.IsNullOrEmpty(result.Settings.Path))
+            {
+                parts.Add($"Filter: {result.Settings.Path}");
+            }
+            if (result.Settings.Limit != null)
+            {
+                parts.Add($"Limit: {result.Settings.Limit}");
+            }
+
+            sb.AppendLine($"{cDim}{string.Join(" | ", parts)}{cReset}\n");
+            return sb.ToString();
         }
 
         private struct CombinedContributor
@@ -141,9 +189,11 @@ namespace Gitic
 
         private IConsoleTableBuilder CreateTableBuilder(List<string> visibleColumns)
         {
+            bool enableBorders = string.Equals(_settings.Format, "human", StringComparison.OrdinalIgnoreCase);
             return new ConsoleTableBuilder()
                 .WithConsoleWidth(GetConsoleWidth())
-                .WithVisibleColumns(visibleColumns);
+                .WithVisibleColumns(visibleColumns)
+                .WithBorders(enableBorders, _termFormatter.UseUnicode, _termFormatter.IsColorEnabled);
         }
 
         private string RenderTemporalCouplingTable(AnalysisResult result)
@@ -460,7 +510,10 @@ namespace Gitic
             }
 
             var contributor = result.Contributors[0];
+            bool enableBorders = string.Equals(_settings.Format, "human", StringComparison.OrdinalIgnoreCase);
             IConsoleTableBuilder table = new ConsoleTableBuilder()
+                .WithConsoleWidth(GetConsoleWidth())
+                .WithBorders(enableBorders, _termFormatter.UseUnicode, _termFormatter.IsColorEnabled)
                 .AddColumnEx("area", width: 28, align: "left")
                 .AddColumnEx("familiarity", width: 11, align: "right")
                 .AddColumnEx("activity", width: 8, align: "right")
@@ -515,6 +568,9 @@ namespace Gitic
     {
         private readonly bool _isColorEnabled;
         private readonly bool _useUnicode;
+
+        public bool IsColorEnabled => _isColorEnabled;
+        public bool UseUnicode => _useUnicode;
 
         public TerminalFormatter(AnalysisSettings settings)
         {

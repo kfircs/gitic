@@ -27,11 +27,39 @@ namespace Gitic
 
             var reportType = PromptSingleSelection(
                 "What type of report would you like to generate?",
-                new[] { "Curated Report (All sections)", "Custom Report (Select specific sections)" }
+                new[] {
+                    "Developer Onboarding & Collaboration Profile",
+                    "Engineering Health & Technical Debt Profile",
+                    "Copilot / AI Code Strain Assessment Profile",
+                    "Comprehensive Repository Diagnostic (Full)",
+                    "Custom Report (Select specific sections)"
+                }
             );
 
             List<string> selectedSections = new List<string>();
-            if (reportType == 0) // Curated
+            if (reportType == 0) // Onboarding & Collaboration
+            {
+                selectedSections = new List<string> {
+                    "Developer Onboarding",
+                    "Review Collaboration"
+                };
+            }
+            else if (reportType == 1) // Health & Tech Debt
+            {
+                selectedSections = new List<string> {
+                    "Work Classification",
+                    "Code Rot"
+                };
+            }
+            else if (reportType == 2) // AI Code Strain
+            {
+                selectedSections = new List<string> {
+                    "Work Classification",
+                    "Review Collaboration",
+                    "AI Code Strain"
+                };
+            }
+            else if (reportType == 3) // Full Curated
             {
                 selectedSections = new List<string> {
                     "Work Classification",
@@ -41,7 +69,7 @@ namespace Gitic
                     "AI Code Strain"
                 };
             }
-            else // Custom
+            else // Custom selection
             {
                 var availableSections = new[] {
                     "Work Classification",
@@ -255,7 +283,7 @@ namespace Gitic
 
         private int PromptSingleSelection(string prompt, string[] options)
         {
-            if (Console.IsInputRedirected)
+            if (Console.IsInputRedirected || Console.IsOutputRedirected || Console.IsErrorRedirected)
             {
                 Console.WriteLine(prompt);
                 for (int i = 0; i < options.Length; i++) Console.WriteLine($"[{i}] {options[i]}");
@@ -313,7 +341,7 @@ namespace Gitic
 
         private List<int> PromptMultiSelection(string prompt, string[] options)
         {
-            if (Console.IsInputRedirected)
+            if (Console.IsInputRedirected || Console.IsOutputRedirected || Console.IsErrorRedirected)
             {
                 Console.WriteLine(prompt);
                 for (int i = 0; i < options.Length; i++) Console.WriteLine($"[{i}] {options[i]}");

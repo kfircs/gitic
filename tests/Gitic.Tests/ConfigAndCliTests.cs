@@ -891,5 +891,64 @@ bin/
             string ltOutput = await ltRenderer.RenderAsync(emptyResult);
             Assert.Contains("No merge commits in the analysis window", ltOutput);
         }
+
+        [Fact]
+        public async Task TestWizardCommand_PrebuiltProfiles()
+        {
+            string currentDir = Directory.GetCurrentDirectory();
+            var parsed = new ParsedArgs
+            {
+                Command = "wizard",
+                RepoPath = currentDir,
+                Settings = new AnalysisSettings()
+            };
+
+            // Option 0: Developer Onboarding & Collaboration Profile
+            // Option 0: Markdown (.md)
+            string inputLines = "0\n0\n";
+            var originalIn = Console.In;
+            var originalOut = Console.Out;
+
+            try
+            {
+                using var stringReader = new StringReader(inputLines);
+                Console.SetIn(stringReader);
+
+                // Set dummy out to prevent console pollution
+                using var stringWriter = new StringWriter();
+                Console.SetOut(stringWriter);
+
+                var wizard = new WizardCommand(parsed);
+                var reporter = new MockConsoleReporter();
+                var result = await wizard.ExecuteAsync(reporter);
+
+                Assert.Equal(0, result.ExitCode);
+
+                // Find the generated file in the resolved git repo root
+                var gitClient = new GitClient(currentDir);
+                string repoRoot = await gitClient.GetRepositoryRootAsync() ?? currentDir;
+                var files = Directory.GetFiles(repoRoot, "gitic_report_*.md");
+                Assert.NotEmpty(files);
+
+                string filePath = files[0];
+                string content = await File.ReadAllTextAsync(filePath);
+
+                // Verify the selected profile sections are present
+                Assert.Contains("Developer Onboarding", content);
+                Assert.Contains("Review Collaboration", content);
+
+                // Verify non-selected sections are absent
+                Assert.DoesNotContain("Code Rot", content);
+                Assert.DoesNotContain("AI Code Strain", content);
+
+                // Clean up
+                File.Delete(filePath);
+            }
+            finally
+            {
+                Console.SetIn(originalIn);
+                Console.SetOut(originalOut);
+            }
+        }
     }
 }

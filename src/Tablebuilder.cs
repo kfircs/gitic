@@ -37,6 +37,7 @@ namespace Gitic
             int? minWidth = null,
             int? defaultWidth = null);
         IConsoleTableBuilder AddRow(Dictionary<string, string> values);
+        IConsoleTableBuilder WithBorders(bool enable, bool useUnicode = true, bool enableColor = false);
     }
 
     public class ColumnDef
@@ -57,6 +58,18 @@ namespace Gitic
         private readonly List<Dictionary<string, string>> _rows = new();
         private int? _consoleWidth;
         private List<string>? _visibleColumns;
+        
+        public bool EnableBorders { get; private set; } = false;
+        public bool UseUnicode { get; private set; } = true;
+        public bool EnableColor { get; private set; } = false;
+
+        public IConsoleTableBuilder WithBorders(bool enable, bool useUnicode = true, bool enableColor = false)
+        {
+            EnableBorders = enable;
+            UseUnicode = useUnicode;
+            EnableColor = enableColor;
+            return this;
+        }
 
         private static readonly Regex AnsiRegex = new Regex("\x1B\\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
@@ -211,7 +224,7 @@ namespace Gitic
             var fixedCols = visibleColDefs.Where(c => c.WidthPolicy == WidthPolicy.Fixed).ToList();
             var stretchCols = visibleColDefs.Where(c => c.WidthPolicy == WidthPolicy.Stretch).ToList();
 
-            int spacing = visibleColDefs.Count - 1;
+            int spacing = EnableBorders ? (visibleColDefs.Count + 1) : (visibleColDefs.Count - 1);
             int fixedWidthsSum = fixedCols.Sum(c => c.Width ?? 0);
             int remainingWidth = consoleWidth - fixedWidthsSum - spacing;
             if (remainingWidth < 0) remainingWidth = 0;
@@ -267,10 +280,16 @@ namespace Gitic
                         colWidth = col.Width;
                     }
 
-                    if (colWidth == null)
+                    if (colWidth == null && !EnableBorders)
                     {
                         formattedCells.Add(cell);
                         continue;
+                    }
+
+                    if (colWidth == null)
+                    {
+                        int maxValLength = _rows.Select(r => r.TryGetValue(col.Name, out string v) ? GetVisibleLength(v) : 0).DefaultIfEmpty(0).Max();
+                        colWidth = Math.Max(col.Name.Length, maxValLength);
                     }
 
                     int width = colWidth.Value;
@@ -306,10 +325,69 @@ namespace Gitic
                         }
                     }
                 }
-                return string.Join(" ", formattedCells);
+
+                if (EnableBorders)
+                {
+                    string vLine = UseUnicode ? "│" : "|";
+                    if (EnableColor)
+                    {
+                        vLine = $"\x1b[90m{vLine}\x1b[0m";
+                    }
+                    return vLine + string.Join(vLine, formattedCells) + vLine;
+                }
+                else
+                {
+                    return string.Join(" ", formattedCells);
+                }
             }
 
-            var headerRow = FormatRow(visibleColDefs.Select(c => c.Name).ToList());
+            string BuildHorizontalLine(string left, string middle, string right, string segment)
+            {
+                var segments = new List<string>();
+                foreach (var col in visibleColDefs)
+                {
+                    int? colWidth = null;
+                    if (col.WidthPolicy == WidthPolicy.Stretch)
+                    {
+                        if (assignedWidths.TryGetValue(col.Name, out int w))
+                        {
+                            colWidth = w;
+                        }
+                    }
+                    else
+                    {
+                        colWidth = col.Width;
+                    }
+
+                    if (colWidth == null)
+                    {
+                        int maxValLength = _rows.Select(r => r.TryGetValue(col.Name, out string v) ? GetVisibleLength(v) : 0).DefaultIfEmpty(0).Max();
+                        colWidth = Math.Max(col.Name.Length, maxValLength);
+                    }
+                    int wVal = colWidth.Value;
+                    segments.Add(new string(segment[0], wVal));
+                }
+                string line = left + string.Join(middle, segments) + right;
+                if (EnableColor)
+                {
+                    return $"\x1b[90m{line}\x1b[0m";
+                }
+                return line;
+            }
+
+            var headerCells = visibleColDefs.Select(c => {
+                string name = c.Name;
+                if (EnableBorders)
+                {
+                    if (EnableColor)
+                    {
+                        name = $"\x1b[1;36m{name}\x1b[0m";
+                    }
+                }
+                return name;
+            }).ToList();
+
+            var headerRow = FormatRow(headerCells);
 
             var dataRows = new List<string>();
             foreach (var rowDict in _rows)
@@ -329,8 +407,30 @@ namespace Gitic
                 dataRows.Add(FormatRow(cells));
             }
 
-            var allRows = new List<string> { headerRow };
-            allRows.AddRange(dataRows);
+            var allRows = new List<string>();
+            if (EnableBorders)
+            {
+                string topBorder = UseUnicode 
+                    ? BuildHorizontalLine("┌", "┬", "┐", "─") 
+                    : BuildHorizontalLine("+", "+", "+", "-");
+                string middleBorder = UseUnicode 
+                    ? BuildHorizontalLine("├", "┼", "┤", "─") 
+                    : BuildHorizontalLine("+", "+", "+", "-");
+                string bottomBorder = UseUnicode 
+                    ? BuildHorizontalLine("└", "┴", "┘", "─") 
+                    : BuildHorizontalLine("+", "+", "+", "-");
+
+                allRows.Add(topBorder);
+                allRows.Add(headerRow);
+                allRows.Add(middleBorder);
+                allRows.AddRange(dataRows);
+                allRows.Add(bottomBorder);
+            }
+            else
+            {
+                allRows.Add(headerRow);
+                allRows.AddRange(dataRows);
+            }
 
             return string.Join("\n", allRows);
         }
