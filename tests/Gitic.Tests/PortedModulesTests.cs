@@ -725,10 +725,10 @@ __GITIC_NUMSTAT__
         {
             var engine = new TemporalCouplingEngine(10);
 
-            var result = engine.CalculateTemporalCoupling(new List<List<string>> {
-                new List<string> { "fileA.ts", "fileB.ts" },
-                new List<string> { "fileA.ts", "fileB.ts" },
-                new List<string> { "fileA.ts", "fileB.ts" }
+            var result = engine.CalculateTemporalCoupling(new List<CommitFileSet> {
+                new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts" } },
+                new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts" } },
+                new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts" } }
             });
             Assert.Single(result.Couplings);
             Assert.Equal("fileA.ts", result.Couplings[0].FileA);
@@ -745,10 +745,10 @@ __GITIC_NUMSTAT__
             var engine = new TemporalCouplingEngine(2);
 
             // too few shared commits, plus an oversized commit in a single calculation
-            var result = engine.CalculateTemporalCoupling(new List<List<string>> {
-                new List<string> { "fileA.ts", "fileB.ts" },
-                new List<string> { "fileA.ts", "fileB.ts" },
-                new List<string> { "fileA.ts", "fileB.ts", "fileC.ts" }
+            var result = engine.CalculateTemporalCoupling(new List<CommitFileSet> {
+                new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts" } },
+                new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts" } },
+                new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts", "fileC.ts" } }
             });
             Assert.Empty(result.Couplings);
             Assert.Equal(1, result.OversizedCommitCount);

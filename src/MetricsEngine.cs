@@ -14,7 +14,7 @@ namespace Gitic
 
     public interface ITemporalCouplingEngine
     {
-        TemporalCouplingResult CalculateTemporalCoupling(List<List<string>> allIncludedCommits);
+        TemporalCouplingResult CalculateTemporalCoupling(List<CommitFileSet> allIncludedCommits);
     }
 
     public interface ILeadTimeEngine
@@ -45,7 +45,7 @@ namespace Gitic
     public class MetricsCalculationRequest
     {
         public List<GitCommitRecord> Commits { get; set; } = new();
-        public List<List<string>> AllIncludedCommits { get; set; } = new();
+        public List<CommitFileSet> AllIncludedCommits { get; set; } = new();
         public List<ContributorAccumulator> ContributorAccumulators { get; set; } = new();
         public List<ContributorAccumulator> AutomationAccumulators { get; set; } = new();
         public TemporalCouplingConfig? TemporalCouplingConfig { get; set; }
@@ -64,7 +64,7 @@ namespace Gitic
     public interface IMetricsEngine
     {
         MetricsResult CalculateAll(MetricsCalculationRequest request);
-        TemporalCouplingResult CalculateTemporalCoupling(List<List<string>> allIncludedCommits, TemporalCouplingConfig? config = null);
+        TemporalCouplingResult CalculateTemporalCoupling(List<CommitFileSet> allIncludedCommits, TemporalCouplingConfig? config = null);
         LeadTimesInfo CalculateLeadTimes(List<GitCommitRecord> commits, LeadTimeConfig? config = null);
         List<ContributorMetric> RenderContributors(List<ContributorAccumulator> items);
         List<AutomationMetric> RenderAutomation(List<ContributorAccumulator> items);
@@ -92,7 +92,7 @@ namespace Gitic
             _metricsEngine = metricsEngine ?? new MetricsEngine();
         }
 
-        public TemporalCouplingResult CalculateTemporalCoupling(List<List<string>> allIncludedCommits)
+        public TemporalCouplingResult CalculateTemporalCoupling(List<CommitFileSet> allIncludedCommits)
         {
             return _metricsEngine.CalculateTemporalCoupling(allIncludedCommits, _config);
         }
@@ -280,7 +280,7 @@ namespace Gitic
             return result;
         }
 
-        public TemporalCouplingResult CalculateTemporalCoupling(List<List<string>> allIncludedCommits, TemporalCouplingConfig? config = null)
+        public TemporalCouplingResult CalculateTemporalCoupling(List<CommitFileSet> allIncludedCommits, TemporalCouplingConfig? config = null)
         {
             var cfg = config ?? new TemporalCouplingConfig();
             var fileCommitCount = new Dictionary<string, int>();
@@ -288,9 +288,10 @@ namespace Gitic
             int oversizedCommitCount = 0;
             int maxObservedFiles = 0;
 
-            foreach (var filePaths in allIncludedCommits)
+            foreach (var commit in allIncludedCommits)
             {
-                if (filePaths.Count == 0) continue;
+                var filePaths = commit.Files;
+                if (filePaths == null || filePaths.Count == 0) continue;
 
                 if (filePaths.Count > maxObservedFiles)
                 {

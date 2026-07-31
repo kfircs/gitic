@@ -652,4 +652,9 @@ namespace Gitic
         public double TotalActivity { get; set; }
         public Dictionary<string, double> Areas { get; set; } = new();
     }
+
+    public class CommitFileSet
+    {
+        public List<string> Files { get; set; } = new();
+    }
 }

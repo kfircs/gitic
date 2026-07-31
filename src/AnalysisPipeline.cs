@@ -113,7 +113,8 @@ namespace Gitic
             bool mergeByEmail = (config.Identity?.MergeOnEmail == true) || (settings.MergeByEmail == true);
             var actualIdentityRegistry = _identityRegistry ?? new IdentityRegistry(config.Aliases, config.Bots, mergeByEmail);
             IChangeAccumulator actualAccumulator = _accumulator ?? _changeAccumulatorFactory(config, settings, pathClassifier, actualIdentityRegistry);
-            var allIncludedCommits = actualAccumulator.ProcessCommits(commits);
+            var rawIncludedCommits = actualAccumulator.ProcessCommits(commits);
+            var allIncludedCommits = rawIncludedCommits.Select(files => new CommitFileSet { Files = files }).ToList();
 
             int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
             ITemporalCouplingEngine actualTemporalCouplingEngine = _temporalCouplingEngine ?? new TemporalCouplingEngine(temporalCouplingLimit);
