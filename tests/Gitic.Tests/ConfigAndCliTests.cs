@@ -239,6 +239,25 @@ excludes:
         }
 
         [Fact]
+        public async Task TestHtmlRenderer_Streaming()
+        {
+            var renderer = new HtmlRenderer();
+            var result = new AnalysisResult();
+
+            using var ms = new MemoryStream();
+            await renderer.RenderToStreamAsync(result, ms);
+            ms.Position = 0;
+            using var reader = new StreamReader(ms, System.Text.Encoding.UTF8);
+            string streamedContent = await reader.ReadToEndAsync();
+
+            string regularContent = await renderer.RenderAsync(result);
+
+            Assert.NotNull(streamedContent);
+            Assert.Contains("<html", streamedContent);
+            Assert.Equal(regularContent, streamedContent);
+        }
+
+        [Fact]
         public async Task TestCli_RunCliAsync_HandlesExceptionGracefully()
         {
             string repoPath = "sessions-db";
