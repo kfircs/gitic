@@ -1,175 +1,169 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
+namespace Gitic;
 
-namespace Gitic
+/// <summary>
+/// Represents a deep interface for parsing git diff and numstat metadata.
+/// Exposes only the high-leverage entry point, keeping extraction details encapsulated.
+/// </summary>
+internal interface IGitPatchParser
 {
+    List<GitFileChange> ParseNumstatAndPatches(string text);
+}
+
+internal class GitPatchParser : IGitPatchParser
+{
+    private const int MaxSymbolLength = 60;
+
     /// <summary>
-    /// Represents a deep interface for parsing git diff and numstat metadata.
-    /// Exposes only the high-leverage entry point, keeping extraction details encapsulated.
+    /// Parses the raw numstat and patch details into structured file changes.
     /// </summary>
-    internal interface IGitPatchParser
+    public List<GitFileChange> ParseNumstatAndPatches(string text)
     {
-        List<GitFileChange> ParseNumstatAndPatches(string text);
+        var lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim())
+            .Where(line => line.Length > 0)
+            .ToList();
+
+        var (fileChanges, fileChangesMap) = ParseNumstatMetadata(lines);
+        ExtractSymbolsFromHunks(lines, fileChangesMap);
+        return fileChanges;
     }
 
-    internal class GitPatchParser : IGitPatchParser
+    private (List<GitFileChange> fileChanges, Dictionary<string, GitFileChange> fileChangesMap) ParseNumstatMetadata(List<string> lines)
     {
-        private const int MaxSymbolLength = 60;
+        var fileChanges = new List<GitFileChange>();
+        var fileChangesMap = new Dictionary<string, GitFileChange>();
 
-        /// <summary>
-        /// Parses the raw numstat and patch details into structured file changes.
-        /// </summary>
-        public List<GitFileChange> ParseNumstatAndPatches(string text)
+        foreach (var line in lines)
         {
-            var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(line => line.Trim())
-                .Where(line => line.Length > 0)
-                .ToList();
-
-            var (fileChanges, fileChangesMap) = ParseNumstatMetadata(lines);
-            ExtractSymbolsFromHunks(lines, fileChangesMap);
-            return fileChanges;
-        }
-
-        private (List<GitFileChange> fileChanges, Dictionary<string, GitFileChange> fileChangesMap) ParseNumstatMetadata(List<string> lines)
-        {
-            var fileChanges = new List<GitFileChange>();
-            var fileChangesMap = new Dictionary<string, GitFileChange>();
-
-            foreach (var line in lines)
+            if (line.Contains('\t'))
             {
-                if (line.Contains('\t'))
+                var parts = line.Split('\t');
+                if (parts.Length >= 3)
                 {
-                    var parts = line.Split('\t');
-                    if (parts.Length >= 3)
-                    {
-                        string addedStr = parts[0];
-                        string deletedStr = parts[1];
-                        var pathParts = parts.Skip(2).ToList();
-                        string rawPath = string.Join("\t", pathParts);
-                        string path = NormalizeNumstatPath(rawPath);
+                    string addedStr = parts[0];
+                    string deletedStr = parts[1];
+                    var pathParts = parts.Skip(2).ToList();
+                    string rawPath = string.Join("\t", pathParts);
+                    string path = NormalizeNumstatPath(rawPath);
 
-                        if (path.Length > 0)
-                        {
-                            int added = ParseDiffLineCount(addedStr);
-                            int deleted = ParseDiffLineCount(deletedStr);
-                            
-                            var change = new GitFileChange { Path = path, Added = added, Deleted = deleted, Symbols = new List<string>() };
-                            fileChanges.Add(change);
-                            fileChangesMap[path] = change;
-                        }
+                    if (path.Length > 0)
+                    {
+                        int added = ParseDiffLineCount(addedStr);
+                        int deleted = ParseDiffLineCount(deletedStr);
+                        
+                        var change = new GitFileChange { Path = path, Added = added, Deleted = deleted, Symbols = new List<string>() };
+                        fileChanges.Add(change);
+                        fileChangesMap[path] = change;
                     }
                 }
             }
-
-            return (fileChanges, fileChangesMap);
         }
 
-        private void ExtractSymbolsFromHunks(
-            List<string> lines,
-            Dictionary<string, GitFileChange> fileChangesMap)
+        return (fileChanges, fileChangesMap);
+    }
+
+    private void ExtractSymbolsFromHunks(
+        List<string> lines,
+        Dictionary<string, GitFileChange> fileChangesMap)
+    {
+        string? currentPath = null;
+        foreach (var line in lines)
         {
-            string? currentPath = null;
-            foreach (var line in lines)
+            if (line.StartsWith("diff --git "))
             {
-                if (line.StartsWith("diff --git "))
+                var match = GitRegexConstants.DiffGitRegex.Match(line);
+                if (match.Success)
                 {
-                    var match = GitRegexConstants.DiffGitRegex.Match(line);
-                    if (match.Success)
-                    {
-                        currentPath = PathUtils.NormalizeGitPath(match.Groups[1].Value);
-                    }
-                    else
-                    {
-                        currentPath = null;
-                    }
+                    currentPath = PathUtils.NormalizeGitPath(match.Groups[1].Value);
                 }
-                else if (line.StartsWith("@@ ") && currentPath != null)
+                else
                 {
-                    var match = GitRegexConstants.HunkHeaderRegex.Match(line);
-                    if (match.Success && match.Groups.Count >= 2)
+                    currentPath = null;
+                }
+            }
+            else if (line.StartsWith("@@ ") && currentPath != null)
+            {
+                var match = GitRegexConstants.HunkHeaderRegex.Match(line);
+                if (match.Success && match.Groups.Count >= 2)
+                {
+                    string symbol = CleanSymbol(match.Groups[1].Value);
+                    if (symbol.Length > 0)
                     {
-                        string symbol = CleanSymbol(match.Groups[1].Value);
-                        if (symbol.Length > 0)
+                        if (fileChangesMap.TryGetValue(currentPath, out var change))
                         {
-                            if (fileChangesMap.TryGetValue(currentPath, out var change))
+                            change.Symbols ??= new List<string>();
+                            if (!change.Symbols.Contains(symbol))
                             {
-                                change.Symbols ??= new List<string>();
-                                if (!change.Symbols.Contains(symbol))
-                                {
-                                    change.Symbols.Add(symbol);
-                                }
+                                change.Symbols.Add(symbol);
                             }
                         }
                     }
                 }
             }
         }
+    }
 
-        /// <summary>
-        /// Cleans a symbol extracted from hunk headers by stripping suffixes and decorators.
-        /// Public to support direct testing in PortedModulesTests.
-        /// </summary>
-        public string CleanSymbol(string symbol)
+    /// <summary>
+    /// Cleans a symbol extracted from hunk headers by stripping suffixes and decorators.
+    /// Public to support direct testing in PortedModulesTests.
+    /// </summary>
+    public string CleanSymbol(string symbol)
+    {
+        string cleaned = symbol.Trim();
+        if (cleaned.StartsWith('@'))
         {
-            string cleaned = symbol.Trim();
-            if (cleaned.StartsWith('@'))
-            {
-                return "";
-            }
-            if (GitRegexConstants.ImportExcludeRegex.IsMatch(cleaned))
-            {
-                return "";
-            }
-
-            cleaned = GitRegexConstants.SemicolonSuffixRegex.Replace(cleaned, "");
-
-            while (true)
-            {
-                string prev = cleaned;
-                cleaned = GitRegexConstants.BracketsSuffixRegex.Replace(cleaned, "");
-                if (cleaned == prev)
-                {
-                    break;
-                }
-            }
-
-            if (cleaned.Length > MaxSymbolLength)
-            {
-                cleaned = cleaned.Substring(0, MaxSymbolLength) + "...";
-            }
-
-            return cleaned;
+            return "";
+        }
+        if (GitRegexConstants.ImportExcludeRegex.IsMatch(cleaned))
+        {
+            return "";
         }
 
-        /// <summary>
-        /// Normalizes git rename/move syntax inside numstat paths.
-        /// Public to support direct testing in PortedModulesTests.
-        /// </summary>
-        public string NormalizeNumstatPath(string path)
+        cleaned = GitRegexConstants.SemicolonSuffixRegex.Replace(cleaned, "");
+
+        while (true)
         {
-            string normalized = PathUtils.NormalizeGitPath(path);
-            var match = GitRegexConstants.BraceRenameRegex.Match(normalized);
-            if (match.Success)
+            string prev = cleaned;
+            cleaned = GitRegexConstants.BracketsSuffixRegex.Replace(cleaned, "");
+            if (cleaned == prev)
             {
-                return GitRegexConstants.BraceRenameRegex.Replace(normalized, match.Groups[1].Value);
+                break;
             }
-            if (normalized.Contains(" => ") && !normalized.Contains("{") && !normalized.Contains("}"))
-            {
-                var parts = normalized.Split(new[] { " => " }, StringSplitOptions.None);
-                if (parts.Length > 1)
-                {
-                    return parts[1];
-                }
-            }
-            return normalized;
         }
 
-        private int ParseDiffLineCount(string value)
+        if (cleaned.Length > MaxSymbolLength)
         {
-            return value == "-" ? 0 : (int.TryParse(value, out var parsedVal) ? parsedVal : 0);
+            cleaned = cleaned.Substring(0, MaxSymbolLength) + "...";
         }
+
+        return cleaned;
+    }
+
+    /// <summary>
+    /// Normalizes git rename/move syntax inside numstat paths.
+    /// Public to support direct testing in PortedModulesTests.
+    /// </summary>
+    public string NormalizeNumstatPath(string path)
+    {
+        string normalized = PathUtils.NormalizeGitPath(path);
+        var match = GitRegexConstants.BraceRenameRegex.Match(normalized);
+        if (match.Success)
+        {
+            return GitRegexConstants.BraceRenameRegex.Replace(normalized, match.Groups[1].Value);
+        }
+        if (normalized.Contains(" => ") && !normalized.Contains("{") && !normalized.Contains("}"))
+        {
+            var parts = normalized.Split(new[] { " => " }, StringSplitOptions.None);
+            if (parts.Length > 1)
+            {
+                return parts[1];
+            }
+        }
+        return normalized;
+    }
+
+    private int ParseDiffLineCount(string value)
+    {
+        return value == "-" ? 0 : (int.TryParse(value, out var parsedVal) ? parsedVal : 0);
     }
 }
