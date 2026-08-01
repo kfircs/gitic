@@ -99,7 +99,7 @@ namespace Gitic
             string normalized = path.Replace('\\', '/');
             if (normalized.StartsWith("./", StringComparison.Ordinal))
             {
-                normalized = normalized.Substring(2);
+                normalized = normalized[2..];
             }
             normalized = normalized.TrimStart('/');
             return normalized;
