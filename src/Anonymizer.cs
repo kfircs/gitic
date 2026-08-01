@@ -71,41 +71,17 @@ namespace Gitic
             var cache = new IdentityAnonymizationCache();
 
             // Anonymize human contributors
-            if (cloned.Contributors != null)
-            {
-                foreach (var contributor in cloned.Contributors)
-                {
-                    var identity = cache.AnonymizeHuman(contributor.Name, contributor.Email);
-                    contributor.Name = identity.Name;
-                    contributor.Email = identity.Email;
-                }
-            }
+            AnonymizeList(cloned.Contributors, cache.AnonymizeHuman);
 
             // Anonymize automation contributors
-            if (cloned.Automation != null)
-            {
-                foreach (var automation in cloned.Automation)
-                {
-                    var identity = cache.AnonymizeAutomation(automation.Name, automation.Email);
-                    automation.Name = identity.Name;
-                    automation.Email = identity.Email;
-                }
-            }
+            AnonymizeList(cloned.Automation, cache.AnonymizeAutomation);
 
             // Anonymize contributors in file metrics
             if (cloned.Files != null)
             {
                 foreach (var file in cloned.Files)
                 {
-                    if (file.Contributors != null)
-                    {
-                        foreach (var contributor in file.Contributors)
-                        {
-                            var identity = cache.AnonymizeHuman(contributor.Name, contributor.Email);
-                            contributor.Name = identity.Name;
-                            contributor.Email = identity.Email;
-                        }
-                    }
+                    AnonymizeList(file.Contributors, cache.AnonymizeHuman);
                 }
             }
 
@@ -114,19 +90,22 @@ namespace Gitic
             {
                 foreach (var area in cloned.Areas)
                 {
-                    if (area.Contributors != null)
-                    {
-                        foreach (var contributor in area.Contributors)
-                        {
-                            var identity = cache.AnonymizeHuman(contributor.Name, contributor.Email);
-                            contributor.Name = identity.Name;
-                            contributor.Email = identity.Email;
-                        }
-                    }
+                    AnonymizeList(area.Contributors, cache.AnonymizeHuman);
                 }
             }
 
             return cloned;
+        }
+
+        private static void AnonymizeList<T>(List<T>? list, Func<string, string, GitIdentity> anonymizeFunc) where T : IContributorIdentity
+        {
+            if (list == null) return;
+            foreach (var item in list)
+            {
+                var identity = anonymizeFunc(item.Name, item.Email);
+                item.Name = identity.Name;
+                item.Email = identity.Email;
+            }
         }
     }
 }

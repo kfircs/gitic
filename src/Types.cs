@@ -4,6 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace Gitic
 {
+    public interface IContributorIdentity
+    {
+        string Name { get; set; }
+        string Email { get; set; }
+    }
+
     public class GitIdentity
     {
         [JsonPropertyName("name")]
@@ -181,7 +187,7 @@ namespace Gitic
         };
     }
 
-    public class ContributorShare
+    public class ContributorShare : IContributorIdentity
     {
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
@@ -340,7 +346,7 @@ namespace Gitic
         public double FamiliarityScore { get; set; }
     }
 
-    public class ContributorMetric
+    public class ContributorMetric : IContributorIdentity
     {
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
@@ -355,7 +361,7 @@ namespace Gitic
         public List<ContributorAreaMetric> Areas { get; set; } = new();
     }
 
-    public class AutomationMetric
+    public class AutomationMetric : IContributorIdentity
     {
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
