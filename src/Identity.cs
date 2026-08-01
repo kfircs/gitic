@@ -17,12 +17,7 @@ namespace Gitic
     {
         public string IdentityKey(GitIdentity identity) => identity is null ? string.Empty : IdentityKey(identity.Name, identity.Email);
 
-        public string IdentityKey(string name, string email)
-        {
-            string normalizedName = name?.ToLowerInvariant() ?? string.Empty;
-            string normalizedEmail = email?.ToLowerInvariant() ?? string.Empty;
-            return $"{normalizedName} <{normalizedEmail}>";
-        }
+        public string IdentityKey(string name, string email) => $"{(name?.ToLowerInvariant() ?? string.Empty)} <{(email?.ToLowerInvariant() ?? string.Empty)}>";
     }
 
     internal static class IdentityKeyGenerator
