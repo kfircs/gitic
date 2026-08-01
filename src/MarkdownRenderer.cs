@@ -11,10 +11,6 @@ namespace Gitic
 {
     public class MarkdownRenderer : IReportRenderer
     {
-        public MarkdownRenderer()
-        {
-        }
-
         public Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
