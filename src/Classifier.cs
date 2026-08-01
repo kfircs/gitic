@@ -29,11 +29,8 @@ namespace Gitic
             PrefixRegex = prefixRegex ?? throw new ArgumentNullException(nameof(prefixRegex));
         }
 
-        public bool Matches(string message)
-        {
-            if (message == null) return false;
-            return MainRegex.IsMatch(message) || PrefixRegex.IsMatch(message);
-        }
+        public bool Matches(string message) =>
+            message != null && (MainRegex.IsMatch(message) || PrefixRegex.IsMatch(message));
     }
 
     public class CommitClassifier : ICommitClassifier
