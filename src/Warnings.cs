@@ -8,17 +8,13 @@ namespace Gitic
     {
         public static int GetSeverityOrder(string severity)
         {
-            if (string.Equals(severity, "Critical", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(severity, "Error", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(severity, "Failure", StringComparison.OrdinalIgnoreCase))
+            if (severity == null) return 3;
+            return severity.ToLowerInvariant() switch
             {
-                return 1;
-            }
-            if (string.Equals(severity, "Warning", StringComparison.OrdinalIgnoreCase))
-            {
-                return 2;
-            }
-            return 3;
+                "critical" or "error" or "failure" => 1,
+                "warning" => 2,
+                _ => 3
+            };
         }
     }
 
