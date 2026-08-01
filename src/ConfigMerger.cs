@@ -29,10 +29,7 @@ namespace Gitic
 
     public class ConfigMerger : IConfigMerger
     {
-        public GiticConfig CloneDefaultConfig()
-        {
-            return CloneConfig(GiticConfig.Default);
-        }
+        public GiticConfig CloneDefaultConfig() => CloneConfig(GiticConfig.Default);
 
         public GiticConfigOverrides ConvertToOverrides(GiticConfig config)
         {
