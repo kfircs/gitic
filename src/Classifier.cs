@@ -51,10 +51,7 @@ namespace Gitic
 
         private readonly List<ClassificationRule> _rules;
 
-        public CommitClassifier()
-        {
-            _rules = DefaultRules;
-        }
+        public CommitClassifier() => _rules = DefaultRules;
 
         public CommitClassifier(IEnumerable<ClassificationRule> rules)
         {
