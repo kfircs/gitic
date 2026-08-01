@@ -22,67 +22,24 @@ namespace Gitic
     {
         public ICliCommand CreateCommand(ParsedArgs parsed)
         {
-            if (string.Equals(parsed.Command, "help", StringComparison.OrdinalIgnoreCase))
-            {
-                return new HelpCommand(parsed.HelpText);
-            }
+            if (parsed == null) throw new ArgumentNullException(nameof(parsed));
 
-            if (string.Equals(parsed.Command, "version", StringComparison.OrdinalIgnoreCase))
+            return parsed.Command?.ToLowerInvariant() switch
             {
-                return new VersionCommand();
-            }
-
-            if (string.Equals(parsed.Command, "config", StringComparison.OrdinalIgnoreCase))
-            {
-                return new ConfigCommand(parsed);
-            }
-
-            if (string.Equals(parsed.Command, "hotspots", StringComparison.OrdinalIgnoreCase))
-            {
-                return new HotspotsCommand(parsed);
-            }
-
-            if (string.Equals(parsed.Command, "areas", StringComparison.OrdinalIgnoreCase))
-            {
-                return new AreasCommand(parsed);
-            }
-
-            if (string.Equals(parsed.Command, "contributors", StringComparison.OrdinalIgnoreCase))
-            {
-                return new ContributorsCommand(parsed);
-            }
-
-            if (string.Equals(parsed.Command, "contributor", StringComparison.OrdinalIgnoreCase))
-            {
-                return new ContributorCommand(parsed);
-            }
-
-            if (string.Equals(parsed.Command, "report", StringComparison.OrdinalIgnoreCase))
-            {
-                return new ReportCommand(parsed);
-            }
-
-            if (string.Equals(parsed.Command, "wizard", StringComparison.OrdinalIgnoreCase))
-            {
-                return new WizardCommand(parsed);
-            }
-
-            if (string.Equals(parsed.Command, "temporal-coupling", StringComparison.OrdinalIgnoreCase))
-            {
-                return new TemporalCouplingCommand(parsed);
-            }
-
-            if (string.Equals(parsed.Command, "lead-time", StringComparison.OrdinalIgnoreCase))
-            {
-                return new LeadTimeCommand(parsed);
-            }
-
-            if (string.Equals(parsed.Command, "ge-report", StringComparison.OrdinalIgnoreCase))
-            {
-                return new GeReportCommand(parsed);
-            }
-
-            throw new CommandLineParseError($"Unknown command: {parsed.Command}");
+                "help" => new HelpCommand(parsed.HelpText),
+                "version" => new VersionCommand(),
+                "config" => new ConfigCommand(parsed),
+                "hotspots" => new HotspotsCommand(parsed),
+                "areas" => new AreasCommand(parsed),
+                "contributors" => new ContributorsCommand(parsed),
+                "contributor" => new ContributorCommand(parsed),
+                "report" => new ReportCommand(parsed),
+                "wizard" => new WizardCommand(parsed),
+                "temporal-coupling" => new TemporalCouplingCommand(parsed),
+                "lead-time" => new LeadTimeCommand(parsed),
+                "ge-report" => new GeReportCommand(parsed),
+                _ => throw new CommandLineParseError($"Unknown command: {parsed.Command}")
+            };
         }
     }
 
