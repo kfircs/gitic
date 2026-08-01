@@ -56,10 +56,6 @@ namespace Gitic
 
     public class ResultAnonymizer : IResultAnonymizer
     {
-        public ResultAnonymizer()
-        {
-        }
-
         public AnalysisResult Anonymize(AnalysisResult result)
         {
             if (result == null) throw new ArgumentNullException(nameof(result));
