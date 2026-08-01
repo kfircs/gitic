@@ -277,10 +277,7 @@ namespace Gitic
             return null;
         }
 
-        private bool IsLockfile(string fileName)
-        {
-            return fileName.EndsWith(".lock", StringComparison.OrdinalIgnoreCase) || Exclusions.LockFiles.Contains(fileName);
-        }
+        private bool IsLockfile(string fileName) => fileName.EndsWith(".lock", StringComparison.OrdinalIgnoreCase) || Exclusions.LockFiles.Contains(fileName);
 
         private void AddExclusion(string category, string pattern)
         {
