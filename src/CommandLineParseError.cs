@@ -1,13 +1,12 @@
 using System;
 
-namespace Gitic
+namespace Gitic;
+
+public sealed class CommandLineParseError : Exception
 {
-    public class CommandLineParseError : Exception
-    {
-        public CommandLineParseError() : base() { }
+    public CommandLineParseError() { }
 
-        public CommandLineParseError(string message) : base(message) { }
+    public CommandLineParseError(string message) : base(message) { }
 
-        public CommandLineParseError(string message, Exception innerException) : base(message, innerException) { }
-    }
+    public CommandLineParseError(string message, Exception innerException) : base(message, innerException) { }
 }
