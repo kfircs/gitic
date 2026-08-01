@@ -78,6 +78,10 @@ namespace Gitic
 
     public static class PathUtils
     {
+        private const int MinLengthForSplitting = 5;
+        private const int EllipsisLength = 3;
+        private const string Ellipsis = "...";
+
         private static IGlobMatcher _matcher = new CachedGlobMatcher();
 
         public static void SetMatcher(IGlobMatcher matcher)
@@ -127,20 +131,20 @@ namespace Gitic
                 return path;
             }
 
-            if (maxLength <= 5)
+            if (maxLength <= MinLengthForSplitting)
             {
                 return path.Substring(path.Length - maxLength);
             }
 
             int keepEnd = maxLength / 2;
-            int keepStart = maxLength - keepEnd - 3; // -3 for "..."
+            int keepStart = maxLength - keepEnd - EllipsisLength;
 
             if (keepStart <= 0)
             {
-                return "..." + path.Substring(path.Length - (maxLength - 3));
+                return Ellipsis + path.Substring(path.Length - (maxLength - EllipsisLength));
             }
 
-            return path.Substring(0, keepStart) + "..." + path.Substring(path.Length - keepEnd);
+            return path.Substring(0, keepStart) + Ellipsis + path.Substring(path.Length - keepEnd);
         }
     }
 }
