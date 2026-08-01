@@ -12,9 +12,6 @@ namespace Gitic
             Details = details;
         }
 
-        public ConfigValidationError(string message) : base(message)
-        {
-            Details = new List<string> { message };
-        }
+        public ConfigValidationError(string message) : base(message) => Details = new List<string> { message };
     }
 }
