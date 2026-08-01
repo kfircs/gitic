@@ -205,8 +205,6 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
                 throw new CommandLineParseError($"{errors}\nTry running 'gitic --help' for usage.");
             }
 
-            string commandName = "wizard"; // Running gitic directly opens the TUI Wizard
-
             var settings = DefaultAnalysisSettings.Create();
 
             // Populate settings from options
@@ -255,8 +253,6 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
             settings.Quiet = parseResult.GetValue(quietOption);
 
             string repoPath = parseResult.GetValue(repoPathArg) ?? ".";
-            string? contributorName = null;
-            string? configAction = null;
 
             string? htmlPath = parseResult.GetValue(htmlOption);
             string? mdPath = parseResult.GetValue(mdOption);
@@ -264,14 +260,14 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
 
             return new ParsedArgs
             {
-                Command = commandName,
+                Command = "wizard",
                 RepoPath = repoPath,
                 Settings = settings,
-                ContributorName = contributorName,
+                ContributorName = null,
                 HtmlPath = htmlPath,
                 MdPath = mdPath,
                 SvgPath = svgPath,
-                ConfigAction = configAction
+                ConfigAction = null
             };
         }
     }
