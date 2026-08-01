@@ -202,35 +202,25 @@ namespace Gitic
 
                 if (attentionRecord.TryGetValue("churn", out var churnVal) && churnVal != null)
                 {
-                    attention.Churn = ConvertToDouble(churnVal);
+                    attention.Churn = ConfigUtils.ConvertToDouble(churnVal);
                 }
                 if (attentionRecord.TryGetValue("recency", out var recencyVal) && recencyVal != null)
                 {
-                    attention.Recency = ConvertToDouble(recencyVal);
+                    attention.Recency = ConfigUtils.ConvertToDouble(recencyVal);
                 }
                 if (attentionRecord.TryGetValue("contributor_spread", out var csVal) && csVal != null)
                 {
-                    attention.ContributorSpread = ConvertToDouble(csVal);
+                    attention.ContributorSpread = ConfigUtils.ConvertToDouble(csVal);
                 }
                 if (attentionRecord.TryGetValue("low_familiarity_concentration", out var lfcVal) && lfcVal != null)
                 {
-                    attention.LowFamiliarityConcentration = ConvertToDouble(lfcVal);
+                    attention.LowFamiliarityConcentration = ConfigUtils.ConvertToDouble(lfcVal);
                 }
 
                 result.Attention = attention;
             }
             return result;
         }
-
-        private static double ConvertToDouble(object? val) => val switch
-        {
-            null => 0.0,
-            double d => d,
-            float f => f,
-            long l => l,
-            int i => i,
-            _ => Convert.ToDouble(val)
-        };
 
         private static string? NormalizeNonEmptyString(object? value)
         {

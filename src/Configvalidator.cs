@@ -469,28 +469,28 @@ namespace Gitic
                 {
                     if (ValidateWeightObject(churnVal, "churn", source, errors))
                     {
-                        churn = ConvertToDouble(churnVal);
+                        churn = ConfigUtils.ConvertToDouble(churnVal);
                     }
                 }
                 if (attentionRecord.TryGetValue("recency", out var recencyVal))
                 {
                     if (ValidateWeightObject(recencyVal, "recency", source, errors))
                     {
-                        recency = ConvertToDouble(recencyVal);
+                        recency = ConfigUtils.ConvertToDouble(recencyVal);
                     }
                 }
                 if (attentionRecord.TryGetValue("contributor_spread", out var csVal))
                 {
                     if (ValidateWeightObject(csVal, "contributor_spread", source, errors))
                     {
-                        contributorSpread = ConvertToDouble(csVal);
+                        contributorSpread = ConfigUtils.ConvertToDouble(csVal);
                     }
                 }
                 if (attentionRecord.TryGetValue("low_familiarity_concentration", out var lfcVal))
                 {
                     if (ValidateWeightObject(lfcVal, "low_familiarity_concentration", source, errors))
                     {
-                        lowFamiliarityConcentration = ConvertToDouble(lfcVal);
+                        lowFamiliarityConcentration = ConfigUtils.ConvertToDouble(lfcVal);
                     }
                 }
 
@@ -542,15 +542,5 @@ namespace Gitic
 
             return ValidateWeightValue(numVal, key, source, errors);
         }
-
-        private static double ConvertToDouble(object? val) => val switch
-        {
-            null => 0.0,
-            double d => d,
-            float f => f,
-            long l => l,
-            int i => i,
-            _ => Convert.ToDouble(val)
-        };
     }
 }

@@ -183,5 +183,17 @@ namespace Gitic
         public string? RepoConfigPath { get; set; }
     }
 
-
+    public static class ConfigUtils
+    {
+        public static double ConvertToDouble(object? val) => val switch
+        {
+            null => 0.0,
+            double d => d,
+            float f => f,
+            int i => i,
+            long l => l,
+            string s when double.TryParse(s, out var d) => d,
+            _ => Convert.ToDouble(val)
+        };
+    }
 }
