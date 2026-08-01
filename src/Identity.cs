@@ -43,9 +43,7 @@ namespace Gitic
 
         public static string IdentityKey(string name, string email)
         {
-            string normalizedName = name?.ToLowerInvariant() ?? string.Empty;
-            string normalizedEmail = email?.ToLowerInvariant() ?? string.Empty;
-            return $"{normalizedName} <{normalizedEmail}>";
+            return IdentityKeyGenerator.Default.IdentityKey(name, email);
         }
 
         public static bool SameIdentity(GitIdentity left, GitIdentity right)
