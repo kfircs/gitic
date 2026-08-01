@@ -161,12 +161,12 @@ namespace Gitic
         private const double HeatScoreChurnWeight = 0.45;
         private const double HeatScoreRecencyWeight = 0.1;
 
-        public static string ConcentrationTier(double share)
+        public static string ConcentrationTier(double share) => share switch
         {
-            if (share < ConcentrationHealthyMax) return "healthy";
-            if (share < ConcentrationWatchMax) return "watch";
-            return "silo";
-        }
+            < ConcentrationHealthyMax => "healthy",
+            < ConcentrationWatchMax => "watch",
+            _ => "silo"
+        };
 
         public static double RoundRatio(double value)
         {
