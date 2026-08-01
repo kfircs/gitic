@@ -51,7 +51,7 @@ namespace Gitic
     {
         public override List<Diagnostic> CollectDiagnostics(WarningContext context)
         {
-            if ((context.AliasCount ?? 0) > 0)
+            if (context.AliasCount > 0)
             {
                 return new List<Diagnostic>();
             }
