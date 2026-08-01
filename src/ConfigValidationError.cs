@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
 
-namespace Gitic
+namespace Gitic;
+
+public sealed class ConfigValidationError : Exception
 {
-    public class ConfigValidationError : Exception
+    public List<string> Details { get; }
+
+    public ConfigValidationError(List<string> details) : base(string.Join(Environment.NewLine, details))
     {
-        public List<string> Details { get; }
-
-        public ConfigValidationError(List<string> details) : base(string.Join("\n", details))
-        {
-            Details = details;
-        }
-
-        public ConfigValidationError(string message) : base(message) => Details = new List<string> { message };
+        Details = details;
     }
+
+    public ConfigValidationError(string message) : base(message) => Details = new List<string> { message };
 }
+
