@@ -101,7 +101,7 @@ namespace Gitic
 
                 if (pattern.StartsWith("/"))
                 {
-                    pattern = pattern.Substring(1);
+                    pattern = pattern[1..];
                 }
                 else if (!pattern.StartsWith("**/"))
                 {
@@ -112,7 +112,7 @@ namespace Gitic
 
                 if (pattern.StartsWith("**/"))
                 {
-                    rules.Add(new ExcludeRule { Pattern = pattern.Substring(3), Category = category });
+                    rules.Add(new ExcludeRule { Pattern = pattern[3..], Category = category });
                 }
             }
             return rules;
