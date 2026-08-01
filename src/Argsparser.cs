@@ -9,7 +9,7 @@ namespace Gitic
 {
     public class CommandLineParser : ICommandLineParser
     {
-        private readonly List<string> _args;
+        private readonly IReadOnlyList<string> _args;
         private readonly ICliCommandFactory _commandFactory;
 
         public CommandLineParser(string[] args) : this(args, new CliCommandFactoryImpl())
