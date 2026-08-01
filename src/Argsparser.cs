@@ -18,7 +18,7 @@ namespace Gitic
 
         public CommandLineParser(string[] args, ICliCommandFactory commandFactory)
         {
-            _args = args != null ? new List<string>(args) : new List<string>();
+            _args = args is not null ? [..args] : [];
             _commandFactory = commandFactory ?? new CliCommandFactoryImpl();
         }
 
