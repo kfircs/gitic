@@ -15,6 +15,8 @@ namespace Gitic
     {
         private readonly ConcurrentDictionary<string, Regex> _regexCache = new ConcurrentDictionary<string, Regex>();
 
+        private static bool IsGlobPattern(string pattern) => pattern.Contains('*') || pattern.Contains('?');
+
         public bool MatchesPathPattern(string path, string pattern)
         {
             string normalizedPath = PathUtils.NormalizeGitPath(path);
@@ -23,7 +25,7 @@ namespace Gitic
             {
                 return false;
             }
-            if (normalizedPattern.Contains('*') || normalizedPattern.Contains('?'))
+            if (IsGlobPattern(normalizedPattern))
             {
                 return GlobToRegExp(normalizedPattern).IsMatch(normalizedPath);
             }
@@ -32,7 +34,7 @@ namespace Gitic
 
         public bool MatchesTextPattern(string value, string pattern)
         {
-            if (pattern.Contains('*') || pattern.Contains('?'))
+            if (IsGlobPattern(pattern))
             {
                 return GlobToRegExp(pattern).IsMatch(value);
             }
