@@ -2,78 +2,77 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Gitic
+namespace Gitic;
+
+public sealed class ContributorNotFoundError : Exception
 {
-    public class ContributorNotFoundError : Exception
+    public ContributorNotFoundError() { }
+
+    public ContributorNotFoundError(string message) : base(message)
     {
-        public ContributorNotFoundError() : base() { }
-
-        public ContributorNotFoundError(string message) : base(message)
-        {
-        }
-
-        public ContributorNotFoundError(string message, Exception innerException) : base(message, innerException) { }
     }
 
-    public class AmbiguousContributorError : Exception
+    public ContributorNotFoundError(string message, Exception innerException) : base(message, innerException) { }
+}
+
+public sealed class AmbiguousContributorError : Exception
+{
+    public AmbiguousContributorError() { }
+
+    public AmbiguousContributorError(string message) : base(message)
     {
-        public AmbiguousContributorError() : base() { }
-
-        public AmbiguousContributorError(string message) : base(message)
-        {
-        }
-
-        public AmbiguousContributorError(string message, Exception innerException) : base(message, innerException) { }
     }
 
-    public interface IContributorLookupRegistry
+    public AmbiguousContributorError(string message, Exception innerException) : base(message, innerException) { }
+}
+
+public interface IContributorLookupRegistry
+{
+    ContributorMetric Find(string lookup);
+}
+
+public class ContributorLookupRegistry : IContributorLookupRegistry
+{
+    private readonly List<ContributorMetric> _contributors;
+
+    public ContributorLookupRegistry(List<ContributorMetric> contributors)
     {
-        ContributorMetric Find(string lookup);
+        _contributors = contributors;
     }
 
-    public class ContributorLookupRegistry : IContributorLookupRegistry
+    public ContributorMetric Find(string lookup)
     {
-        private readonly List<ContributorMetric> _contributors;
-
-        public ContributorLookupRegistry(List<ContributorMetric> contributors)
+        if (string.IsNullOrWhiteSpace(lookup))
         {
-            _contributors = contributors;
+            throw new ArgumentException("Lookup query cannot be null or whitespace.", nameof(lookup));
         }
 
-        public ContributorMetric Find(string lookup)
+        var exact = _contributors.FirstOrDefault(c => string.Equals(c.Name, lookup, StringComparison.Ordinal));
+        if (exact != null)
         {
-            if (string.IsNullOrWhiteSpace(lookup))
-            {
-                throw new ArgumentException("Lookup query cannot be null or whitespace.", nameof(lookup));
-            }
+            return exact;
+        }
 
-            var exact = _contributors.FirstOrDefault(c => string.Equals(c.Name, lookup, StringComparison.Ordinal));
-            if (exact != null)
-            {
-                return exact;
-            }
+        var matches = _contributors.Where(c =>
+            string.Equals(c.Name, lookup, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(c.Email, lookup, StringComparison.OrdinalIgnoreCase)
+        ).ToList();
 
-            var matches = _contributors.Where(c =>
-                string.Equals(c.Name, lookup, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(c.Email, lookup, StringComparison.OrdinalIgnoreCase)
-            ).ToList();
+        if (matches.Count == 1)
+        {
+            return matches[0];
+        }
 
-            if (matches.Count == 1)
-            {
-                return matches[0];
-            }
-
-            if (matches.Count > 1)
-            {
-                string candidates = string.Join(", ", matches.Select(c => $"{c.Name} <{c.Email}>"));
-                throw new AmbiguousContributorError(
-                    $"Contributor lookup \"{lookup}\" is ambiguous. Candidates: {candidates}"
-                );
-            }
-
-            throw new ContributorNotFoundError(
-                $"Contributor \"{lookup}\" was not found in the selected analysis."
+        if (matches.Count > 1)
+        {
+            string candidates = string.Join(", ", matches.Select(c => $"{c.Name} <{c.Email}>"));
+            throw new AmbiguousContributorError(
+                $"Contributor lookup \"{lookup}\" is ambiguous. Candidates: {candidates}"
             );
         }
+
+        throw new ContributorNotFoundError(
+            $"Contributor \"{lookup}\" was not found in the selected analysis."
+        );
     }
 }
