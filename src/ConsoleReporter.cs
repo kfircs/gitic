@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Gitic
@@ -18,23 +19,9 @@ namespace Gitic
         {
             if (diagnostics == null) return;
 
-            var diagnosticsToShow = new List<Diagnostic>();
-            foreach (var d in diagnostics)
-            {
-                if (quiet)
-                {
-                    if (string.Equals(d.Severity, "Critical", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(d.Severity, "Error", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(d.Severity, "Failure", StringComparison.OrdinalIgnoreCase))
-                    {
-                        diagnosticsToShow.Add(d);
-                    }
-                }
-                else
-                {
-                    diagnosticsToShow.Add(d);
-                }
-            }
+            var diagnosticsToShow = quiet
+                ? diagnostics.Where(d => Warnings.GetSeverityOrder(d.Severity) == 1).ToList()
+                : diagnostics.ToList();
 
             if (diagnosticsToShow.Count == 0) return;
 
