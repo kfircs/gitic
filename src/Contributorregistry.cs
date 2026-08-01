@@ -6,16 +6,24 @@ namespace Gitic
 {
     public class ContributorNotFoundError : Exception
     {
+        public ContributorNotFoundError() : base() { }
+
         public ContributorNotFoundError(string message) : base(message)
         {
         }
+
+        public ContributorNotFoundError(string message, Exception innerException) : base(message, innerException) { }
     }
 
     public class AmbiguousContributorError : Exception
     {
+        public AmbiguousContributorError() : base() { }
+
         public AmbiguousContributorError(string message) : base(message)
         {
         }
+
+        public AmbiguousContributorError(string message, Exception innerException) : base(message, innerException) { }
     }
 
     public interface IContributorLookupRegistry
