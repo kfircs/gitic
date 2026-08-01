@@ -303,48 +303,6 @@ namespace Gitic
             reporter.WriteDiagnostics(diagnostics, quiet);
         }
 
-        private static string SafeSubstring(string? str, int startIndex)
-        {
-            if (string.IsNullOrEmpty(str))
-            {
-                return string.Empty;
-            }
-            if (startIndex < 0)
-            {
-                startIndex = 0;
-            }
-            if (startIndex >= str.Length)
-            {
-                return string.Empty;
-            }
-            return str.Substring(startIndex);
-        }
-
-        private static string SafeSubstring(string? str, int startIndex, int length)
-        {
-            if (string.IsNullOrEmpty(str))
-            {
-                return string.Empty;
-            }
-            if (startIndex < 0)
-            {
-                startIndex = 0;
-            }
-            if (startIndex >= str.Length)
-            {
-                return string.Empty;
-            }
-            if (length <= 0)
-            {
-                return string.Empty;
-            }
-            if (startIndex + length > str.Length)
-            {
-                length = str.Length - startIndex;
-            }
-            return str.Substring(startIndex, length);
-        }
-
         private Diagnostic ParseOrWrapWarning(string warning)
         {
             if (string.IsNullOrEmpty(warning))
@@ -366,8 +324,8 @@ namespace Gitic
                     {
                         Code = "GITIC007",
                         Severity = "Warning",
-                        Message = SafeSubstring(warning, 0, idx),
-                        Hint = SafeSubstring(warning, idx + 2) // "using ..."
+                        Message = warning.Substring(0, idx),
+                        Hint = warning.Substring(idx + 2) // "using ..."
                     };
                 }
                 return new Diagnostic
