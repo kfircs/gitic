@@ -93,7 +93,7 @@ namespace Gitic
             double sum = attention.Churn + attention.Recency + attention.ContributorSpread + attention.LowFamiliarityConcentration;
             if (Math.Abs(sum - 1.0) > 0.0001)
             {
-                errors.Add($"{source}: scoring.attention weights must sum to 1. Current sum: {sum.ToString("F6")}.");
+                errors.Add($"{source}: scoring.attention weights must sum to 1. Current sum: {sum:F6}.");
             }
 
             if (errors.Count > 0)
