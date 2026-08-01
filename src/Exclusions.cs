@@ -257,15 +257,9 @@ namespace Gitic
             return null;
         }
 
-        private bool IsBinaryImage(string fileName)
-        {
-            return Exclusions.BinaryImageExtensions.Contains(Path.GetExtension(fileName));
-        }
+        private bool IsBinaryImage(string fileName) => Exclusions.BinaryImageExtensions.Contains(Path.GetExtension(fileName));
 
-        private bool IsNonCode(string fileName)
-        {
-            return Exclusions.NonCodeExtensions.Contains(Path.GetExtension(fileName));
-        }
+        private bool IsNonCode(string fileName) => Exclusions.NonCodeExtensions.Contains(Path.GetExtension(fileName));
 
         private ExclusionCategory? ClassifyConfiguredExclusion(string path)
         {
