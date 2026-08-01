@@ -15,11 +15,7 @@ namespace Gitic
 
     internal class DefaultIdentityKeyGenerator : IIdentityKeyGenerator
     {
-        public string IdentityKey(GitIdentity identity)
-        {
-            if (identity == null) return string.Empty;
-            return IdentityKey(identity.Name, identity.Email);
-        }
+        public string IdentityKey(GitIdentity identity) => identity is null ? string.Empty : IdentityKey(identity.Name, identity.Email);
 
         public string IdentityKey(string name, string email)
         {
