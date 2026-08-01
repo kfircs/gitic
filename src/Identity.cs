@@ -86,7 +86,7 @@ namespace Gitic
 
         private static bool MatchesDefaultBotHeuristics(string value)
         {
-            return Array.Exists(DefaultBotKeywords, keyword => value.Contains(keyword));
+            return DefaultBotKeywords.Any(keyword => value.Contains(keyword));
         }
 
         private static bool MatchesAiAgentHeuristics(string name, string email)
