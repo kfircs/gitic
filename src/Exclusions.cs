@@ -152,7 +152,7 @@ namespace Gitic
             _headFiles = headFiles;
             _excludes = excludes;
             _includeDeleted = includeDeleted;
-            _requestedPath = requestedPath == null ? null : PathUtils.NormalizeGitPath(requestedPath).TrimEnd('/');
+            _requestedPath = requestedPath is null ? null : PathUtils.NormalizeGitPath(requestedPath).TrimEnd('/');
         }
 
         public bool Check(string path)
