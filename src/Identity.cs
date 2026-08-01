@@ -165,8 +165,8 @@ namespace Gitic
 
         internal IdentityRegistry(List<AliasRule>? aliases = null, List<BotRule>? bots = null, bool mergeOnEmail = false, IIdentityKeyGenerator? keyGenerator = null)
         {
-            _aliases = aliases ?? new List<AliasRule>();
-            _bots = bots ?? new List<BotRule>();
+            _aliases = aliases ?? [];
+            _bots = bots ?? [];
             _mergeOnEmail = mergeOnEmail;
             _keyGenerator = keyGenerator ?? IdentityKeyGenerator.Default;
         }
