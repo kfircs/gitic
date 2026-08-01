@@ -3,278 +3,276 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json;
 
-namespace Gitic
+namespace Gitic;
+
+public interface IConfigMerger
 {
-    public interface IConfigMerger
+    GiticConfig CloneDefaultConfig();
+    GiticConfigOverrides ConvertToOverrides(GiticConfig config);
+    GiticConfig CloneConfig(GiticConfig config);
+    GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfigOverrides? overrideConfig = null);
+    
+    // Deep Interface Overloads
+    GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfig? overrideConfig);
+    GiticConfig MergeMultiple(GiticConfig baseConfig, params GiticConfigOverrides?[] overrides);
+    GiticConfig MergeMultiple(GiticConfig baseConfig, params object?[] overridesOrConfigs);
+}
+
+public interface IConfigurationService
+{
+    GiticConfig Merge(GiticConfig baseConfig, params object?[] overridesOrConfigs);
+    AnalysisSettings NormalizeSettings(AnalysisSettings? settings);
+    GiticConfigOverrides NormalizeOverrides(object? rawYamlDict, string source);
+}
+
+public class ConfigMerger : IConfigMerger
+{
+    public GiticConfig CloneDefaultConfig() => CloneConfig(GiticConfig.Default);
+
+    public GiticConfigOverrides ConvertToOverrides(GiticConfig config)
     {
-        GiticConfig CloneDefaultConfig();
-        GiticConfigOverrides ConvertToOverrides(GiticConfig config);
-        GiticConfig CloneConfig(GiticConfig config);
-        GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfigOverrides? overrideConfig = null);
-        
-        // Deep Interface Overloads
-        GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfig? overrideConfig);
-        GiticConfig MergeMultiple(GiticConfig baseConfig, params GiticConfigOverrides?[] overrides);
-        GiticConfig MergeMultiple(GiticConfig baseConfig, params object?[] overridesOrConfigs);
+        if (config == null) return new GiticConfigOverrides();
+        return MapTo<GiticConfigOverrides>(config);
     }
 
-    public interface IConfigurationService
+    public GiticConfig CloneConfig(GiticConfig config)
     {
-        GiticConfig Merge(GiticConfig baseConfig, params object?[] overridesOrConfigs);
-        AnalysisSettings NormalizeSettings(AnalysisSettings? settings);
-        GiticConfigOverrides NormalizeOverrides(object? rawYamlDict, string source);
+        if (config == null) return new GiticConfig();
+        return new GiticConfig
+        {
+            Aliases = config.Aliases?.Select(a => new AliasRule
+            {
+                Canonical = a.Canonical != null ? new GitIdentity { Name = a.Canonical.Name, Email = a.Canonical.Email } : new GitIdentity(),
+                Identities = a.Identities?.Select(id => new GitIdentity { Name = id.Name, Email = id.Email }).ToList() ?? new List<GitIdentity>()
+            }).ToList() ?? new List<AliasRule>(),
+            
+            Bots = config.Bots?.Select(b => new BotRule
+            {
+                Name = b.Name,
+                Email = b.Email,
+                Pattern = b.Pattern
+            }).ToList() ?? new List<BotRule>(),
+
+            Excludes = config.Excludes?.Select(e => new ExcludeRule
+            {
+                Pattern = e.Pattern,
+                Category = e.Category
+            }).ToList() ?? new List<ExcludeRule>(),
+
+            Areas = config.Areas?.Select(area => new NamedArea
+            {
+                Name = area.Name,
+                Paths = area.Paths?.ToList() ?? new List<string>()
+            }).ToList() ?? new List<NamedArea>(),
+
+            Scoring = config.Scoring != null ? new ScoringConfig
+            {
+                Attention = config.Scoring.Attention != null ? new AttentionWeights
+                {
+                    Churn = config.Scoring.Attention.Churn,
+                    Recency = config.Scoring.Attention.Recency,
+                    ContributorSpread = config.Scoring.Attention.ContributorSpread,
+                    LowFamiliarityConcentration = config.Scoring.Attention.LowFamiliarityConcentration
+                } : new AttentionWeights()
+            } : new ScoringConfig(),
+
+            Identity = config.Identity != null ? new IdentityConfig
+            {
+                MergeOnEmail = config.Identity.MergeOnEmail
+            } : new IdentityConfig(),
+
+            Metrics = config.Metrics != null ? new MetricsConfig
+            {
+                TemporalCouplingMaxCommitFileCount = config.Metrics.TemporalCouplingMaxCommitFileCount
+            } : new MetricsConfig()
+        };
     }
 
-    public class ConfigMerger : IConfigMerger
+    public GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfigOverrides? overrideConfig = null)
     {
-        public GiticConfig CloneDefaultConfig() => CloneConfig(GiticConfig.Default);
-
-        public GiticConfigOverrides ConvertToOverrides(GiticConfig config)
+        var cloned = CloneConfig(baseConfig);
+        if (overrideConfig == null)
         {
-            if (config == null) return new GiticConfigOverrides();
-            return MapTo<GiticConfigOverrides>(config);
-        }
-
-        public GiticConfig CloneConfig(GiticConfig config)
-        {
-            if (config == null) return new GiticConfig();
-            return new GiticConfig
-            {
-                Aliases = config.Aliases?.Select(a => new AliasRule
-                {
-                    Canonical = a.Canonical != null ? new GitIdentity { Name = a.Canonical.Name, Email = a.Canonical.Email } : new GitIdentity(),
-                    Identities = a.Identities?.Select(id => new GitIdentity { Name = id.Name, Email = id.Email }).ToList() ?? new List<GitIdentity>()
-                }).ToList() ?? new List<AliasRule>(),
-                
-                Bots = config.Bots?.Select(b => new BotRule
-                {
-                    Name = b.Name,
-                    Email = b.Email,
-                    Pattern = b.Pattern
-                }).ToList() ?? new List<BotRule>(),
-
-                Excludes = config.Excludes?.Select(e => new ExcludeRule
-                {
-                    Pattern = e.Pattern,
-                    Category = e.Category
-                }).ToList() ?? new List<ExcludeRule>(),
-
-                Areas = config.Areas?.Select(area => new NamedArea
-                {
-                    Name = area.Name,
-                    Paths = area.Paths?.ToList() ?? new List<string>()
-                }).ToList() ?? new List<NamedArea>(),
-
-                Scoring = config.Scoring != null ? new ScoringConfig
-                {
-                    Attention = config.Scoring.Attention != null ? new AttentionWeights
-                    {
-                        Churn = config.Scoring.Attention.Churn,
-                        Recency = config.Scoring.Attention.Recency,
-                        ContributorSpread = config.Scoring.Attention.ContributorSpread,
-                        LowFamiliarityConcentration = config.Scoring.Attention.LowFamiliarityConcentration
-                    } : new AttentionWeights()
-                } : new ScoringConfig(),
-
-                Identity = config.Identity != null ? new IdentityConfig
-                {
-                    MergeOnEmail = config.Identity.MergeOnEmail
-                } : new IdentityConfig(),
-
-                Metrics = config.Metrics != null ? new MetricsConfig
-                {
-                    TemporalCouplingMaxCommitFileCount = config.Metrics.TemporalCouplingMaxCommitFileCount
-                } : new MetricsConfig()
-            };
-        }
-
-        public GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfigOverrides? overrideConfig = null)
-        {
-            var cloned = CloneConfig(baseConfig);
-            if (overrideConfig == null)
-            {
-                return cloned;
-            }
-
-            MergeObjects(cloned, overrideConfig);
             return cloned;
         }
 
-        // Deep Interface Implementation: Overload that accepts GiticConfig directly, hiding manual override mapping
-        public GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfig? overrideConfig)
-        {
-            if (overrideConfig == null) return CloneConfig(baseConfig);
-            return MergeConfig(baseConfig, ConvertToOverrides(overrideConfig));
-        }
+        MergeObjects(cloned, overrideConfig);
+        return cloned;
+    }
 
-        // Deep Interface Implementation: Overload that handles chaining multiple typed overrides
-        public GiticConfig MergeMultiple(GiticConfig baseConfig, params GiticConfigOverrides?[] overrides)
-        {
-            var cloned = CloneConfig(baseConfig);
-            if (overrides == null) return cloned;
+    // Deep Interface Implementation: Overload that accepts GiticConfig directly, hiding manual override mapping
+    public GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfig? overrideConfig)
+    {
+        if (overrideConfig == null) return CloneConfig(baseConfig);
+        return MergeConfig(baseConfig, ConvertToOverrides(overrideConfig));
+    }
 
-            foreach (var @override in overrides)
+    // Deep Interface Implementation: Overload that handles chaining multiple typed overrides
+    public GiticConfig MergeMultiple(GiticConfig baseConfig, params GiticConfigOverrides?[] overrides)
+    {
+        var cloned = CloneConfig(baseConfig);
+        if (overrides == null) return cloned;
+
+        foreach (var @override in overrides)
+        {
+            if (@override != null)
             {
-                if (@override != null)
-                {
-                    MergeObjects(cloned, @override);
-                }
-            }
-            return cloned;
-        }
-
-        // Deep Interface Implementation: Overload that handles both GiticConfig and GiticConfigOverrides polymorphically
-        public GiticConfig MergeMultiple(GiticConfig baseConfig, params object?[] overridesOrConfigs)
-        {
-            var cloned = CloneConfig(baseConfig);
-            if (overridesOrConfigs == null) return cloned;
-
-            foreach (var item in overridesOrConfigs)
-            {
-                if (item == null) continue;
-
-                if (item is GiticConfig configItem)
-                {
-                    MergeObjects(cloned, ConvertToOverrides(configItem));
-                }
-                else if (item is GiticConfigOverrides overridesItem)
-                {
-                    MergeObjects(cloned, overridesItem);
-                }
-            }
-            return cloned;
-        }
-
-        private static TTarget MapTo<TTarget>(object source) where TTarget : class, new()
-        {
-            var target = new TTarget();
-            MapProperties(source, target);
-            return target;
-        }
-
-        private static void MapProperties(object source, object target)
-        {
-            if (source == null || target == null) return;
-
-            var sourceProps = source.GetType().GetProperties();
-            var targetProps = target.GetType().GetProperties();
-
-            foreach (var sourceProp in sourceProps)
-            {
-                var targetProp = targetProps.FirstOrDefault(p => p.Name == sourceProp.Name);
-                if (targetProp == null || !targetProp.CanWrite) continue;
-
-                var sourceVal = sourceProp.GetValue(source);
-                if (sourceVal == null) continue;
-
-                // Case 1: Simple assignment if types match (e.g., lists like List<AliasRule>)
-                if (targetProp.PropertyType.IsAssignableFrom(sourceProp.PropertyType))
-                {
-                    targetProp.SetValue(target, sourceVal);
-                }
-                // Case 2: Target is Nullable version of Source type (e.g., bool? and bool, double? and double, int? and int)
-                else if (Nullable.GetUnderlyingType(targetProp.PropertyType) == sourceProp.PropertyType)
-                {
-                    targetProp.SetValue(target, sourceVal);
-                }
-                // Case 3: Nested objects (e.g., ScoringConfigOverrides and ScoringConfig)
-                else if (targetProp.PropertyType.IsClass && sourceProp.PropertyType.IsClass &&
-                         targetProp.PropertyType != typeof(string) && !typeof(IEnumerable).IsAssignableFrom(targetProp.PropertyType))
-                {
-                    var targetVal = targetProp.GetValue(target);
-                    if (targetVal == null)
-                    {
-                        targetVal = Activator.CreateInstance(targetProp.PropertyType);
-                        targetProp.SetValue(target, targetVal);
-                    }
-                    if (targetVal != null)
-                    {
-                        MapProperties(sourceVal, targetVal);
-                    }
-                }
+                MergeObjects(cloned, @override);
             }
         }
+        return cloned;
+    }
 
-        private static void MergeObjects(object target, object source)
+    // Deep Interface Implementation: Overload that handles both GiticConfig and GiticConfigOverrides polymorphically
+    public GiticConfig MergeMultiple(GiticConfig baseConfig, params object?[] overridesOrConfigs)
+    {
+        var cloned = CloneConfig(baseConfig);
+        if (overridesOrConfigs == null) return cloned;
+
+        foreach (var item in overridesOrConfigs)
         {
-            if (target == null || source == null) return;
+            if (item == null) continue;
 
-            var targetProperties = target.GetType().GetProperties();
-            var sourceProperties = source.GetType().GetProperties();
-
-            foreach (var sourceProp in sourceProperties)
+            if (item is GiticConfig configItem)
             {
-                var val = sourceProp.GetValue(source);
-                if (val == null) continue;
+                MergeObjects(cloned, ConvertToOverrides(configItem));
+            }
+            else if (item is GiticConfigOverrides overridesItem)
+            {
+                MergeObjects(cloned, overridesItem);
+            }
+        }
+        return cloned;
+    }
 
-                var targetProp = targetProperties.FirstOrDefault(p => p.Name == sourceProp.Name);
-                if (targetProp == null || !targetProp.CanWrite) continue;
+    private static TTarget MapTo<TTarget>(object source) where TTarget : class, new()
+    {
+        var target = new TTarget();
+        MapProperties(source, target);
+        return target;
+    }
 
-                // Case 1: Collection
-                if (typeof(IList).IsAssignableFrom(targetProp.PropertyType) &&
-                    val is IEnumerable sourceCollection)
+    private static void MapProperties(object source, object target)
+    {
+        if (source == null || target == null) return;
+
+        var sourceProps = source.GetType().GetProperties();
+        var targetProps = target.GetType().GetProperties();
+
+        foreach (var sourceProp in sourceProps)
+        {
+            var targetProp = targetProps.FirstOrDefault(p => p.Name == sourceProp.Name);
+            if (targetProp == null || !targetProp.CanWrite) continue;
+
+            var sourceVal = sourceProp.GetValue(source);
+            if (sourceVal == null) continue;
+
+            // Case 1: Simple assignment if types match (e.g., lists like List<AliasRule>)
+            if (targetProp.PropertyType.IsAssignableFrom(sourceProp.PropertyType))
+            {
+                targetProp.SetValue(target, sourceVal);
+            }
+            // Case 2: Target is Nullable version of Source type (e.g., bool? and bool, double? and double, int? and int)
+            else if (Nullable.GetUnderlyingType(targetProp.PropertyType) == sourceProp.PropertyType)
+            {
+                targetProp.SetValue(target, sourceVal);
+            }
+            // Case 3: Nested objects (e.g., ScoringConfigOverrides and ScoringConfig)
+            else if (targetProp.PropertyType.IsClass && sourceProp.PropertyType.IsClass &&
+                     targetProp.PropertyType != typeof(string) && !typeof(IEnumerable).IsAssignableFrom(targetProp.PropertyType))
+            {
+                var targetVal = targetProp.GetValue(target);
+                if (targetVal == null)
                 {
-                    var targetList = targetProp.GetValue(target) as IList;
-                    if (targetList == null)
-                    {
-                        targetList = Activator.CreateInstance(targetProp.PropertyType) as IList;
-                        targetProp.SetValue(target, targetList);
-                    }
-                    if (targetList != null)
-                    {
-                        foreach (var item in sourceCollection)
-                        {
-                            targetList.Add(item);
-                        }
-                    }
+                    targetVal = Activator.CreateInstance(targetProp.PropertyType);
+                    targetProp.SetValue(target, targetVal);
                 }
-                // Case 2: Nullable primitive on source, non-nullable primitive on target
-                else if (Nullable.GetUnderlyingType(sourceProp.PropertyType) != null)
+                if (targetVal != null)
                 {
-                    targetProp.SetValue(target, val);
-                }
-                // Case 3: Nested object
-                else if (targetProp.PropertyType.IsClass && sourceProp.PropertyType.IsClass &&
-                         targetProp.PropertyType != typeof(string))
-                {
-                    var targetVal = targetProp.GetValue(target);
-                    if (targetVal != null)
-                    {
-                        MergeObjects(targetVal, val);
-                    }
+                    MapProperties(sourceVal, targetVal);
                 }
             }
         }
     }
 
-    public class ConfigurationService : IConfigurationService
+    private static void MergeObjects(object target, object source)
     {
-        private readonly IConfigMerger _merger;
-        private readonly IConfigOverridesNormalizer _overridesNormalizer;
-        private readonly IAnalysisSettingsNormalizer _settingsNormalizer;
+        if (target == null || source == null) return;
 
-        public ConfigurationService(IConfigMerger? merger = null, IConfigOverridesNormalizer? overridesNormalizer = null, IAnalysisSettingsNormalizer? settingsNormalizer = null)
-        {
-            _merger = merger ?? new ConfigMerger();
-            _overridesNormalizer = overridesNormalizer ?? new ConfigOverridesNormalizer(new ConfigValidator());
-            _settingsNormalizer = settingsNormalizer ?? new AnalysisSettingsNormalizer();
-        }
+        var targetProperties = target.GetType().GetProperties();
+        var sourceProperties = source.GetType().GetProperties();
 
-        public GiticConfig Merge(GiticConfig baseConfig, params object?[] overridesOrConfigs)
+        foreach (var sourceProp in sourceProperties)
         {
-            return _merger.MergeMultiple(baseConfig, overridesOrConfigs);
-        }
+            var val = sourceProp.GetValue(source);
+            if (val == null) continue;
 
-        public AnalysisSettings NormalizeSettings(AnalysisSettings? settings)
-        {
-            return _settingsNormalizer.Normalize(settings ?? new AnalysisSettings());
-        }
+            var targetProp = targetProperties.FirstOrDefault(p => p.Name == sourceProp.Name);
+            if (targetProp == null || !targetProp.CanWrite) continue;
 
-        public GiticConfigOverrides NormalizeOverrides(object? rawYamlDict, string source)
-        {
-            return _overridesNormalizer.NormalizeOverride(rawYamlDict, source);
+            // Case 1: Collection
+            if (typeof(IList).IsAssignableFrom(targetProp.PropertyType) &&
+                val is IEnumerable sourceCollection)
+            {
+                var targetList = targetProp.GetValue(target) as IList;
+                if (targetList == null)
+                {
+                    targetList = Activator.CreateInstance(targetProp.PropertyType) as IList;
+                    targetProp.SetValue(target, targetList);
+                }
+                if (targetList != null)
+                {
+                    foreach (var item in sourceCollection)
+                    {
+                        targetList.Add(item);
+                    }
+                }
+            }
+            // Case 2: Nullable primitive on source, non-nullable primitive on target
+            else if (Nullable.GetUnderlyingType(sourceProp.PropertyType) != null)
+            {
+                targetProp.SetValue(target, val);
+            }
+            // Case 3: Nested object
+            else if (targetProp.PropertyType.IsClass && sourceProp.PropertyType.IsClass &&
+                     targetProp.PropertyType != typeof(string))
+            {
+                var targetVal = targetProp.GetValue(target);
+                if (targetVal != null)
+                {
+                    MergeObjects(targetVal, val);
+                }
+            }
         }
+    }
+}
+
+public class ConfigurationService : IConfigurationService
+{
+    private readonly IConfigMerger _merger;
+    private readonly IConfigOverridesNormalizer _overridesNormalizer;
+    private readonly IAnalysisSettingsNormalizer _settingsNormalizer;
+
+    public ConfigurationService(IConfigMerger? merger = null, IConfigOverridesNormalizer? overridesNormalizer = null, IAnalysisSettingsNormalizer? settingsNormalizer = null)
+    {
+        _merger = merger ?? new ConfigMerger();
+        _overridesNormalizer = overridesNormalizer ?? new ConfigOverridesNormalizer(new ConfigValidator());
+        _settingsNormalizer = settingsNormalizer ?? new AnalysisSettingsNormalizer();
+    }
+
+    public GiticConfig Merge(GiticConfig baseConfig, params object?[] overridesOrConfigs)
+    {
+        return _merger.MergeMultiple(baseConfig, overridesOrConfigs);
+    }
+
+    public AnalysisSettings NormalizeSettings(AnalysisSettings? settings)
+    {
+        return _settingsNormalizer.Normalize(settings ?? new AnalysisSettings());
+    }
+
+    public GiticConfigOverrides NormalizeOverrides(object? rawYamlDict, string source)
+    {
+        return _overridesNormalizer.NormalizeOverride(rawYamlDict, source);
     }
 }
