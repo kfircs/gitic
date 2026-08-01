@@ -14,7 +14,7 @@ namespace Gitic
 
         public GitParser(IGitPatchParser patchParser)
         {
-            _patchParser = patchParser;
+            _patchParser = patchParser ?? throw new ArgumentNullException(nameof(patchParser));
         }
 
         public string CommitMarker => "__GITIC_COMMIT__";
