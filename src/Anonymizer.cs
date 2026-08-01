@@ -57,7 +57,7 @@ namespace Gitic
     {
         public AnalysisResult Anonymize(AnalysisResult result)
         {
-            if (result == null) throw new ArgumentNullException(nameof(result));
+            ArgumentNullException.ThrowIfNull(result);
 
             var serialized = JsonSerializer.Serialize(result);
             var cloned = JsonSerializer.Deserialize<AnalysisResult>(serialized) 
