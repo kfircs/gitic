@@ -111,5 +111,22 @@ namespace Gitic.Tests
             Assert.Equal("Some other warning message.", target!.Message);
             Assert.Null(target.Hint);
         }
+
+        [Fact]
+        public void TestGetSeverityOrder()
+        {
+            Assert.Equal(3, Warnings.GetSeverityOrder(null!));
+            Assert.Equal(1, Warnings.GetSeverityOrder("critical"));
+            Assert.Equal(1, Warnings.GetSeverityOrder("CRITICAL"));
+            Assert.Equal(1, Warnings.GetSeverityOrder("error"));
+            Assert.Equal(1, Warnings.GetSeverityOrder("ERROR"));
+            Assert.Equal(1, Warnings.GetSeverityOrder("failure"));
+            Assert.Equal(1, Warnings.GetSeverityOrder("FAILURE"));
+            Assert.Equal(2, Warnings.GetSeverityOrder("warning"));
+            Assert.Equal(2, Warnings.GetSeverityOrder("WARNING"));
+            Assert.Equal(3, Warnings.GetSeverityOrder("info"));
+            Assert.Equal(3, Warnings.GetSeverityOrder("unknown"));
+            Assert.Equal(3, Warnings.GetSeverityOrder(""));
+        }
     }
 }

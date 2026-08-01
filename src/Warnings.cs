@@ -6,16 +6,13 @@ namespace Gitic
 {
     public static class Warnings
     {
-        public static int GetSeverityOrder(string severity)
-        {
-            if (severity == null) return 3;
-            return severity.ToLowerInvariant() switch
+        public static int GetSeverityOrder(string severity) =>
+            severity is null ? 3 : severity.ToLowerInvariant() switch
             {
                 "critical" or "error" or "failure" => 1,
                 "warning" => 2,
                 _ => 3
             };
-        }
     }
 
     public class WarningContext
