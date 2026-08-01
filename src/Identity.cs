@@ -46,11 +46,7 @@ namespace Gitic
             return IdentityKeyGenerator.Default.IdentityKey(name, email);
         }
 
-        public static bool SameIdentity(GitIdentity left, GitIdentity right)
-        {
-            return left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase) &&
-                   left.Email.Equals(right.Email, StringComparison.OrdinalIgnoreCase);
-        }
+        public static bool SameIdentity(GitIdentity left, GitIdentity right) => left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase) && left.Email.Equals(right.Email, StringComparison.OrdinalIgnoreCase);
 
         public static GitIdentity ResolveAlias(GitIdentity identity, List<AliasRule> aliases)
         {
