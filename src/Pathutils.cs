@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Gitic
@@ -49,30 +50,30 @@ namespace Gitic
 
         private static string ConvertGlobToRegexPattern(string pattern)
         {
-            string source = "^";
+            var sb = new StringBuilder("^");
             for (int index = 0; index < pattern.Length; index += 1)
             {
                 char c = pattern[index];
                 if (c == '*' && index + 1 < pattern.Length && pattern[index + 1] == '*')
                 {
-                    source += ".*";
+                    sb.Append(".*");
                     index += 1;
                     continue;
                 }
                 if (c == '*')
                 {
-                    source += "[^/]*";
+                    sb.Append("[^/]*");
                     continue;
                 }
                 if (c == '?')
                 {
-                    source += "[^/]";
+                    sb.Append("[^/]");
                     continue;
                 }
-                source += Regex.Escape(c.ToString());
+                sb.Append(Regex.Escape(c.ToString()));
             }
-            source += "$";
-            return source;
+            sb.Append("$");
+            return sb.ToString();
         }
     }
 
