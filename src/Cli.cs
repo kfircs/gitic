@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Gitic;
 
@@ -46,22 +47,43 @@ public static class Cli
 
         Console.CancelKeyPress += cancelHandler;
 
-        ICommandLineParser parser = new CommandLineParser(args);
-        ICliCommand command;
         try
         {
-            command = parser.ParseToCommand();
+            ICliCommand? command = ParseCommand(args, reporter, out CliResult? errorResult);
+            if (errorResult != null)
+            {
+                return errorResult;
+            }
+
+            return await ExecuteCommandAsync(command!, reporter, cts.Token);
+        }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
+        }
+    }
+
+    private static ICliCommand? ParseCommand(string[] args, IConsoleReporter? reporter, out CliResult? errorResult)
+    {
+        errorResult = null;
+        ICommandLineParser parser = new CommandLineParser(args);
+        try
+        {
+            return parser.ParseToCommand();
         }
         catch (CommandLineParseError error)
         {
-            Console.CancelKeyPress -= cancelHandler;
             reporter?.WriteError($"{error.Message}\n");
-            return CliFailure($"{error.Message}\n", exitCode: 2);
+            errorResult = CliFailure($"{error.Message}\n", exitCode: 2);
+            return null;
         }
+    }
 
+    private static async Task<CliResult> ExecuteCommandAsync(ICliCommand command, IConsoleReporter? reporter, CancellationToken cancellationToken)
+    {
         try
         {
-            return await command.ExecuteAsync(reporter, cts.Token);
+            return await command.ExecuteAsync(reporter, cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -74,10 +96,6 @@ public static class Cli
             string errMsg = $"Error: {ex.Message}\n";
             reporter?.WriteError(errMsg);
             return CliFailure(errMsg);
-        }
-        finally
-        {
-            Console.CancelKeyPress -= cancelHandler;
         }
     }
 }
