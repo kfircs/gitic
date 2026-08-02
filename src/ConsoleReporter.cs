@@ -64,20 +64,12 @@ public interface IConsoleReporter
     void WriteExclusions(IEnumerable<ExclusionSummary> exclusions)
     {
         if (exclusions == null) return;
-        List<ExclusionSummary> list = [];
-        foreach (var e in exclusions)
-        {
-            if (e != null) list.Add(e);
-        }
+        var list = exclusions.Where(e => e != null).ToList();
         if (list.Count == 0) return;
 
         var sb = new StringBuilder();
         sb.Append("exclusions ");
-        List<string> parts = [];
-        foreach (var e in list)
-        {
-            parts.Add($"{e.Category}:{e.Count}");
-        }
+        var parts = list.Select(e => $"{e.Category}:{e.Count}");
         sb.Append(string.Join(", ", parts));
         sb.AppendLine();
 
