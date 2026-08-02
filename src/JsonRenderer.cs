@@ -15,7 +15,7 @@ public class JsonRenderer : IReportRenderer
     public Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        string json = JsonSerializer.Serialize(result, Options) + "\n";
+        string json = $"{JsonSerializer.Serialize(result, Options)}\n";
         return Task.FromResult(json);
     }
 }
