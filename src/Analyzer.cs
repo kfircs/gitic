@@ -77,7 +77,28 @@ public class RepositoryAnalyzer : IRepositoryAnalyzer
 
         var curatedReportsEngine = new CuratedReportsEngine();
 
-        var result = new AnalysisResult
+        var result = CreateAnalysisResult(input, commits, settings, config, pipelineResult, fileMetrics, curatedReportsEngine);
+
+        _metricProcessorService.SortMetrics(result, input.Command);
+
+        if (settings.Anonymize)
+        {
+            result = _anonymizer.Anonymize(result);
+        }
+
+        return result;
+    }
+
+    private AnalysisResult CreateAnalysisResult(
+        AnalyzeInput input,
+        List<GitCommitRecord> commits,
+        AnalysisSettings settings,
+        GiticConfig config,
+        AnalysisPipelineResult pipelineResult,
+        List<FileMetric> fileMetrics,
+        CuratedReportsEngine curatedReportsEngine)
+    {
+        return new AnalysisResult
         {
             SchemaVersion = "1.0",
             Tool = "gitic",
@@ -122,14 +143,5 @@ public class RepositoryAnalyzer : IRepositoryAnalyzer
             Warnings = pipelineResult.Warnings,
             Diagnostics = pipelineResult.Diagnostics
         };
-
-        _metricProcessorService.SortMetrics(result, input.Command);
-
-        if (settings.Anonymize)
-        {
-            result = _anonymizer.Anonymize(result);
-        }
-
-        return result;
     }
 }
