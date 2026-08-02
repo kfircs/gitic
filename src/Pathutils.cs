@@ -9,6 +9,7 @@ public interface IGlobMatcher
 {
     bool MatchesPathPattern(string path, string pattern);
     bool MatchesTextPattern(string value, string pattern);
+    Regex GlobToRegExp(string pattern);
 }
 
 public class CachedGlobMatcher : IGlobMatcher
@@ -120,11 +121,7 @@ public static class PathUtils
 
     public static Regex GlobToRegExp(string pattern)
     {
-        if (_matcher is CachedGlobMatcher cached)
-        {
-            return cached.GlobToRegExp(pattern);
-        }
-        return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        return _matcher.GlobToRegExp(pattern);
     }
 
     public static string TruncatePath(string path, int maxLength)
