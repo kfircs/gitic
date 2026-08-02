@@ -6,15 +6,16 @@ namespace Gitic;
 
 public class JsonRenderer : IReportRenderer
 {
+    private static readonly JsonSerializerOptions Options = new JsonSerializerOptions
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
+
     public Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-        };
-        string json = JsonSerializer.Serialize(result, options) + "\n";
+        string json = JsonSerializer.Serialize(result, Options) + "\n";
         return Task.FromResult(json);
     }
 }
