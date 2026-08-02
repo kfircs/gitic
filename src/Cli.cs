@@ -34,7 +34,7 @@ public static class Cli
 
         try
         {
-            ICliCommand? command = ParseCommand(args, reporter, out CliResult? errorResult);
+            var (command, errorResult) = ParseCommand(args, reporter);
             if (errorResult != null)
             {
                 return errorResult;
@@ -48,19 +48,17 @@ public static class Cli
         }
     }
 
-    private static ICliCommand? ParseCommand(string[] args, IConsoleReporter? reporter, out CliResult? errorResult)
+    private static (ICliCommand? Command, CliResult? Error) ParseCommand(string[] args, IConsoleReporter? reporter)
     {
-        errorResult = null;
         ICommandLineParser parser = new CommandLineParser(args);
         try
         {
-            return parser.ParseToCommand();
+            return (parser.ParseToCommand(), null);
         }
         catch (CommandLineParseError error)
         {
             reporter?.WriteError($"{error.Message}\n");
-            errorResult = CliFailure($"{error.Message}\n", exitCode: 2);
-            return null;
+            return (null, CliFailure($"{error.Message}\n", exitCode: 2));
         }
     }
 
