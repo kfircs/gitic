@@ -13,10 +13,6 @@ public class HtmlRenderer : IReportRenderer
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     };
 
-    public HtmlRenderer()
-    {
-    }
-
     public async Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
     {
         using var ms = new MemoryStream();
