@@ -89,39 +89,49 @@ public class ChangeAccumulator : IChangeAccumulator
 
         foreach (var change in commit.Files)
         {
-            string path = PathUtils.NormalizeGitPath(change.Path);
-            if (!_filter.Check(path))
+            ProcessFileChange(change, commit, commitCategory, participants, filesInCommit);
+        }
+    }
+
+    private void ProcessFileChange(
+        GitFileChange change,
+        GitCommitRecord commit,
+        string commitCategory,
+        List<ParticipantInfo> participants,
+        List<string> filesInCommit)
+    {
+        string path = PathUtils.NormalizeGitPath(change.Path);
+        if (!_filter.Check(path))
+        {
+            return;
+        }
+
+        _includedFileChangeCount += 1;
+        string areaName = _areaMapper.AreaForPath(path, _settings.Depth, _config.Areas, _warnings);
+        var fileAccumulator = GetOrCreateItem(_files, path);
+        var areaAccumulator = GetOrCreateItem(_areas, areaName);
+        
+        AddChangeToItem(fileAccumulator, path, change, commit, commitCategory);
+        AddChangeToItem(areaAccumulator, path, change, commit, commitCategory);
+
+        filesInCommit.Add(path);
+
+        foreach (var participant in participants)
+        {
+            if (_identityRegistry.IsBot(participant.Identity))
             {
+                AddContributorActivity(_automation, participant.Identity, areaName, participant.Credit);
                 continue;
             }
 
-            _includedFileChangeCount += 1;
-            string areaName = _areaMapper.AreaForPath(path, _settings.Depth, _config.Areas, _warnings);
-            var fileAccumulator = GetOrCreateItem(_files, path);
-            var areaAccumulator = GetOrCreateItem(_areas, areaName);
-            
-            AddChangeToItem(fileAccumulator, path, change, commit, commitCategory);
-            AddChangeToItem(areaAccumulator, path, change, commit, commitCategory);
-
-            filesInCommit.Add(path);
-
-            foreach (var participant in participants)
-            {
-                if (_identityRegistry.IsBot(participant.Identity))
-                {
-                    AddContributorActivity(_automation, participant.Identity, areaName, participant.Credit);
-                    continue;
-                }
-
-                AddContributorActivity(
-                    _contributors,
-                    participant.Identity,
-                    areaName,
-                    participant.Credit
-                );
-                AddContributorCredit(fileAccumulator, participant.Identity, participant.Credit);
-                AddContributorCredit(areaAccumulator, participant.Identity, participant.Credit);
-            }
+            AddContributorActivity(
+                _contributors,
+                participant.Identity,
+                areaName,
+                participant.Credit
+            );
+            AddContributorCredit(fileAccumulator, participant.Identity, participant.Credit);
+            AddContributorCredit(areaAccumulator, participant.Identity, participant.Credit);
         }
     }
 
