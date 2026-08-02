@@ -1,10 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Gitic
+namespace Gitic;
+
+public interface IReportRenderer
 {
-    public interface IReportRenderer
-    {
-        Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default);
-    }
+    Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default);
 }
