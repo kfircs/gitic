@@ -288,7 +288,7 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
 
                 if (colWidth == null)
                 {
-                    int maxValLength = _rows.Select(r => r.TryGetValue(col.Name, out string v) ? GetVisibleLength(v) : 0).DefaultIfEmpty(0).Max();
+                    int maxValLength = _rows.Select(r => r.TryGetValue(col.Name, out string? v) ? GetVisibleLength(v ?? string.Empty) : 0).DefaultIfEmpty(0).Max();
                     colWidth = Math.Max(col.Name.Length, maxValLength);
                 }
 
@@ -361,7 +361,7 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
 
                 if (colWidth == null)
                 {
-                    int maxValLength = _rows.Select(r => r.TryGetValue(col.Name, out string v) ? GetVisibleLength(v) : 0).DefaultIfEmpty(0).Max();
+                    int maxValLength = _rows.Select(r => r.TryGetValue(col.Name, out string? v) ? GetVisibleLength(v ?? string.Empty) : 0).DefaultIfEmpty(0).Max();
                     colWidth = Math.Max(col.Name.Length, maxValLength);
                 }
                 int wVal = colWidth.Value;
@@ -395,9 +395,9 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
             List<string> cells = [];
             foreach (var col in visibleColDefs)
             {
-                if (rowDict.TryGetValue(col.Name, out string val))
+                if (rowDict.TryGetValue(col.Name, out string? val))
                 {
-                    cells.Add(val);
+                    cells.Add(val ?? string.Empty);
                 }
                 else
                 {
