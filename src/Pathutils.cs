@@ -21,7 +21,7 @@ public class CachedGlobMatcher : IGlobMatcher
     public bool MatchesPathPattern(string path, string pattern)
     {
         string normalizedPath = PathUtils.NormalizeGitPath(path);
-        string normalizedPattern = PathUtils.NormalizeGitPath(pattern).TrimStart('/').TrimEnd('/');
+        string normalizedPattern = PathUtils.NormalizeGitPath(pattern).Trim('/');
         if (normalizedPattern.Length == 0)
         {
             return false;
