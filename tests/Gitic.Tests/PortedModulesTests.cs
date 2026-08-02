@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -2198,8 +2199,8 @@ __GITIC_NUMSTAT__
                 // Test 1: Verify ClassificationRule with custom patterns
                 var customBugfixRule = new ClassificationRule(
                     "bugfix",
-                    @"(?:defect|patch|hotfix)",
-                    @"^hotfix(?:\(.+\))?:"
+                    new Regex(@"(?:defect|patch|hotfix)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+                    new Regex(@"^hotfix(?:\(.+\))?:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
                 );
 
                 // Should match custom patterns
@@ -2213,8 +2214,8 @@ __GITIC_NUMSTAT__
                 // Test 2: Verify ClassificationRule with custom patterns
                 var customFeatureRule = new ClassificationRule(
                     "feature",
-                    @"(?:new-feature|impl|create)",
-                    @"^new(?:\(.+\))?:"
+                    new Regex(@"(?:new-feature|impl|create)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+                    new Regex(@"^new(?:\(.+\))?:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
                 );
 
                 // Should match custom patterns
