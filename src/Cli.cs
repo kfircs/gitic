@@ -6,33 +6,18 @@ using System.Threading;
 
 namespace Gitic;
 
-public class CliResult
-{
-    public int ExitCode { get; init; }
-    public string Stdout { get; init; } = string.Empty;
-    public string Stderr { get; init; } = string.Empty;
-}
+public record CliResult(int ExitCode, string Stdout, string Stderr);
 
 public static class Cli
 {
     public static CliResult CliSuccess(string stdout, string stderr = "")
     {
-        return new CliResult
-        {
-            ExitCode = 0,
-            Stdout = stdout,
-            Stderr = stderr
-        };
+        return new CliResult(0, stdout, stderr);
     }
 
     public static CliResult CliFailure(string stderr, int exitCode = 1)
     {
-        return new CliResult
-        {
-            ExitCode = exitCode,
-            Stdout = "",
-            Stderr = stderr
-        };
+        return new CliResult(exitCode, "", stderr);
     }
 
     public static async Task<CliResult> RunCliAsync(string[] args, IConsoleReporter? reporter = null, CancellationToken cancellationToken = default)
