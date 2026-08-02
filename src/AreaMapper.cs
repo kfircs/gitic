@@ -25,15 +25,16 @@ public class AreaMapper : IAreaMapper
             area.Paths.Any(areaPath => PathUtils.MatchesPathPattern(path, areaPath))
         ).ToList();
 
-        if (matchingAreas.Count > 0)
+        var firstMatch = matchingAreas.FirstOrDefault();
+        if (firstMatch != null)
         {
             if (matchingAreas.Count > 1 && warnings != null)
             {
                 warnings.Add(
-                    $"Path {path} matched multiple configured areas ({string.Join(", ", matchingAreas.Select(a => a.Name))}); using {matchingAreas[0].Name}."
+                    $"Path {path} matched multiple configured areas ({string.Join(", ", matchingAreas.Select(a => a.Name))}); using {firstMatch.Name}."
                 );
             }
-            return matchingAreas[0].Name;
+            return firstMatch.Name;
         }
 
         var segments = PathUtils.NormalizeGitPath(path).Split('/', StringSplitOptions.RemoveEmptyEntries);
