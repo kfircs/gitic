@@ -1,8 +1,8 @@
-namespace Gitic
+namespace Gitic;
+
+public interface ICommandLineParser
 {
-    public interface ICommandLineParser
-    {
-        ParsedArgs Parse();
-        ICliCommand ParseToCommand();
-    }
+    ParsedArgs Parse();
+    ICliCommand ParseToCommand();
 }
+
