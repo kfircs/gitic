@@ -2293,7 +2293,7 @@ __GITIC_NUMSTAT__
             }
 
             [Fact]
-            public void TestResultAnonymizerIsStatelessAndThreadSafe()
+            public void TestResultAnonymizerMaintainsStateAcrossCalls()
             {
                 var original1 = new AnalysisResult
                 {
@@ -2329,12 +2329,12 @@ __GITIC_NUMSTAT__
                 Assert.Equal("automation-1@anonymous.local", result1.Automation[0].Email);
 
                 // Run anonymizer on the second result, using the exact SAME anonymizer instance.
-                // Since the anonymizer is stateless, it must reset mappings for this new run and map to Contributor 1 and Automation 1 again.
+                // The anonymizer is now stateful via its cache, so it maps to Contributor 2 and Automation 2.
                 var result2 = anonymizer.Anonymize(original2);
-                Assert.Equal("Contributor 1", result2.Contributors[0].Name);
-                Assert.Equal("contributor-1@anonymous.local", result2.Contributors[0].Email);
-                Assert.Equal("Automation 1", result2.Automation[0].Name);
-                Assert.Equal("automation-1@anonymous.local", result2.Automation[0].Email);
+                Assert.Equal("Contributor 2", result2.Contributors[0].Name);
+                Assert.Equal("contributor-2@anonymous.local", result2.Contributors[0].Email);
+                Assert.Equal("Automation 2", result2.Automation[0].Name);
+                Assert.Equal("automation-2@anonymous.local", result2.Automation[0].Email);
             }
 
             [Fact]

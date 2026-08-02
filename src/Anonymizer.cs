@@ -53,6 +53,17 @@ public class IdentityAnonymizationCache : IIdentityAnonymizationCache
 
 public class ResultAnonymizer : IResultAnonymizer
 {
+    private readonly IIdentityAnonymizationCache _cache;
+
+    public ResultAnonymizer() : this(new IdentityAnonymizationCache())
+    {
+    }
+
+    public ResultAnonymizer(IIdentityAnonymizationCache cache)
+    {
+        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+    }
+
     public AnalysisResult Anonymize(AnalysisResult result)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -61,20 +72,18 @@ public class ResultAnonymizer : IResultAnonymizer
         var cloned = JsonSerializer.Deserialize<AnalysisResult>(serialized) 
                      ?? throw new InvalidOperationException("Failed to clone AnalysisResult via JSON serialization.");
 
-        var cache = new IdentityAnonymizationCache();
-
         // Anonymize human contributors
-        AnonymizeList(cloned.Contributors, cache.AnonymizeHuman);
+        AnonymizeList(cloned.Contributors, _cache.AnonymizeHuman);
 
         // Anonymize automation contributors
-        AnonymizeList(cloned.Automation, cache.AnonymizeAutomation);
+        AnonymizeList(cloned.Automation, _cache.AnonymizeAutomation);
 
         // Anonymize contributors in file metrics
         if (cloned.Files != null)
         {
             foreach (var file in cloned.Files)
             {
-                AnonymizeList(file.Contributors, cache.AnonymizeHuman);
+                AnonymizeList(file.Contributors, _cache.AnonymizeHuman);
             }
         }
 
@@ -83,7 +92,7 @@ public class ResultAnonymizer : IResultAnonymizer
         {
             foreach (var area in cloned.Areas)
             {
-                AnonymizeList(area.Contributors, cache.AnonymizeHuman);
+                AnonymizeList(area.Contributors, _cache.AnonymizeHuman);
             }
         }
 
