@@ -55,54 +55,76 @@ public class ExecFileGitExecutor : IGitExecutor
 
         bool failed = false;
         string? stderrOutput = null;
-        var lines = new List<string>();
+        bool shouldBreak = false;
 
         try
         {
             process.Start();
+        }
+        catch (Exception ex) when (IsGitNoCommitsException(ex))
+        {
+            shouldBreak = true;
+        }
 
-            while (true)
+        if (shouldBreak)
+        {
+            yield break;
+        }
+
+        while (true)
+        {
+            string? line = null;
+            try
             {
-                string? line = await process.StandardOutput.ReadLineAsync(cancellationToken);
+                line = await process.StandardOutput.ReadLineAsync(cancellationToken);
                 if (line == null)
                 {
-                    break;
+                    await process.WaitForExitAsync(cancellationToken);
+
+                    if (process.ExitCode != 0)
+                    {
+                        stderrOutput = await process.StandardError.ReadToEndAsync(cancellationToken);
+                        if (stderrOutput.Contains("does not have any commits yet") ||
+                            stderrOutput.Contains("Not a valid object name HEAD"))
+                        {
+                            // No-op, just break
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+                    }
                 }
-                lines.Add(line);
             }
-
-            await process.WaitForExitAsync(cancellationToken);
-
-            if (process.ExitCode != 0)
+            catch (Exception ex) when (IsGitNoCommitsException(ex))
             {
-                stderrOutput = await process.StandardError.ReadToEndAsync(cancellationToken);
-                if (stderrOutput.Contains("does not have any commits yet") ||
-                    stderrOutput.Contains("Not a valid object name HEAD"))
-                {
-                    // No-op, just yield what we have (nothing)
-                }
-                else
-                {
-                    failed = true;
-                }
+                shouldBreak = true;
             }
-        }
-        catch (Exception ex) when (ex.Message.Contains("does not have any commits yet") ||
-                                   ex.Message.Contains("Not a valid object name HEAD") ||
-                                   ex.InnerException?.Message.Contains("does not have any commits yet") == true ||
-                                   ex.InnerException?.Message.Contains("Not a valid object name HEAD") == true)
-        {
-            // Swallow and yield nothing
-        }
 
-        if (failed)
-        {
-            throw new Exception($"Git command failed with exit code {process.ExitCode}: {stderrOutput}");
-        }
+            if (shouldBreak)
+            {
+                break;
+            }
 
-        foreach (var line in lines)
-        {
+            if (failed)
+            {
+                throw new Exception($"Git command failed with exit code {process.ExitCode}: {stderrOutput}");
+            }
+
+            if (line == null)
+            {
+                break;
+            }
+
             yield return line;
+        }
+
+        bool IsGitNoCommitsException(Exception ex)
+        {
+            return ex.Message.Contains("does not have any commits yet") ||
+                   ex.Message.Contains("Not a valid object name HEAD") ||
+                   ex.InnerException?.Message.Contains("does not have any commits yet") == true ||
+                   ex.InnerException?.Message.Contains("Not a valid object name HEAD") == true;
         }
     }
 }
