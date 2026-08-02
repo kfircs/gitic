@@ -144,6 +144,7 @@ namespace Gitic.Tests
             var file = Assert.Single(files);
             Assert.Equal(42.0, file.DebtVolatility);
             Assert.Equal(88.0, file.CoordinationOverlap);
+            Assert.NotNull(file.KnowledgeSilo);
             Assert.Equal(3, file.KnowledgeSilo.TruckFactor);
             Assert.True(file.KnowledgeSilo.IsSilo);
         }
