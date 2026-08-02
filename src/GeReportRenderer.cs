@@ -46,7 +46,7 @@ public class GeReportRenderer : IReportRenderer
         
         foreach (var f in highReworkFiles)
         {
-            actionItems.Add($"* ⚠️ **Refactor Warning:** `{f.Path}` has a high rework rate ({(f.ReworkRate.Value*100):F1}%) and is edited by {f.ContributorCount} different authors.");
+            actionItems.Add($"* ⚠️ **Refactor Warning:** `{f.Path}` has a high rework rate ({(f.ReworkRate.GetValueOrDefault()*100):F1}%) and is edited by {f.ContributorCount} different authors.");
         }
 
         // Find bus factor files/areas
