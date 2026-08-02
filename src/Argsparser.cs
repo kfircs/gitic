@@ -12,6 +12,29 @@ public class CommandLineParser : ICommandLineParser
     private readonly IReadOnlyList<string> _args;
     private readonly ICliCommandFactory _commandFactory;
 
+    private Option<string> configOption = null!;
+    private Option<string> userConfigOption = null!;
+    private Option<bool> jsonOption = null!;
+    private Option<string> formatOption = null!;
+    private Option<string> colorOption = null!;
+    private Option<bool> allTimeOption = null!;
+    private Option<bool> includeMergesOption = null!;
+    private Option<bool> includeDeletedOption = null!;
+    private Option<bool> mergeByEmailOption = null!;
+    private Option<bool> anonymizeOption = null!;
+    private Option<string> sinceOption = null!;
+    private Option<string> untilOption = null!;
+    private Option<string> pathOption = null!;
+    private Option<int> depthOption = null!;
+    private Option<string> htmlOption = null!;
+    private Option<string> mdOption = null!;
+    private Option<string> svgOption = null!;
+    private Option<int?> limitOption = null!;
+    private Option<string> sortOption = null!;
+    private Option<string> columnsOption = null!;
+    private Option<bool> quietOption = null!;
+    private Argument<string> repoPathArg = null!;
+
     public CommandLineParser(string[] args) : this(args, new CliCommandFactoryImpl())
     {
     }
@@ -53,90 +76,7 @@ public class CommandLineParser : ICommandLineParser
         // 1. Build the command model
         var rootCommand = new RootCommand("Gitic Strategic Codebase Analysis");
 
-        var configOption = new Option<string>("--config") { Description = "Path to non-default configuration file", Recursive = true };
-        var userConfigOption = new Option<string>("--user-config") { Description = "Path to non-default global user configuration file", Recursive = true };
-        var jsonOption = new Option<bool>("--json") { Description = "Output results in raw JSON format", Recursive = true };
-        
-        var formatOption = new Option<string>("--format") 
-        { 
-            Description = "Output format: human, plain, json", 
-            DefaultValueFactory = _ => "human",
-            Recursive = true 
-        };
-        
-        var colorOption = new Option<string>("--color") 
-        { 
-            Description = "Color mode: auto, always, never", 
-            DefaultValueFactory = _ => "auto",
-            Recursive = true 
-        };
-        
-        var allTimeOption = new Option<bool>("--all-time") { Description = "Analyze all history (ignoring time window settings)", Recursive = true };
-        var includeMergesOption = new Option<bool>("--include-merges") { Description = "Include merge commits in the analysis", Recursive = true };
-        var includeDeletedOption = new Option<bool>("--include-deleted") { Description = "Include deleted files in stats", Recursive = true };
-        var mergeByEmailOption = new Option<bool>("--merge-by-email") { Description = "Merge contributor identities by email", Recursive = true };
-        var anonymizeOption = new Option<bool>("--anonymize") { Description = "Anonymize contributor names/emails in output", Recursive = true };
-        var sinceOption = new Option<string>("--since") { Description = "Filter commits since date (YYYY-MM-DD)", Recursive = true };
-        var untilOption = new Option<string>("--until") { Description = "Filter commits until date (YYYY-MM-DD)", Recursive = true };
-        var pathOption = new Option<string>("--path") { Description = "Filter analysis to files matching glob pattern", Recursive = true };
-        
-        var depthOption = new Option<int>("--depth") 
-        { 
-            Description = "Directory depth for areas analysis (1-10)", 
-            DefaultValueFactory = _ => 2,
-            Recursive = true 
-        };
-        depthOption.Validators.Add(result =>
-        {
-            try
-            {
-                var value = result.GetValue(depthOption);
-                if (value < 1 || value > 10)
-                {
-                    result.AddError("--depth must be an integer between 1 and 10.");
-                }
-            }
-            catch
-            {
-                result.AddError("--depth must be an integer between 1 and 10.");
-            }
-        });
-
-        var htmlOption = new Option<string>("--html") { Description = "Output visual HTML report to path", Recursive = true, HelpName = "path" };
-        var mdOption = new Option<string>("--md") { Description = "Output Markdown summary report to path", Recursive = true, HelpName = "path" };
-        var svgOption = new Option<string>("--svg") { Description = "Output SVG reports to path", Recursive = true, HelpName = "path" };
-
-        var limitOption = new Option<int?>("--limit") { Description = "Limit results to top N items", Recursive = true };
-        var sortOption = new Option<string>("--sort") { Description = "Sort results by field", Recursive = true };
-        var columnsOption = new Option<string>("--columns") { Description = "Select columns to show", Recursive = true };
-        var quietOption = new Option<bool>("--quiet") { Description = "Suppress non-critical warnings", Recursive = true };
-
-        // Add global options
-        rootCommand.Options.Add(configOption);
-        rootCommand.Options.Add(userConfigOption);
-        rootCommand.Options.Add(jsonOption);
-        rootCommand.Options.Add(formatOption);
-        rootCommand.Options.Add(colorOption);
-        rootCommand.Options.Add(allTimeOption);
-        rootCommand.Options.Add(includeMergesOption);
-        rootCommand.Options.Add(includeDeletedOption);
-        rootCommand.Options.Add(mergeByEmailOption);
-        rootCommand.Options.Add(anonymizeOption);
-        rootCommand.Options.Add(sinceOption);
-        rootCommand.Options.Add(untilOption);
-        rootCommand.Options.Add(pathOption);
-        rootCommand.Options.Add(depthOption);
-        rootCommand.Options.Add(htmlOption);
-        rootCommand.Options.Add(mdOption);
-        rootCommand.Options.Add(svgOption);
-        rootCommand.Options.Add(limitOption);
-        rootCommand.Options.Add(sortOption);
-        rootCommand.Options.Add(columnsOption);
-        rootCommand.Options.Add(quietOption);
-
-        // Single root argument for repository path
-        var repoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-        rootCommand.Arguments.Add(repoPathArg);
+        ConfigureOptions(rootCommand);
 
         // Intercept help/version checks at the very beginning
         if (_args.Contains("--help") || _args.Contains("-h") || _args.Contains("help"))
@@ -269,5 +209,93 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
             SvgPath = svgPath,
             ConfigAction = null
         };
+    }
+
+    private void ConfigureOptions(RootCommand rootCommand)
+    {
+        configOption = new Option<string>("--config") { Description = "Path to non-default configuration file", Recursive = true };
+        userConfigOption = new Option<string>("--user-config") { Description = "Path to non-default global user configuration file", Recursive = true };
+        jsonOption = new Option<bool>("--json") { Description = "Output results in raw JSON format", Recursive = true };
+        
+        formatOption = new Option<string>("--format") 
+        { 
+            Description = "Output format: human, plain, json", 
+            DefaultValueFactory = _ => "human",
+            Recursive = true 
+        };
+        
+        colorOption = new Option<string>("--color") 
+        { 
+            Description = "Color mode: auto, always, never", 
+            DefaultValueFactory = _ => "auto",
+            Recursive = true 
+        };
+        
+        allTimeOption = new Option<bool>("--all-time") { Description = "Analyze all history (ignoring time window settings)", Recursive = true };
+        includeMergesOption = new Option<bool>("--include-merges") { Description = "Include merge commits in the analysis", Recursive = true };
+        includeDeletedOption = new Option<bool>("--include-deleted") { Description = "Include deleted files in stats", Recursive = true };
+        mergeByEmailOption = new Option<bool>("--merge-by-email") { Description = "Merge contributor identities by email", Recursive = true };
+        anonymizeOption = new Option<bool>("--anonymize") { Description = "Anonymize contributor names/emails in output", Recursive = true };
+        sinceOption = new Option<string>("--since") { Description = "Filter commits since date (YYYY-MM-DD)", Recursive = true };
+        untilOption = new Option<string>("--until") { Description = "Filter commits until date (YYYY-MM-DD)", Recursive = true };
+        pathOption = new Option<string>("--path") { Description = "Filter analysis to files matching glob pattern", Recursive = true };
+        
+        depthOption = new Option<int>("--depth") 
+        { 
+            Description = "Directory depth for areas analysis (1-10)", 
+            DefaultValueFactory = _ => 2,
+            Recursive = true 
+        };
+        depthOption.Validators.Add(result =>
+        {
+            try
+            {
+                var value = result.GetValue(depthOption);
+                if (value < 1 || value > 10)
+                {
+                    result.AddError("--depth must be an integer between 1 and 10.");
+                }
+            }
+            catch
+            {
+                result.AddError("--depth must be an integer between 1 and 10.");
+            }
+        });
+
+        htmlOption = new Option<string>("--html") { Description = "Output visual HTML report to path", Recursive = true, HelpName = "path" };
+        mdOption = new Option<string>("--md") { Description = "Output Markdown summary report to path", Recursive = true, HelpName = "path" };
+        svgOption = new Option<string>("--svg") { Description = "Output SVG reports to path", Recursive = true, HelpName = "path" };
+
+        limitOption = new Option<int?>("--limit") { Description = "Limit results to top N items", Recursive = true };
+        sortOption = new Option<string>("--sort") { Description = "Sort results by field", Recursive = true };
+        columnsOption = new Option<string>("--columns") { Description = "Select columns to show", Recursive = true };
+        quietOption = new Option<bool>("--quiet") { Description = "Suppress non-critical warnings", Recursive = true };
+
+        // Add global options
+        rootCommand.Options.Add(configOption);
+        rootCommand.Options.Add(userConfigOption);
+        rootCommand.Options.Add(jsonOption);
+        rootCommand.Options.Add(formatOption);
+        rootCommand.Options.Add(colorOption);
+        rootCommand.Options.Add(allTimeOption);
+        rootCommand.Options.Add(includeMergesOption);
+        rootCommand.Options.Add(includeDeletedOption);
+        rootCommand.Options.Add(mergeByEmailOption);
+        rootCommand.Options.Add(anonymizeOption);
+        rootCommand.Options.Add(sinceOption);
+        rootCommand.Options.Add(untilOption);
+        rootCommand.Options.Add(pathOption);
+        rootCommand.Options.Add(depthOption);
+        rootCommand.Options.Add(htmlOption);
+        rootCommand.Options.Add(mdOption);
+        rootCommand.Options.Add(svgOption);
+        rootCommand.Options.Add(limitOption);
+        rootCommand.Options.Add(sortOption);
+        rootCommand.Options.Add(columnsOption);
+        rootCommand.Options.Add(quietOption);
+
+        // Single root argument for repository path
+        repoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
+        rootCommand.Arguments.Add(repoPathArg);
     }
 }
