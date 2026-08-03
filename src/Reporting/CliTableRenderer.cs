@@ -629,11 +629,11 @@ public class TerminalFormatter
         {
             string symbol = _useUnicode ? "⚠️  " : "[!] ";
             string text = $"{symbol}{textValue}";
-            return _isColorEnabled ? $"\x1b[1;31m{text}\x1b[0m" : text;
+            return _isColorEnabled ? $"\x1b[38;2;243;139;168m{text}\x1b[0m" : text;
         }
         else if (score >= 50.0)
         {
-            return _isColorEnabled ? $"\x1b[33m{textValue}\x1b[0m" : textValue;
+            return _isColorEnabled ? $"\x1b[38;2;249;226;175m{textValue}\x1b[0m" : textValue;
         }
         return textValue;
     }
@@ -644,11 +644,11 @@ public class TerminalFormatter
         {
             string symbol = _useUnicode ? "🔥  " : "* ";
             string text = $"{symbol}{textValue}";
-            return _isColorEnabled ? $"\x1b[1;31m{text}\x1b[0m" : text;
+            return _isColorEnabled ? $"\x1b[38;2;243;139;168m{text}\x1b[0m" : text;
         }
         else if (score >= 50.0)
         {
-            return _isColorEnabled ? $"\x1b[33m{textValue}\x1b[0m" : textValue;
+            return _isColorEnabled ? $"\x1b[38;2;249;226;175m{textValue}\x1b[0m" : textValue;
         }
         return textValue;
     }

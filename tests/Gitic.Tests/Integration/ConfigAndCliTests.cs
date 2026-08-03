@@ -624,7 +624,7 @@ bin/
             // Check for Unicode warning (⚠️) and heat (🔥) symbols and ANSI colors
             Assert.Contains("⚠️", outputAlways);
             Assert.Contains("🔥", outputAlways);
-            Assert.Contains("\x1b[1;31m", outputAlways);
+            Assert.Contains("\x1b[38;2;243;139;168m", outputAlways);
 
             // Case 2: plain format (should have no Unicode and no ANSI)
             var settingsPlain = new AnalysisSettings { Format = "plain" };
@@ -906,6 +906,63 @@ bin/
 
                 // Clean up
                 File.Delete(filePath);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("GITIC_INTERACTIVE_TEST", null);
+                Console.SetIn(originalIn);
+                Console.SetOut(originalOut);
+            }
+        }
+
+        [Fact]
+        public async Task TestWizardCommand_EscapeKeyBackNavigation()
+        {
+            string currentDir = Directory.GetCurrentDirectory();
+            var parsed = new ParsedArgs
+            {
+                Command = "wizard",
+                RepoPath = currentDir,
+                Settings = new AnalysisSettings()
+            };
+
+            // Option 0: Generate Curated Report (TUI Menu)
+            // Option 0: Developer Onboarding & Collaboration Profile
+            // Option escape: Go back from format selection to report type selection
+            // Option 4: Custom Report
+            // Option escape: Go back from custom sections selection to report type selection
+            // Option escape: Go back from report type selection to main menu
+            // Option 10: Exit (from menu)
+            string inputLines = "0\n0\nescape\n4\nescape\nescape\n10\n";
+            var originalIn = Console.In;
+            var originalOut = Console.Out;
+
+            try
+            {
+                Environment.SetEnvironmentVariable("GITIC_INTERACTIVE_TEST", "1");
+                using var stringReader = new StringReader(inputLines);
+                Console.SetIn(stringReader);
+
+                // Set dummy out to prevent console pollution
+                using var stringWriter = new StringWriter();
+                Console.SetOut(stringWriter);
+
+                var wizard = new WizardCommand(parsed);
+                var reporter = new MockConsoleReporter();
+                var result = await wizard.ExecuteAsync(reporter);
+
+                Assert.Equal(0, result.ExitCode);
+
+                // Since we backed out and escaped, NO file should be generated in .test-report
+                var gitClient = new GitClient(currentDir);
+                string repoRoot = await gitClient.GetRepositoryRootAsync() ?? currentDir;
+                string targetDir = Path.Combine(repoRoot, ".test-report");
+                var files = Directory.Exists(targetDir) ? Directory.GetFiles(targetDir, "gitic_report_*.md") : Array.Empty<string>();
+                // Clean up any files that might have been leftover (but our test shouldn't create new ones)
+                foreach (var file in files)
+                {
+                    try { File.Delete(file); } catch {}
+                }
             }
             finally
             {

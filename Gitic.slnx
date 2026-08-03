@@ -2,5 +2,5 @@
   <Folder Name="/tests/">
     <Project Path="tests/Gitic.Tests/Gitic.Tests.csproj" />
   </Folder>
-  <Project Path="Gitic.csproj" />
+  <Project Path="src/Gitic.csproj" />
 </Solution>

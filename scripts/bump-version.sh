@@ -13,7 +13,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 NEW_VERSION=$1
-CURRENT_VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" "$PROJECT_ROOT/Gitic.csproj")
+CURRENT_VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" "$PROJECT_ROOT/src/Gitic.csproj")
 
 if [ "$NEW_VERSION" == "$CURRENT_VERSION" ]; then
     echo "Version is already $CURRENT_VERSION. Nothing to do."
@@ -23,8 +23,8 @@ fi
 echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION..."
 
 # Update Gitic.csproj
-sed -i.bak "s/<Version>$CURRENT_VERSION<\/Version>/<Version>$NEW_VERSION<\/Version>/" "$PROJECT_ROOT/Gitic.csproj"
-rm -f "$PROJECT_ROOT/Gitic.csproj.bak"
+sed -i.bak "s/<Version>$CURRENT_VERSION<\/Version>/<Version>$NEW_VERSION<\/Version>/" "$PROJECT_ROOT/src/Gitic.csproj"
+rm -f "$PROJECT_ROOT/src/Gitic.csproj.bak"
 
 # Update install.sh
 sed -i.bak "s/VERSION=\"$CURRENT_VERSION\"/VERSION=\"$NEW_VERSION\"/" "$SCRIPT_DIR/install.sh"

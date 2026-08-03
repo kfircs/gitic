@@ -47,7 +47,7 @@ jobs:
 
       - name: Publish Single File Binary
         run: |
-          dotnet publish Gitic.csproj -c Release -r ${{ matrix.rid }} -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -o ./publish
+          dotnet publish src/Gitic.csproj -c Release -r ${{ matrix.rid }} -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -o ./publish
 
       - name: Rename Binary
         shell: bash
@@ -72,7 +72,7 @@ jobs:
           include-prerelease: true
 
       - name: Pack NuGet Tool
-        run: dotnet pack Gitic.csproj -c Release
+        run: dotnet pack src/Gitic.csproj -c Release
 
       - name: Upload NuGet Package Artifact
         uses: actions/upload-artifact@v4

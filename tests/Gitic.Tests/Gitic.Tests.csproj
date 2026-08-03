@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Gitic.csproj" />
+    <ProjectReference Include="..\..\src\Gitic.csproj" />
   </ItemGroup>
 
 </Project>

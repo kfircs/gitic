@@ -25,7 +25,8 @@ public class ExecFileGitExecutor : IGitExecutor
 {
     public async IAsyncEnumerable<string> RunAsync(string[] args, string cwd, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        List<string> allArgs = ["-C", cwd, ..args];
+        string fullCwd = Path.GetFullPath(cwd);
+        List<string> allArgs = ["-C", fullCwd, ..args];
 
         ProcessStartInfo psi = new()
         {
@@ -33,7 +34,8 @@ public class ExecFileGitExecutor : IGitExecutor
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
+            WorkingDirectory = fullCwd
         };
         foreach (var arg in allArgs)
         {
@@ -164,7 +166,7 @@ public class GitClient : IGitClient
 
     public GitClient(string repoRoot, IGitExecutor? executor = null)
     {
-        _repoRoot = repoRoot;
+        _repoRoot = string.IsNullOrEmpty(repoRoot) ? Directory.GetCurrentDirectory() : Path.GetFullPath(repoRoot);
         _executor = executor ?? new ExecFileGitExecutor();
         GitPatchParser patchParser = new();
         _parser = new GitParser(patchParser);

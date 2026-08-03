@@ -44,13 +44,15 @@ public interface IConsoleReporter
         var sb = new StringBuilder();
         foreach (var key in orderedKeys)
         {
-            sb.AppendLine($"[{key}]");
+            string color = key == "ERROR" || key == "CRITICAL" ? "\x1b[38;2;243;139;168m" : "\x1b[38;2;249;226;175m";
+            string icon = key == "ERROR" || key == "CRITICAL" ? "❌" : "⚠️";
+            sb.AppendLine($"{color}[{key}] {icon}\x1b[0m");
             foreach (var diag in groups[key])
             {
-                sb.AppendLine($"  {diag.Code}: {diag.Message}");
+                sb.AppendLine($"  {color}{diag.Code}\x1b[0m: {diag.Message}");
                 if (!string.IsNullOrEmpty(diag.Hint))
                 {
-                    sb.AppendLine($"  Hint: {diag.Hint}");
+                    sb.AppendLine($"  \x1b[38;2;108;112;147m󰌑 Hint: {diag.Hint}\x1b[0m");
                 }
             }
         }
@@ -68,10 +70,10 @@ public interface IConsoleReporter
         if (list.Count == 0) return;
 
         var sb = new StringBuilder();
-        sb.Append("exclusions ");
+        sb.Append("\x1b[38;2;108;112;147m󰆧 exclusions ");
         var parts = list.Select(e => $"{e.Category}:{e.Count}");
         sb.Append(string.Join(", ", parts));
-        sb.AppendLine();
+        sb.AppendLine("\x1b[0m");
 
         WriteError(sb.ToString());
     }

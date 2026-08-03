@@ -331,7 +331,7 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
                 string vLine = UseUnicode ? "│" : "|";
                 if (EnableColor)
                 {
-                    vLine = $"\x1b[90m{vLine}\x1b[0m";
+                    vLine = $"\x1b[38;2;249;226;175m{vLine}\x1b[0m";
                 }
                 return vLine + string.Join(vLine, formattedCells) + vLine;
             }
@@ -370,7 +370,7 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
             string line = left + string.Join(middle, segments) + right;
             if (EnableColor)
             {
-                return $"\x1b[90m{line}\x1b[0m";
+                return $"\x1b[38;2;249;226;175m{line}\x1b[0m";
             }
             return line;
         }
@@ -381,7 +381,7 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
             {
                 if (EnableColor)
                 {
-                    name = $"\x1b[1;36m{name}\x1b[0m";
+                    name = $"\x1b[1;38;2;203;166;247m{name}\x1b[0m";
                 }
             }
             return name;

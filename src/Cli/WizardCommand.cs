@@ -58,12 +58,18 @@ namespace Gitic
             while (!exit && !cancellationToken.IsCancellationRequested)
             {
                 Console.Clear();
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("=============================================");
-                Console.WriteLine("🚀 Gitic Strategic Codebase Analysis Dashboard");
-                Console.WriteLine("=============================================");
-                Console.ResetColor();
-                Console.WriteLine($"Target Repository: {Path.GetFullPath(_parsed.RepoPath)}\n");
+                int winWidth = 80;
+                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winWidth = Console.WindowWidth; } catch {}
+                int boxWidth = Math.Max(50, Math.Min(80, winWidth));
+                string topBorder = "\x1b[38;2;203;166;247m┌" + new string('─', boxWidth - 2) + "┐\x1b[0m";
+                string botBorder = "\x1b[38;2;203;166;247m└" + new string('─', boxWidth - 2) + "┘\x1b[0m";
+                string midBorder = "\x1b[38;2;203;166;247m├" + new string('─', boxWidth - 2) + "┤\x1b[0m";
+                Console.WriteLine(topBorder);
+                Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {PadRightAnsi("\x1b[1m󰚩 Gitic Strategic Codebase Analysis Dashboard\x1b[0m", boxWidth - 4)} \x1b[38;2;203;166;247m│\x1b[0m");
+                Console.WriteLine(midBorder);
+                Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {PadRightAnsi($"\x1b[38;2;166;227;161mTarget:\x1b[0m {Path.GetFullPath(_parsed.RepoPath)}", boxWidth - 4)} \x1b[38;2;203;166;247m│\x1b[0m");
+                Console.WriteLine(botBorder);
+                Console.WriteLine();
 
                 var mainChoice = PromptSingleSelection(
                     "Select an analysis view or action:",
@@ -144,9 +150,9 @@ namespace Gitic
                 }
                 catch (Exception ex)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"\x1b[38;2;243;139;168m");
                     Console.WriteLine($"\nError executing command: {ex.Message}");
-                    Console.ResetColor();
+                    Console.Write("\x1b[0m");
                 }
 
                 if (!exit)
@@ -160,7 +166,7 @@ namespace Gitic
                     {
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("\nPress any key to return to the main menu...");
-                        Console.ResetColor();
+                        Console.Write("\x1b[0m");
                         try { Console.ReadKey(true); } catch { }
                     }
                 }
@@ -171,83 +177,140 @@ namespace Gitic
 
         private async Task GenerateCuratedReportAsync(IConsoleReporter? reporter, CancellationToken cancellationToken)
         {
-            Console.WriteLine("=============================================");
-            Console.WriteLine("📊 Gitic Report Wizard");
-            Console.WriteLine("=============================================\n");
-
-            var reportType = PromptSingleSelection(
-                "What type of report would you like to generate?",
-                new[] {
-                    "Developer Onboarding & Collaboration Profile",
-                    "Engineering Health & Technical Debt Profile",
-                    "Copilot / AI Code Strain Assessment Profile",
-                    "Comprehensive Repository Diagnostic (Full)",
-                    "Custom Report (Select specific sections)"
-                }
-            );
-
-            if (reportType == -1) return;
-
+            int step = 0;
+            int reportType = 0;
             List<string> selectedSections = new List<string>();
-            if (reportType == 0) // Onboarding & Collaboration
+            int formatType = 0;
+
+            while (step >= 0 && step <= 2)
             {
-                selectedSections = new List<string> {
-                    "Developer Onboarding",
-                    "Review Collaboration"
-                };
-            }
-            else if (reportType == 1) // Health & Tech Debt
-            {
-                selectedSections = new List<string> {
-                    "Work Classification",
-                    "Code Rot"
-                };
-            }
-            else if (reportType == 2) // AI Code Strain
-            {
-                selectedSections = new List<string> {
-                    "Work Classification",
-                    "Review Collaboration",
-                    "AI Code Strain"
-                };
-            }
-            else if (reportType == 3) // Full Curated
-            {
-                selectedSections = new List<string> {
-                    "Work Classification",
-                    "Developer Onboarding",
-                    "Code Rot",
-                    "Review Collaboration",
-                    "AI Code Strain"
-                };
-            }
-            else // Custom selection
-            {
-                var availableSections = new[] {
-                    "Work Classification",
-                    "Developer Onboarding",
-                    "Code Rot",
-                    "Review Collaboration",
-                    "AI Code Strain"
-                };
-                var selections = PromptMultiSelection("Select the sections to include (Space to select, Enter to confirm):", availableSections);
-                if (selections.Contains(-1) || selections.Count == 0)
+                if (cancellationToken.IsCancellationRequested) return;
+
+                // Clear console and print header for each selection step
+                Console.Clear();
+                int winWidth = 80;
+                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winWidth = Console.WindowWidth; } catch {}
+                int boxWidth = Math.Max(50, Math.Min(80, winWidth));
+                Console.WriteLine($"\x1b[38;2;203;166;247m┌{new string('─', boxWidth - 2)}┐\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {PadRightAnsi("\x1b[1m📊 Gitic Report Wizard\x1b[0m", boxWidth - 4)} \x1b[38;2;203;166;247m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;203;166;247m└{new string('─', boxWidth - 2)}┘\x1b[0m");
+                Console.WriteLine();
+
+                if (step == 0)
                 {
-                    Console.WriteLine("\nNo sections selected.");
-                    return;
+                    reportType = PromptSingleSelection(
+                        "What type of report would you like to generate?",
+                        new[] {
+                            "Developer Onboarding & Collaboration Profile",
+                            "Engineering Health & Technical Debt Profile",
+                            "Copilot / AI Code Strain Assessment Profile",
+                            "Comprehensive Repository Diagnostic (Full)",
+                            "Custom Report (Select specific sections)"
+                        }
+                    );
+
+                    if (reportType == -1)
+                    {
+                        return; // Exit GenerateCuratedReportAsync back to main menu
+                    }
+
+                    if (reportType == 4) // Custom selection
+                    {
+                        step = 1;
+                    }
+                    else
+                    {
+                        // Predefined profiles
+                        if (reportType == 0) // Onboarding & Collaboration
+                        {
+                            selectedSections = new List<string> {
+                                "Developer Onboarding",
+                                "Review Collaboration"
+                            };
+                        }
+                        else if (reportType == 1) // Health & Tech Debt
+                        {
+                            selectedSections = new List<string> {
+                                "Work Classification",
+                                "Code Rot"
+                            };
+                        }
+                        else if (reportType == 2) // AI Code Strain
+                        {
+                            selectedSections = new List<string> {
+                                "Work Classification",
+                                "Review Collaboration",
+                                "AI Code Strain"
+                            };
+                        }
+                        else if (reportType == 3) // Full Curated
+                        {
+                            selectedSections = new List<string> {
+                                "Work Classification",
+                                "Developer Onboarding",
+                                "Code Rot",
+                                "Review Collaboration",
+                                "AI Code Strain"
+                            };
+                        }
+                        step = 2; // skip step 1 (custom selection)
+                    }
                 }
-                foreach (var index in selections)
+                else if (step == 1)
                 {
-                    selectedSections.Add(availableSections[index]);
+                    var availableSections = new[] {
+                        "Work Classification",
+                        "Developer Onboarding",
+                        "Code Rot",
+                        "Review Collaboration",
+                        "AI Code Strain"
+                    };
+                    var selections = PromptMultiSelection("Select the sections to include (Space to select, Enter to confirm):", availableSections);
+                    if (selections.Contains(-1))
+                    {
+                        step = 0; // go back to choosing report type
+                        continue;
+                    }
+                    if (selections.Count == 0)
+                    {
+                        Console.WriteLine("\nNo sections selected. Please select at least one section.");
+                        // Let's pause briefly so they see it
+                        await Task.Delay(1000, cancellationToken);
+                        continue;
+                    }
+                    selectedSections = new List<string>();
+                    foreach (var index in selections)
+                    {
+                        selectedSections.Add(availableSections[index]);
+                    }
+                    step = 2;
+                }
+                else if (step == 2)
+                {
+                    formatType = PromptSingleSelection(
+                        "Which format do you prefer?",
+                        new[] { "Markdown (.md) with embedded SVGs", "HTML (.html) with embedded SVGs" }
+                    );
+
+                    if (formatType == -1)
+                    {
+                        if (reportType == 4)
+                        {
+                            step = 1; // go back to custom sections selection
+                        }
+                        else
+                        {
+                            step = 0; // go back to choosing report type
+                        }
+                        continue;
+                    }
+
+                    // Done with selections, proceed to generate
+                    step = 3;
                 }
             }
 
-            var formatType = PromptSingleSelection(
-                "\nWhich format do you prefer?",
-                new[] { "Markdown (.md) with embedded SVGs", "HTML (.html) with embedded SVGs" }
-            );
-
-            if (formatType == -1) return;
+            if (step != 3) return; // cancelled or exited
 
             Console.WriteLine("\nGenerating report with selected sections:");
             foreach (var sec in selectedSections) Console.WriteLine($" - {sec}");
@@ -433,6 +496,25 @@ namespace Gitic
             return sb.ToString();
         }
 
+        
+        private static string PadRightAnsi(string text, int totalWidth)
+        {
+            int visibleLength = 0;
+            bool inEscape = false;
+            foreach (char c in text)
+            {
+                if (c == '') inEscape = true;
+                else if (inEscape && c == 'm') inEscape = false;
+                else if (!inEscape) visibleLength++;
+            }
+            int paddingCount = totalWidth - visibleLength;
+            if (paddingCount > 0)
+            {
+                return text + new string(' ', paddingCount);
+            }
+            return text;
+        }
+
         private int PromptSingleSelection(string prompt, string[] options)
         {
             if (Console.IsInputRedirected || Console.IsOutputRedirected || Console.IsErrorRedirected)
@@ -441,7 +523,7 @@ namespace Gitic
                 for (int i = 0; i < options.Length; i++) Console.WriteLine($"[{i}] {options[i]}");
                 Console.Write("Enter selection (number): ");
                 string? line = Console.ReadLine();
-                if (line == null) return -1;
+                if (line == null || line == "back" || line == "escape") return -1;
                 if (int.TryParse(line, out int val) && val >= 0 && val < options.Length) return val;
                 return 0;
             }
@@ -461,20 +543,26 @@ namespace Gitic
                 }
                 firstDraw = false;
 
-                Console.WriteLine(prompt);
+                int winW = 80;
+                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winW = Console.WindowWidth; } catch {}
+                int bWidth = Math.Max(50, Math.Min(80, winW));
+                Console.WriteLine($"\x1b[38;2;249;226;175m┌{new string('─', bWidth - 2)}┐\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"\x1b[1m󰜎 {prompt}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
                 for (int i = 0; i < options.Length; i++)
                 {
                     if (i == currentSelection)
                     {
-                        Console.ForegroundColor = ConsoleColor.Cyan;
-                        Console.WriteLine($" > {options[i]}".PadRight(Console.WindowWidth));
-                        Console.ResetColor();
+                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"\x1b[38;2;137;180;250m󰅂\x1b[0m \x1b[1;38;2;137;180;250m{options[i]}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                     }
                     else
                     {
-                        Console.WriteLine($"   {options[i]}".PadRight(Console.WindowWidth));
+                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"  {options[i]}", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                     }
                 }
+                Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi("\x1b[38;2;108;112;147m󰌑 Up/Down: Navigate │ Enter: Select\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m└{new string('─', bWidth - 2)}┘\x1b[0m");
 
                 key = Console.ReadKey(true).Key;
 
@@ -486,6 +574,9 @@ namespace Gitic
                     case ConsoleKey.DownArrow:
                         currentSelection = (currentSelection == options.Length - 1) ? 0 : currentSelection + 1;
                         break;
+                    case ConsoleKey.Escape:
+                        try { Console.CursorVisible = true; } catch { }
+                        return -1;
                 }
             } while (key != ConsoleKey.Enter);
 
@@ -501,7 +592,7 @@ namespace Gitic
                 for (int i = 0; i < options.Length; i++) Console.WriteLine($"[{i}] {options[i]}");
                 Console.Write("Enter selections (comma separated numbers): ");
                 var line = Console.ReadLine();
-                if (line == null) return new List<int> { -1 };
+                if (line == null || line == "back" || line == "escape") return new List<int> { -1 };
                 var parts = line.Split(',', StringSplitOptions.RemoveEmptyEntries);
                 var sel = parts.Select(p => int.TryParse(p, out int v) ? v : -1).Where(v => v >= 0 && v < options.Length).ToList();
                 return sel.Count > 0 ? sel : new List<int> { 0 };
@@ -523,21 +614,27 @@ namespace Gitic
                 }
                 firstDraw = false;
 
-                Console.WriteLine(prompt);
+                int winW = 80;
+                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winW = Console.WindowWidth; } catch {}
+                int bWidth = Math.Max(50, Math.Min(80, winW));
+                Console.WriteLine($"\x1b[38;2;249;226;175m┌{new string('─', bWidth - 2)}┐\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"\x1b[1m󰜎 {prompt}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
                 for (int i = 0; i < options.Length; i++)
                 {
-                    string checkbox = selected.Contains(i) ? "[x]" : "[ ]";
+                    string checkbox = selected.Contains(i) ? "󰄲" : "󰄱";
                     if (i == currentSelection)
                     {
-                        Console.ForegroundColor = ConsoleColor.Cyan;
-                        Console.WriteLine($" > {checkbox} {options[i]}".PadRight(Console.WindowWidth));
-                        Console.ResetColor();
+                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"\x1b[38;2;137;180;250m󰅂\x1b[0m {checkbox} \x1b[1;38;2;137;180;250m{options[i]}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                     }
                     else
                     {
-                        Console.WriteLine($"   {checkbox} {options[i]}".PadRight(Console.WindowWidth));
+                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"  {checkbox} {options[i]}", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                     }
                 }
+                Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi("\x1b[38;2;108;112;147m󰌑 Up/Down: Navigate │ Space: Toggle │ Enter: Select\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m└{new string('─', bWidth - 2)}┘\x1b[0m");
 
                 key = Console.ReadKey(true).Key;
 
@@ -555,6 +652,9 @@ namespace Gitic
                         else
                             selected.Add(currentSelection);
                         break;
+                    case ConsoleKey.Escape:
+                        try { Console.CursorVisible = true; } catch { }
+                        return new List<int> { -1 };
                 }
             } while (key != ConsoleKey.Enter);
 

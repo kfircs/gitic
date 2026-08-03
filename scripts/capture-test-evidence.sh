@@ -50,7 +50,7 @@ if ! run_step restore dotnet restore tests/Gitic.Tests/Gitic.Tests.csproj --nolo
   overall_status=1
 fi
 
-if ! run_step release-build dotnet build Gitic.csproj --configuration Release --no-restore --nologo; then
+if ! run_step release-build dotnet build src/Gitic.csproj --configuration Release --no-restore --nologo; then
   overall_status=1
 fi
 

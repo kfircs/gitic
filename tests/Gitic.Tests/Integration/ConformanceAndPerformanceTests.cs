@@ -24,7 +24,7 @@ namespace Gitic.Tests
                 _dllPath = Path.Combine(baseDir, "Gitic.dll");
             }
 
-            string baselinePath = Path.GetFullPath(Path.Combine(baseDir, "../../../conformance_baseline.json"));
+            string baselinePath = Path.GetFullPath(Path.Combine(baseDir, "../../../Integration/conformance_baseline.json"));
             if (File.Exists(baselinePath))
             {
                 var json = File.ReadAllText(baselinePath);
