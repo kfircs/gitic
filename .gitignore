@@ -22,3 +22,30 @@ logs/
 
 # Agent specific files
 .gemini/
+
+# Test reports
+.test-report/
+.test-reports/
+
+# Agent & Runner files
+.agents/
+.cadwa/
+.imptory/
+.prompts/
+agent-models.json
+imptory-config.json
+prd.json
+progress.txt
+run_loops_runner.log
+
+# Node dependencies
+node_modules/
+package.json
+package-lock.json
+
+# Scratch & fix scripts
+fix.js
+fix.py
+fix.sh
+fix_namespace.py
+test_refactor.sh
