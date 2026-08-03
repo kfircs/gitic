@@ -20,7 +20,8 @@ namespace Gitic
         public async Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
         {
             bool isTestMock = AppDomain.CurrentDomain.GetAssemblies().Any(a => a.FullName?.StartsWith("xunit", StringComparison.OrdinalIgnoreCase) == true);
-            if ((Console.IsInputRedirected || Console.IsOutputRedirected || Console.IsErrorRedirected) && !isTestMock)
+            bool isInteractiveTest = isTestMock && Environment.GetEnvironmentVariable("GITIC_INTERACTIVE_TEST") == "1";
+            if ((Console.IsInputRedirected || Console.IsOutputRedirected || Console.IsErrorRedirected) && !isInteractiveTest)
             {
                 // In non-interactive mode, if they passed reporting options like --html or --md, we can run the report generation directly!
                 if (!string.IsNullOrEmpty(_parsed.HtmlPath) || !string.IsNullOrEmpty(_parsed.MdPath) || !string.IsNullOrEmpty(_parsed.SvgPath))
@@ -150,10 +151,18 @@ namespace Gitic
 
                 if (!exit)
                 {
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    Console.WriteLine("\nPress any key to return to the main menu...");
-                    Console.ResetColor();
-                    try { Console.ReadKey(true); } catch { }
+                    if (Console.IsInputRedirected || Console.IsOutputRedirected || Console.IsErrorRedirected)
+                    {
+                        // In redirected environments, read a line if available, but do not block on ReadKey
+                        Console.ReadLine();
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Console.WriteLine("\nPress any key to return to the main menu...");
+                        Console.ResetColor();
+                        try { Console.ReadKey(true); } catch { }
+                    }
                 }
             }
 
@@ -257,7 +266,9 @@ namespace Gitic
 
             string extension = formatType == 0 ? "md" : "html";
             string filename = $"gitic_report_{DateTime.Now:yyyyMMdd_HHmmss}.{extension}";
-            string targetPath = Path.Combine(repoRoot, filename);
+            string targetDir = Path.Combine(repoRoot, ".test-report");
+            Directory.CreateDirectory(targetDir);
+            string targetPath = Path.Combine(targetDir, filename);
 
             var content = formatType == 0 ? GenerateCustomMarkdown(result, selectedSections) : GenerateCustomHtml(result, selectedSections);
             
@@ -429,7 +440,9 @@ namespace Gitic
                 Console.WriteLine(prompt);
                 for (int i = 0; i < options.Length; i++) Console.WriteLine($"[{i}] {options[i]}");
                 Console.Write("Enter selection (number): ");
-                if (int.TryParse(Console.ReadLine(), out int val) && val >= 0 && val < options.Length) return val;
+                string? line = Console.ReadLine();
+                if (line == null) return -1;
+                if (int.TryParse(line, out int val) && val >= 0 && val < options.Length) return val;
                 return 0;
             }
 
@@ -487,7 +500,8 @@ namespace Gitic
                 Console.WriteLine(prompt);
                 for (int i = 0; i < options.Length; i++) Console.WriteLine($"[{i}] {options[i]}");
                 Console.Write("Enter selections (comma separated numbers): ");
-                var line = Console.ReadLine() ?? "";
+                var line = Console.ReadLine();
+                if (line == null) return new List<int> { -1 };
                 var parts = line.Split(',', StringSplitOptions.RemoveEmptyEntries);
                 var sel = parts.Select(p => int.TryParse(p, out int v) ? v : -1).Where(v => v >= 0 && v < options.Length).ToList();
                 return sel.Count > 0 ? sel : new List<int> { 0 };

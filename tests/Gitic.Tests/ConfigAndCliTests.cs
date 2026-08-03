@@ -862,14 +862,17 @@ bin/
                 Settings = new AnalysisSettings()
             };
 
+            // Option 0: Generate Curated Report (TUI Menu)
             // Option 0: Developer Onboarding & Collaboration Profile
             // Option 0: Markdown (.md)
-            string inputLines = "0\n0\n";
+            // Option 10: Exit (from menu)
+            string inputLines = "0\n0\n0\n10\n";
             var originalIn = Console.In;
             var originalOut = Console.Out;
 
             try
             {
+                Environment.SetEnvironmentVariable("GITIC_INTERACTIVE_TEST", "1");
                 using var stringReader = new StringReader(inputLines);
                 Console.SetIn(stringReader);
 
@@ -883,10 +886,11 @@ bin/
 
                 Assert.Equal(0, result.ExitCode);
 
-                // Find the generated file in the resolved git repo root
+                // Find the generated file in the resolved .test-report folder
                 var gitClient = new GitClient(currentDir);
                 string repoRoot = await gitClient.GetRepositoryRootAsync() ?? currentDir;
-                var files = Directory.GetFiles(repoRoot, "gitic_report_*.md");
+                string targetDir = Path.Combine(repoRoot, ".test-report");
+                var files = Directory.Exists(targetDir) ? Directory.GetFiles(targetDir, "gitic_report_*.md") : Array.Empty<string>();
                 Assert.NotEmpty(files);
 
                 string filePath = files[0];
@@ -905,6 +909,7 @@ bin/
             }
             finally
             {
+                Environment.SetEnvironmentVariable("GITIC_INTERACTIVE_TEST", null);
                 Console.SetIn(originalIn);
                 Console.SetOut(originalOut);
             }
