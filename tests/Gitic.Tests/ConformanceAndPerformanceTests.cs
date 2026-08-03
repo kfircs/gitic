@@ -67,8 +67,11 @@ namespace Gitic.Tests
             var sw = Stopwatch.StartNew();
             process.Start();
 
-            string stdout = await process.StandardOutput.ReadToEndAsync();
-            string stderr = await process.StandardError.ReadToEndAsync();
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+            await Task.WhenAll(stdoutTask, stderrTask);
+            string stdout = stdoutTask.Result;
+            string stderr = stderrTask.Result;
             await process.WaitForExitAsync();
             sw.Stop();
 
