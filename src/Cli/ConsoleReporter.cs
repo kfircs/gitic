@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Gitic;
 
+/// <summary>
+/// Defines console reporting operations for displaying messages, errors, and diagnostics.
+/// </summary>
 public interface IConsoleReporter
 {
     void Write(string message);
@@ -25,17 +28,10 @@ public interface IConsoleReporter
 
         if (diagnosticsToShow.Count == 0) return;
 
-        // Group by Severity
-        Dictionary<string, List<Diagnostic>> groups = new(StringComparer.OrdinalIgnoreCase);
-        foreach (var d in diagnosticsToShow)
-        {
-            string severity = (d.Severity ?? "WARNING").ToUpperInvariant();
-            if (!groups.ContainsKey(severity))
-            {
-                groups[severity] = [];
-            }
-            groups[severity].Add(d);
-        }
+        // Group by Severity using LINQ
+        var groups = diagnosticsToShow
+            .GroupBy(d => (d.Severity ?? "WARNING").ToUpperInvariant(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
 
         // Sort the groups by severity order: Critical/Error/Failure first, then Warning, then others.
         List<string> orderedKeys = new(groups.Keys);
