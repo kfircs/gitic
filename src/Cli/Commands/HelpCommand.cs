@@ -65,10 +65,7 @@ Options:
             return Task.FromResult(Cli.CliSuccess(_generatedHelpText));
         }
 
-        var assembly = typeof(Cli).Assembly;
-        var version = assembly.GetName().Version?.ToString(3) ?? DefaultVersion;
-        var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        var displayVersion = string.IsNullOrEmpty(infoVersion) ? version : infoVersion;
+        string displayVersion = Cli.GetDisplayVersion();
 
         string helpText = string.Format(HelpTemplate, displayVersion);
         reporter?.Write(helpText);

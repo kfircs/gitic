@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -10,6 +11,14 @@ public record CliResult(int ExitCode, string Stdout, string Stderr);
 
 public static class Cli
 {
+    public static string GetDisplayVersion()
+    {
+        var assembly = typeof(Cli).Assembly;
+        var version = assembly.GetName().Version?.ToString(3) ?? "0.1.0";
+        var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        return string.IsNullOrEmpty(infoVersion) ? version : infoVersion;
+    }
+
     public static CliResult CliSuccess(string stdout, string stderr = "")
     {
         return new CliResult(0, stdout, stderr);
