@@ -5,6 +5,8 @@ using System.Linq;
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Gitic.Tests")]
 
 namespace Gitic;
+
+/// <summary>Defines validation methods for Gitic configuration settings.</summary>
 public interface IConfigValidator
 {
     void ValidateOverride(object? input, string source);
@@ -127,7 +129,7 @@ public class ConfigValidator : IConfigValidator
             record = dict;
             return true;
         }
-        record = new Dictionary<string, object?>();
+        record = [];
         return false;
     }
 
@@ -157,7 +159,7 @@ public class ConfigValidator : IConfigValidator
             return true;
         }
         errors.Add(errorMsg);
-        array = new List<object?>();
+        array = [];
         return false;
     }
 
@@ -173,7 +175,7 @@ public class ConfigValidator : IConfigValidator
             return true;
         }
         errors.Add(errorMsg);
-        array = new List<object?>();
+        array = [];
         return false;
     }
 
