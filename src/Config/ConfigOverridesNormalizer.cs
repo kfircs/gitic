@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace Gitic;
 
+/// <summary>Defines a contract for normalizing untyped configuration override inputs.</summary>
 public interface IConfigOverridesNormalizer
 {
     GiticConfigOverrides NormalizeOverride(object? input, string source);
@@ -62,8 +63,7 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
 
     private static List<AliasRule> NormalizeAliases(List<object?> array)
     {
-        var aliases = new List<AliasRule>();
-        foreach (var entry in array)
+        return array.Select(entry =>
         {
             var entryRecord = (Dictionary<string, object?>)entry!;
             
@@ -72,20 +72,14 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
 
             entryRecord.TryGetValue("identities", out var identitiesVal);
             var identitiesArr = (List<object?>)identitiesVal!;
+            var identities = identitiesArr.Select(idVal => NormalizeIdentity((Dictionary<string, object?>)idVal!)).ToList();
 
-            var identities = new List<GitIdentity>();
-            foreach (var idVal in identitiesArr)
-            {
-                identities.Add(NormalizeIdentity((Dictionary<string, object?>)idVal!));
-            }
-
-            aliases.Add(new AliasRule
+            return new AliasRule
             {
                 Canonical = canonical,
                 Identities = identities
-            });
-        }
-        return aliases;
+            };
+        }).ToList();
     }
 
     private static GitIdentity NormalizeIdentity(Dictionary<string, object?> record)
@@ -95,15 +89,14 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
 
         return new GitIdentity 
         { 
-            Name = NormalizeNonEmptyString(nameVal!)!, 
-            Email = NormalizeNonEmptyString(emailVal!)! 
+            Name = NormalizeNonEmptyString(nameVal)!, 
+            Email = NormalizeNonEmptyString(emailVal)! 
         };
     }
 
     private static List<BotRule> NormalizeBots(List<object?> array)
     {
-        var bots = new List<BotRule>();
-        foreach (var entry in array)
+        return array.Select(entry =>
         {
             var record = (Dictionary<string, object?>)entry!;
 
@@ -111,86 +104,72 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
             record.TryGetValue("email", out var emailVal);
             record.TryGetValue("pattern", out var patternVal);
 
-            bots.Add(new BotRule
+            return new BotRule
             {
                 Name = NormalizeNonEmptyString(nameVal),
                 Email = NormalizeNonEmptyString(emailVal),
                 Pattern = NormalizeNonEmptyString(patternVal)
-            });
-        }
-        return bots;
+            };
+        }).ToList();
     }
 
     private static List<ExcludeRule> NormalizeExcludes(List<object?> array)
     {
-        var excludes = new List<ExcludeRule>();
-        foreach (var entry in array)
+        return array.Select(entry =>
         {
             var record = (Dictionary<string, object?>)entry!;
 
             record.TryGetValue("pattern", out var patternVal);
             record.TryGetValue("category", out var categoryVal);
 
-            excludes.Add(new ExcludeRule 
+            return new ExcludeRule 
             { 
-                Pattern = NormalizeNonEmptyString(patternVal!)!, 
-                Category = NormalizeNonEmptyString(categoryVal!)! 
-            });
-        }
-        return excludes;
+                Pattern = NormalizeNonEmptyString(patternVal)!, 
+                Category = NormalizeNonEmptyString(categoryVal)! 
+            };
+        }).ToList();
     }
 
     private static List<NamedArea> NormalizeAreas(List<object?> array)
     {
-        var areas = new List<NamedArea>();
-        foreach (var entry in array)
+        return array.Select(entry =>
         {
             var record = (Dictionary<string, object?>)entry!;
 
             record.TryGetValue("name", out var nameVal);
             record.TryGetValue("paths", out var pathsVal);
             var pathsArr = (List<object?>)pathsVal!;
+            var paths = pathsArr.Select(pathVal => NormalizeNonEmptyString(pathVal)!).ToList();
 
-            var paths = new List<string>();
-            foreach (var pathVal in pathsArr)
-            {
-                paths.Add(NormalizeNonEmptyString(pathVal!)!);
-            }
-
-            areas.Add(new NamedArea 
+            return new NamedArea 
             { 
-                Name = NormalizeNonEmptyString(nameVal!)!, 
+                Name = NormalizeNonEmptyString(nameVal)!, 
                 Paths = paths 
-            });
-        }
-        return areas;
+            };
+        }).ToList();
     }
 
     private static IdentityConfigOverrides NormalizeIdentityConfig(Dictionary<string, object?> record)
     {
-        var result = new IdentityConfigOverrides { MergeOnEmail = false };
-        if (record.TryGetValue("merge_on_email", out var raw) && raw is bool b)
+        return new IdentityConfigOverrides
         {
-            result.MergeOnEmail = b;
-        }
-        return result;
+            MergeOnEmail = record.TryGetValue("merge_on_email", out var raw) && raw is bool b && b
+        };
     }
 
     private static MetricsConfigOverrides NormalizeMetricsConfig(Dictionary<string, object?> record)
     {
-        var result = new MetricsConfigOverrides { TemporalCouplingMaxCommitFileCount = 20 };
+        int count = 20;
         if (record.TryGetValue("temporal_coupling_max_commit_file_count", out var raw))
         {
-            if (raw is int i)
+            count = raw switch
             {
-                result.TemporalCouplingMaxCommitFileCount = i;
-            }
-            else if (raw is long l)
-            {
-                result.TemporalCouplingMaxCommitFileCount = (int)l;
-            }
+                int i => i,
+                long l => (int)l,
+                _ => 20
+            };
         }
-        return result;
+        return new MetricsConfigOverrides { TemporalCouplingMaxCommitFileCount = count };
     }
 
     private static ScoringConfigOverrides NormalizeScoring(Dictionary<string, object?> record)
@@ -198,28 +177,20 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
         var result = new ScoringConfigOverrides();
         if (record.TryGetValue("attention", out var attentionVal) && attentionVal is Dictionary<string, object?> attentionRecord)
         {
-            var attention = new AttentionWeightsOverrides();
-
-            if (attentionRecord.TryGetValue("churn", out var churnVal) && churnVal != null)
+            result.Attention = new AttentionWeightsOverrides
             {
-                attention.Churn = ConfigUtils.ConvertToDouble(churnVal);
-            }
-            if (attentionRecord.TryGetValue("recency", out var recencyVal) && recencyVal != null)
-            {
-                attention.Recency = ConfigUtils.ConvertToDouble(recencyVal);
-            }
-            if (attentionRecord.TryGetValue("contributor_spread", out var csVal) && csVal != null)
-            {
-                attention.ContributorSpread = ConfigUtils.ConvertToDouble(csVal);
-            }
-            if (attentionRecord.TryGetValue("low_familiarity_concentration", out var lfcVal) && lfcVal != null)
-            {
-                attention.LowFamiliarityConcentration = ConfigUtils.ConvertToDouble(lfcVal);
-            }
-
-            result.Attention = attention;
+                Churn = GetDoubleValue(attentionRecord, "churn"),
+                Recency = GetDoubleValue(attentionRecord, "recency"),
+                ContributorSpread = GetDoubleValue(attentionRecord, "contributor_spread"),
+                LowFamiliarityConcentration = GetDoubleValue(attentionRecord, "low_familiarity_concentration")
+            };
         }
         return result;
+    }
+
+    private static double? GetDoubleValue(Dictionary<string, object?> record, string key)
+    {
+        return record.TryGetValue(key, out var val) && val != null ? ConfigUtils.ConvertToDouble(val) : null;
     }
 
     private static string? NormalizeNonEmptyString(object? value)
@@ -227,7 +198,7 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
         if (value is string s)
         {
             string trimmed = s.Trim();
-            return trimmed.Length == 0 ? null : trimmed;
+            return trimmed.Length > 0 ? trimmed : null;
         }
         return null;
     }
