@@ -1,6 +1,6 @@
 {
-  "StartupHelpLimitMs": 300,
-  "StartupVersionLimitMs": 300,
+  "StartupHelpLimitMs": 800,
+  "StartupVersionLimitMs": 800,
   "MemoryBudgetMb": 50,
   "SchemaVersion": "1.1"
 }

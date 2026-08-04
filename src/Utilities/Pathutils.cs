@@ -51,31 +51,42 @@ public class CachedGlobMatcher : IGlobMatcher
         });
     }
 
+    /// <summary>
+    /// Converts a glob pattern (e.g., "src/**/*.cs" or "*.json") into an equivalent, compiled-ready regular expression pattern.
+    /// </summary>
+    /// <param name="pattern">The glob pattern to convert.</param>
+    /// <returns>A regular expression string representation of the glob pattern.</returns>
     private static string ConvertGlobToRegexPattern(string pattern)
     {
         var sb = new StringBuilder("^");
-        for (int index = 0; index < pattern.Length; index += 1)
+        int index = 0;
+        int length = pattern.Length;
+
+        while (index < length)
         {
-            char c = pattern[index];
-            if (c == '*' && index + 1 < pattern.Length && pattern[index + 1] == '*')
+            char current = pattern[index];
+
+            // Handle double wildcards (**), which match recursively across directories
+            if (current == '*' && index + 1 < length && pattern[index + 1] == '*')
             {
                 sb.Append(".*");
-                index += 1;
-                continue;
+                index += 2;
             }
-            if (c == '*')
+            else
             {
-                sb.Append("[^/]*");
-                continue;
+                // Handle single character wildcards, single directory wildcards, and literals
+                string substitution = current switch
+                {
+                    '*' => "[^/]*",
+                    '?' => "[^/]",
+                    _ => Regex.Escape(current.ToString())
+                };
+                sb.Append(substitution);
+                index++;
             }
-            if (c == '?')
-            {
-                sb.Append("[^/]");
-                continue;
-            }
-            sb.Append(Regex.Escape(c.ToString()));
         }
-        sb.Append("$");
+
+        sb.Append('$');
         return sb.ToString();
     }
 }
