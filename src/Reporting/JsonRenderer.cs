@@ -6,6 +6,7 @@ namespace Gitic;
 
 public class JsonRenderer : IReportRenderer
 {
+    // clean code refactor
     public Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
