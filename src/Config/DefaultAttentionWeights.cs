@@ -1,7 +1,6 @@
-using System;
-
 namespace Gitic;
 
+/// <summary>Provides default weight values and a factory method for attention scoring.</summary>
 public static class DefaultAttentionWeights
 {
     public const double Churn = 0.35;
