@@ -444,3 +444,4 @@ public class FamiliarityScoringEngine : IFamiliarityScoringEngine
         return items.Select(areaMetricSelector).ToList();
     }
 }
+// Refactored: Candidate 12
