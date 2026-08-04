@@ -4,10 +4,11 @@ using System.Linq;
 
 namespace Gitic;
 
+/// <summary>Provides utility methods and severity sorting logic for warnings.</summary>
 public static class Warnings
 {
-    public static int GetSeverityOrder(string severity) =>
-        severity is null ? 3 : severity.ToLowerInvariant() switch
+    public static int GetSeverityOrder(string? severity) =>
+        severity?.ToLowerInvariant() switch
         {
             "critical" or "error" or "failure" => 1,
             "warning" => 2,
@@ -201,17 +202,14 @@ public interface IWarningRuleProvider
 
 public class DefaultWarningRuleProvider : IWarningRuleProvider
 {
-    public List<IWarningRule> GetRules()
-    {
-        return [
-            new EmailCollisionWarningRule(),
-            new BotConfigWarningRule(),
-            new LeadTimeWarningRule(),
-            new NoBotsWarningRule(),
-            new TemporalCouplingWarningRule(),
-            new GeneratedFileWarningRule()
-        ];
-    }
+    public List<IWarningRule> GetRules() => [
+        new EmailCollisionWarningRule(),
+        new BotConfigWarningRule(),
+        new LeadTimeWarningRule(),
+        new NoBotsWarningRule(),
+        new TemporalCouplingWarningRule(),
+        new GeneratedFileWarningRule()
+    ];
 }
 
 public interface IWarningCollector
@@ -242,20 +240,12 @@ public class WarningCollector : IWarningCollector
         _rules = provider.GetRules();
     }
 
-    public List<string> Collect(WarningContext context)
-    {
-        return Collect(context, null);
-    }
+    public List<string> Collect(WarningContext context) => Collect(context, null);
 
-    public List<string> Collect(WarningContext context, List<string>? existingWarnings)
-    {
-        return CollectDiagnostics(context, existingWarnings).Select(d => d.ToString()).ToList();
-    }
+    public List<string> Collect(WarningContext context, List<string>? existingWarnings) =>
+        CollectDiagnostics(context, existingWarnings).Select(d => d.ToString()).ToList();
 
-    public List<Diagnostic> CollectDiagnostics(WarningContext context)
-    {
-        return CollectDiagnostics(context, null);
-    }
+    public List<Diagnostic> CollectDiagnostics(WarningContext context) => CollectDiagnostics(context, null);
 
     public List<Diagnostic> CollectDiagnostics(WarningContext context, List<string>? existingWarnings)
     {
