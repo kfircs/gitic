@@ -21,6 +21,9 @@ public class TruckFactorCalculator : ITruckFactorCalculator
     // clean code refactor
     /// <summary>
     /// The threshold percentage of cumulative activity (50%) required to define the truck factor cohort.
+    /// Contributors are sorted in descending order of their activity. The truck factor represents
+    /// the minimum number of top contributors whose combined activity meets or exceeds this threshold
+    /// of the total team activity.
     /// </summary>
     private const double TruckFactorThresholdPct = 0.5;
 
@@ -49,6 +52,10 @@ public class TruckFactorCalculator : ITruckFactorCalculator
 
 public class KnowledgeSiloCalculator : IKnowledgeSiloCalculator
 {
+    /// <summary>
+    /// The threshold percentage (70%) of total activity above which a single top contributor's 
+    /// activity share constitutes a knowledge silo.
+    /// </summary>
     private const double SiloThreshold = 0.70;
     private readonly ITruckFactorCalculator _truckFactorCalculator;
 
