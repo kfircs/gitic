@@ -120,6 +120,8 @@ public class CliTableRenderer : IReportRenderer
     {
         bool useColor = _termFormatter.IsColorEnabled;
         
+        // Setup ANSI escape codes for basic formatting if color is enabled.
+        // \x1b[1;36m: Bold Cyan, \x1b[0m: Reset, \x1b[1m: Bold, \x1b[2m: Dim
         string cCyan = useColor ? "\x1b[1;36m" : "";
         string cReset = useColor ? "\x1b[0m" : "";
         string cBold = useColor ? "\x1b[1m" : "";
@@ -167,6 +169,11 @@ public class CliTableRenderer : IReportRenderer
         public string TopAreas { get; set; }
     }
 
+    /// <summary>
+    /// Attempts to determine the actual width of the console window to dynamically size table columns.
+    /// Falls back to a safe default if output is redirected or width cannot be determined.
+    /// Bounds the width between 40 and 200 characters to prevent extreme layouts.
+    /// </summary>
     private int GetConsoleWidth()
     {
         int consoleWidth = 80;
@@ -184,6 +191,10 @@ public class CliTableRenderer : IReportRenderer
         return consoleWidth;
     }
 
+    /// <summary>
+    /// Determines which columns should be visible based on user settings or the available console width.
+    /// Automatically drops less important columns when space is constrained.
+    /// </summary>
     private List<string> GetVisibleColumns(int consoleWidth, Func<int, List<string>> defaultColumnsSelector)
     {
         if (!string.IsNullOrEmpty(_settings.Columns))
@@ -196,6 +207,10 @@ public class CliTableRenderer : IReportRenderer
         return defaultColumnsSelector(consoleWidth);
     }
 
+    /// <summary>
+    /// Configures the base console table builder with the dynamically determined layout settings,
+    /// enabling borders and unicode drawing characters if the terminal and output format support them.
+    /// </summary>
     private IConsoleTableBuilder CreateTableBuilder(List<string> visibleColumns)
     {
         bool enableBorders = string.Equals(_settings.Format, "human", StringComparison.OrdinalIgnoreCase);
@@ -573,6 +588,10 @@ public class CliTableRenderer : IReportRenderer
     }
 }
 
+/// <summary>
+/// Handles terminal capabilities, determining whether to use ANSI color codes
+/// and Unicode symbols based on environment variables and output redirection.
+/// </summary>
 public class TerminalFormatter
 {
     private readonly bool _isColorEnabled;
@@ -583,6 +602,10 @@ public class TerminalFormatter
 
     public TerminalFormatter(AnalysisSettings settings)
     {
+        // Detect terminal capabilities and user preferences:
+        // - TERM: used to identify 'dumb' terminals that don't support advanced formatting.
+        // - NO_COLOR: standard environment variable to disable color output globally.
+        // - IsOutputRedirected: detects if output is being piped to a file or another command.
         string? termEnv = Environment.GetEnvironmentVariable("TERM");
         bool isNoColorPresent = Environment.GetEnvironmentVariable("NO_COLOR") != null;
         bool isOutputRedirected = Console.IsOutputRedirected;
@@ -633,31 +656,43 @@ public class TerminalFormatter
         }
     }
 
+    /// <summary>
+    /// Formats an attention score with corresponding visual indicators.
+    /// Uses true color (24-bit RGB) ANSI codes if color is enabled.
+    /// </summary>
     public string FormatAttention(double score, string textValue)
     {
         if (score >= 80.0)
         {
             string symbol = _useUnicode ? "⚠️  " : "[!] ";
             string text = $"{symbol}{textValue}";
+            // \x1b[38;2;R;G;Bm : sets foreground true color (Redish/Pink for high attention)
             return _isColorEnabled ? $"\x1b[38;2;243;139;168m{text}\x1b[0m" : text;
         }
         else if (score >= 50.0)
         {
+            // \x1b[38;2;R;G;Bm : sets foreground true color (Yellowish/Gold for medium attention)
             return _isColorEnabled ? $"\x1b[38;2;249;226;175m{textValue}\x1b[0m" : textValue;
         }
         return textValue;
     }
 
+    /// <summary>
+    /// Formats a heat score with corresponding visual indicators.
+    /// Uses true color (24-bit RGB) ANSI codes if color is enabled.
+    /// </summary>
     public string FormatHeat(double score, string textValue)
     {
         if (score >= 80.0)
         {
             string symbol = _useUnicode ? "🔥  " : "* ";
             string text = $"{symbol}{textValue}";
+            // \x1b[38;2;R;G;Bm : sets foreground true color (Redish/Pink for high heat)
             return _isColorEnabled ? $"\x1b[38;2;243;139;168m{text}\x1b[0m" : text;
         }
         else if (score >= 50.0)
         {
+            // \x1b[38;2;R;G;Bm : sets foreground true color (Yellowish/Gold for medium heat)
             return _isColorEnabled ? $"\x1b[38;2;249;226;175m{textValue}\x1b[0m" : textValue;
         }
         return textValue;
