@@ -2,6 +2,7 @@ namespace Gitic;
 
 public static class TemplateAssets
 {
+    // clean code refactor
     public const string CssThemes = """
     /* ── Theme Definitions ── */
     :root[data-theme="deloitte"] {
