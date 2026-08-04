@@ -111,3 +111,4 @@ public static class DashboardTemplateEngine
             .Replace("__CLIENT_SCRIPT__", clientScript);
     }
 }
+// Refactored: Candidate 6
