@@ -8,6 +8,8 @@ namespace Gitic;
 /// </summary>
 public static class JsonSerializationDefaults
 {
+    // clean code refactor
+
     /// <summary>
     /// Default options for compact JSON serialization, ignoring null values.
     /// </summary>
