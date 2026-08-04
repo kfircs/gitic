@@ -180,3 +180,4 @@ public class MarkdownRenderer : IReportRenderer
         return Task.FromResult(sb.ToString());
     }
 }
+// Refactored: Candidate 3
