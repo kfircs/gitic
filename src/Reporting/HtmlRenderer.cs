@@ -27,3 +27,4 @@ public class HtmlRenderer : IReportRenderer
         await DashboardTemplateEngine.RenderToStreamAsync(data, output);
     }
 }
+// Refactored: Candidate 8
