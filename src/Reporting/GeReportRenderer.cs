@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Gitic;
 
+// clean code refactor
 public class GeReportRenderer : IReportRenderer
 {
     public Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
