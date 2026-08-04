@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace Gitic;
 
+/// <summary>
+/// Defines the engine for loading, merging, and resolving Gitic configuration.
+/// </summary>
 public interface IConfigurationEngine
 {
     string RenderStarterConfig();
@@ -80,49 +83,8 @@ public class ConfigurationEngine : IConfigurationEngine
     {
         string userHome = options.UserHome ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         
-        string? userConfigPath = options.UserConfigPath;
-        if (userConfigPath == null)
-        {
-            string preferredUserPath = Path.Combine(userHome, ".config", "gitic", "config.yml");
-            string fallbackUserPath = Path.Combine(userHome, ".config", "gitizer", "config.yml");
-            if (File.Exists(preferredUserPath))
-            {
-                userConfigPath = preferredUserPath;
-            }
-            else if (File.Exists(fallbackUserPath))
-            {
-                userConfigPath = fallbackUserPath;
-                Console.Error.WriteLine($"Warning: Using legacy user configuration file at '{fallbackUserPath}'. Please migrate to '{preferredUserPath}'.");
-            }
-            else
-            {
-                userConfigPath = preferredUserPath;
-            }
-        }
-
-        string? repoConfigPath = options.RepoConfigPath;
-        if (repoConfigPath == null && options.RepoRoot != null)
-        {
-            string preferredRepoPath = Path.Combine(options.RepoRoot, ".gitic.yml");
-            string fallbackRepoPath = Path.Combine(options.RepoRoot, ".gitizer.yml");
-            if (File.Exists(preferredRepoPath))
-            {
-                repoConfigPath = preferredRepoPath;
-            }
-            else if (File.Exists(fallbackRepoPath))
-            {
-                repoConfigPath = fallbackRepoPath;
-                Console.Error.WriteLine($"Warning: Using legacy repository configuration file at '{fallbackRepoPath}'. Please migrate to '{preferredRepoPath}'.");
-            }
-            else
-            {
-                repoConfigPath = preferredRepoPath;
-            }
-        }
-        else if (repoConfigPath == null && options.RepoRoot == null)
-        {
-            repoConfigPath = null;
-        }
+        string userConfigPath = GetUserConfigPath(options, userHome);
+        string? repoConfigPath = GetRepoConfigPath(options);
 
         string? userConfigRaw = await ReadOptionalUtf8Async(userConfigPath);
         string? repoConfigRaw = repoConfigPath == null ? null : await ReadOptionalUtf8Async(repoConfigPath);
@@ -151,6 +113,52 @@ public class ConfigurationEngine : IConfigurationEngine
                 Repo = repoConfigRaw == null ? null : repoConfigPath
             }
         };
+    }
+
+    private static string GetUserConfigPath(LoadGiticConfigOptions options, string userHome)
+    {
+        if (options.UserConfigPath != null)
+        {
+            return options.UserConfigPath;
+        }
+
+        string preferredUserPath = Path.Combine(userHome, ".config", "gitic", "config.yml");
+        string fallbackUserPath = Path.Combine(userHome, ".config", "gitizer", "config.yml");
+        if (File.Exists(preferredUserPath))
+        {
+            return preferredUserPath;
+        }
+        if (File.Exists(fallbackUserPath))
+        {
+            Console.Error.WriteLine($"Warning: Using legacy user configuration file at '{fallbackUserPath}'. Please migrate to '{preferredUserPath}'.");
+            return fallbackUserPath;
+        }
+        return preferredUserPath;
+    }
+
+    private static string? GetRepoConfigPath(LoadGiticConfigOptions options)
+    {
+        if (options.RepoConfigPath != null)
+        {
+            return options.RepoConfigPath;
+        }
+        if (options.RepoRoot == null)
+        {
+            return null;
+        }
+
+        string preferredRepoPath = Path.Combine(options.RepoRoot, ".gitic.yml");
+        string fallbackRepoPath = Path.Combine(options.RepoRoot, ".gitizer.yml");
+        if (File.Exists(preferredRepoPath))
+        {
+            return preferredRepoPath;
+        }
+        if (File.Exists(fallbackRepoPath))
+        {
+            Console.Error.WriteLine($"Warning: Using legacy repository configuration file at '{fallbackRepoPath}'. Please migrate to '{preferredRepoPath}'.");
+            return fallbackRepoPath;
+        }
+        return preferredRepoPath;
     }
 
     private static async Task<string?> ReadOptionalUtf8Async(string path)
