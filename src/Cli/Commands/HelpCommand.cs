@@ -66,17 +66,12 @@ Options:
         }
 
         var assembly = typeof(Cli).Assembly;
-        string displayVersion = GetDisplayVersion(assembly);
+        var version = assembly.GetName().Version?.ToString(3) ?? DefaultVersion;
+        var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        var displayVersion = string.IsNullOrEmpty(infoVersion) ? version : infoVersion;
 
         string helpText = string.Format(HelpTemplate, displayVersion);
         reporter?.Write(helpText);
         return Task.FromResult(Cli.CliSuccess(helpText));
-    }
-
-    private string GetDisplayVersion(Assembly assembly)
-    {
-        var version = assembly.GetName().Version?.ToString(3) ?? DefaultVersion;
-        var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        return string.IsNullOrEmpty(infoVersion) ? version : infoVersion;
     }
 }
