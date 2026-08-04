@@ -21,7 +21,7 @@ public enum WidthPolicy
 public interface IConsoleTableBuilder
 {
     IConsoleTableBuilder AddColumn(string name, int? width = null, string align = "left");
-    IConsoleTableBuilder AddRow(List<string> values);
+    IConsoleTableBuilder AddRow(IEnumerable<string?> values);
     string Render();
 
     // Deepening Extensions
@@ -158,14 +158,15 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
         return this;
     }
 
-    public IConsoleTableBuilder AddRow(List<string> values)
+    public IConsoleTableBuilder AddRow(IEnumerable<string?> values)
     {
         Dictionary<string, string> dict = new(StringComparer.OrdinalIgnoreCase);
+        var valList = values?.ToList();
         for (int i = 0; i < _columns.Count; i++)
         {
-            if (values != null && i < values.Count)
+            if (valList != null && i < valList.Count)
             {
-                dict[_columns[i].Name] = values[i];
+                dict[_columns[i].Name] = valList[i] ?? string.Empty;
             }
             else
             {

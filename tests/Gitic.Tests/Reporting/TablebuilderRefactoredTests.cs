@@ -86,8 +86,8 @@ namespace Gitic.Tests
         {
             var builder = new ConsoleTableBuilder();
             builder.AddColumn("Col", 5, "left");
-            builder.AddRow(new List<string> { null });
-            builder.AddRow(new List<string> { "" });
+            builder.AddRow(new List<string?> { null });
+            builder.AddRow(new List<string?> { "" });
 
             var result = builder.Render();
             var lines = result.Split('\n');
@@ -95,6 +95,41 @@ namespace Gitic.Tests
             Assert.Equal("Col  ", lines[0]); // Width 5
             Assert.Equal("     ", lines[1]); // Null treated as empty and padded with 5 spaces
             Assert.Equal("     ", lines[2]); // Empty padded with 5 spaces
+        }
+
+        [Fact]
+        public void TestConsoleTableBuilder_InterfaceCovariance()
+        {
+            IConsoleTableBuilder builder = new ConsoleTableBuilder();
+            builder.AddColumn("Col", 5, "left");
+
+            // Verify implicit generic covariance of IEnumerable<string?>:
+            // 1. List<string> (invariant list of non-nullable)
+            builder.AddRow(new List<string> { "one" });
+            
+            // 2. string[] (array of non-nullable)
+            builder.AddRow(new[] { "two" });
+
+            // 3. IEnumerable<string>
+            IEnumerable<string> enumerableNonNullable = new List<string> { "three" };
+            builder.AddRow(enumerableNonNullable);
+
+            // 4. List<string?> (invariant list of nullable)
+            builder.AddRow(new List<string?> { "four" });
+
+            // 5. IEnumerable<string?>
+            IEnumerable<string?> enumerableNullable = new List<string?> { "five" };
+            builder.AddRow(enumerableNullable);
+
+            var result = builder.Render();
+            var lines = result.Split('\n');
+
+            Assert.Equal("Col  ", lines[0]);
+            Assert.Equal("one  ", lines[1]);
+            Assert.Equal("two  ", lines[2]);
+            Assert.Equal("three", lines[3]);
+            Assert.Equal("four ", lines[4]);
+            Assert.Equal("five ", lines[5]);
         }
     }
 }
