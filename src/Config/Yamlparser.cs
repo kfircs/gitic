@@ -2,11 +2,12 @@ using System.Text.RegularExpressions;
 
 namespace Gitic;
 
+/// <summary>Represents a parsed line of YAML content with its indentation and line number.</summary>
 public class YamlLine
 {
-    public int Indent { get; set; }
-    public string Text { get; set; } = string.Empty;
-    public int LineNumber { get; set; }
+    public int Indent { get; init; }
+    public string Text { get; init; } = string.Empty;
+    public int LineNumber { get; init; }
 }
 
 public class YamlTokenStream
@@ -56,11 +57,7 @@ public class YamlTokenStream
         {
             return Current.LineNumber;
         }
-        if (_lines.Count > 0)
-        {
-            return _lines[_lines.Count - 1].LineNumber;
-        }
-        return 1;
+        return _lines.Count > 0 ? _lines[^1].LineNumber : 1;
     }
 
     public ConfigValidationError Error(YamlLine line, string detail)
