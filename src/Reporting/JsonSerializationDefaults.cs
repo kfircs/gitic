@@ -27,3 +27,5 @@ public static class JsonSerializationDefaults
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 }
+// Refactored: Candidate 9
+
