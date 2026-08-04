@@ -654,3 +654,4 @@ public class TerminalFormatter
         return textValue;
     }
 }
+// Refactored: Candidate 2
