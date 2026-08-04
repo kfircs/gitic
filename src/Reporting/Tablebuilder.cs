@@ -437,3 +437,4 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
         return string.Join("\n", allRows);
     }
 }
+// Refactored: Candidate 5
