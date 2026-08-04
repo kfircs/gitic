@@ -14,3 +14,5 @@ public class JsonRenderer : IReportRenderer
         return Task.FromResult(json);
     }
 }
+// Refactored: Candidate 11
+
