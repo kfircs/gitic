@@ -6,6 +6,7 @@ namespace Gitic;
 
 public static class ReportTemplateHelper
 {
+    // clean code refactor
     public static string GetHtmlReportTemplate(string resultJson)
     {
         return DashboardTemplateEngine.Generate(resultJson);
