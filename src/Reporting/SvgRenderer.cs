@@ -30,6 +30,12 @@ namespace Gitic
     {
         private readonly StringBuilder _sb = new StringBuilder();
 
+        /// <summary>
+        /// Initiates the SVG container. 
+        /// Uses the viewBox attribute matched with width="100%" and height="auto" 
+        /// to ensure the vector graphic scales fluidly to its parent container 
+        /// while maintaining the defined internal aspect ratio and coordinate space.
+        /// </summary>
         public ISvgChartBuilder StartSvg(int width, int height)
         {
             _sb.AppendLine($"<svg viewBox=\"0 0 {width} {height}\" width=\"100%\" height=\"auto\" xmlns=\"http://www.w3.org/2000/svg\" style=\"background-color:#0f172a; border-radius:8px; border:1px solid #1e293b; font-family:system-ui, -apple-system, sans-serif;\">");
@@ -79,6 +85,16 @@ namespace Gitic
         }
     }
 
+    /// <summary>
+    /// Helper class containing calculation logic to generate SVG graphics.
+    /// 
+    /// Coordinate Transformations &amp; Responsive Scaling Strategy:
+    /// - All charts are generated with an internal fixed coordinate system defined by 'width' and 'height'.
+    /// - The SVG element utilizes viewBox="0 0 width height" along with width="100%" and height="auto".
+    /// - This ensures the SVG scales responsively to fit any parent container while preserving its aspect ratio.
+    /// - Data values (e.g., lines, churn, attention score) are linearly transformed to map onto 
+    ///   the available internal plot area (plotWidth, plotHeight) respecting padding constraints.
+    /// </summary>
     public static class SvgGeneratorHelper
     {
         private static string EscapeXml(string value)
