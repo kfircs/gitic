@@ -7,9 +7,17 @@ using System.Threading.Tasks;
 
 namespace Gitic
 {
-    // clean code refactor
+    /// <summary>
+    /// Builder interface for constructing responsive vector SVG graphic components.
+    /// </summary>
     public interface ISvgChartBuilder
     {
+        /// <summary>
+        /// Begins the SVG wrapper tag with responsive viewbox scaling.
+        /// </summary>
+        /// <param name="width">The viewport width coordinate.</param>
+        /// <param name="height">The viewport height coordinate.</param>
+        /// <returns>This builder instance.</returns>
         ISvgChartBuilder StartSvg(int width, int height);
         ISvgChartBuilder StartDefs();
         ISvgChartBuilder EndDefs();
