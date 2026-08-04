@@ -39,8 +39,12 @@ public class HtmlRenderer : IReportRenderer
     {
         cancellationToken.ThrowIfCancellationRequested();
         string rawJson = JsonSerializer.Serialize(result, JsonSerializationDefaults.Compact);
+        
+        // Escape script tags to safely embed the JSON payload directly inside the HTML document structure.
         string data = rawJson.Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
 
+        // Delegates HTML layout generation parameters, structural layout mapping (__BODY__, __CLIENT_SCRIPT__),
+        // and CSS asset linking logic (__CSS__) to the DashboardTemplateEngine.
         await DashboardTemplateEngine.RenderToStreamAsync(data, output);
     }
 }
