@@ -1262,3 +1262,5 @@ public static class TemplateAssets
 </html>
 """;
 }
+// Refactored: Candidate 4
+
