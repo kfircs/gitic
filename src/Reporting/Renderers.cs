@@ -5,5 +5,6 @@ namespace Gitic;
 
 public interface IReportRenderer
 {
+    // clean code refactor
     Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default);
 }
