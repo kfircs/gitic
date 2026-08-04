@@ -19,6 +19,9 @@ public interface ITruckFactorCalculator
 public class TruckFactorCalculator : ITruckFactorCalculator
 {
     // clean code refactor
+    /// <summary>
+    /// The threshold percentage of cumulative activity (50%) required to define the truck factor cohort.
+    /// </summary>
     private const double TruckFactorThresholdPct = 0.5;
 
     public int CalculateTruckFactor(List<ContributorShare> contributors)
