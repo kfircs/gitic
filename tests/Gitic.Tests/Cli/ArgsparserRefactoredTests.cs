@@ -60,5 +60,54 @@ namespace Gitic.Tests
             public void WriteError(string message) => Stderr += message;
             public void WriteErrorLine(string message) => Stderr += message + "\n";
         }
+
+        [Fact]
+        public async Task TestBaseAnalysisCommand_InjectsDependencies()
+        {
+            var parsed = new ParsedArgs
+            {
+                RepoPath = "/fake/root",
+                Settings = DefaultAnalysisSettings.Create()
+            };
+            parsed.Settings.Format = "json";
+
+            var fakeGit = new FakeGitClientForTesting();
+            var fakeAnalyzer = new FakeRepositoryAnalyzerForTesting();
+
+            var command = new HotspotsCommand(parsed, fakeGit, fakeAnalyzer);
+            var reporter = new MockConsoleReporter();
+
+            var result = await command.ExecuteAsync(reporter);
+
+            Assert.True(fakeAnalyzer.AnalyzeAsyncCalled);
+            Assert.Same(fakeGit, fakeAnalyzer.ReceivedInput?.GitClient);
+            Assert.Equal("/fake/root", fakeAnalyzer.ReceivedInput?.RepoRoot);
+            Assert.Equal(0, result.ExitCode);
+        }
+
+        private class FakeGitClientForTesting : IGitClient
+        {
+            public Task<string?> GetRepositoryRootAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>("/fake/root");
+            public Task<HashSet<string>> ListHeadFilesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new HashSet<string>());
+            public Task<System.Collections.Generic.List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null, CancellationToken cancellationToken = default) => Task.FromResult(new System.Collections.Generic.List<GitCommitRecord>());
+        }
+
+        private class FakeRepositoryAnalyzerForTesting : IRepositoryAnalyzer
+        {
+            public bool AnalyzeAsyncCalled { get; private set; } = false;
+            public AnalyzeInput? ReceivedInput { get; private set; }
+
+            public Task<AnalysisResult> AnalyzeAsync(AnalyzeInput input, CancellationToken cancellationToken = default)
+            {
+                AnalyzeAsyncCalled = true;
+                ReceivedInput = input;
+                return Task.FromResult(new AnalysisResult
+                {
+                    Analysis = new AnalysisMetadata { IncludedFileChangeCount = 1 },
+                    Files = new System.Collections.Generic.List<FileMetric>(),
+                    Diagnostics = new System.Collections.Generic.List<Diagnostic>()
+                });
+            }
+        }
     }
 }

@@ -43,129 +43,24 @@ public class CliCommandFactoryImpl : ICliCommandFactory
     }
 }
 
-public class VersionCommand : ICliCommand
-{
-    public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
-    {
-        var assembly = typeof(Cli).Assembly;
-        var version = assembly.GetName().Version?.ToString(3) ?? "0.1.0";
-        var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        var displayVersion = string.IsNullOrEmpty(infoVersion) ? version : infoVersion;
-
-        string versionText = $"gitic version {displayVersion}\n";
-        reporter?.Write(versionText);
-        return Task.FromResult(Cli.CliSuccess(versionText));
-    }
-}
-
-public class HelpCommand : ICliCommand
-{
-    private readonly string? _generatedHelpText;
-
-    public HelpCommand(string? generatedHelpText = null)
-    {
-        _generatedHelpText = generatedHelpText;
-    }
-
-    public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
-    {
-        if (!string.IsNullOrEmpty(_generatedHelpText))
-        {
-            reporter?.Write(_generatedHelpText);
-            return Task.FromResult(Cli.CliSuccess(_generatedHelpText));
-        }
-
-        var assembly = typeof(Cli).Assembly;
-        var version = assembly.GetName().Version?.ToString(3) ?? "0.1.0";
-        var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        var displayVersion = string.IsNullOrEmpty(infoVersion) ? version : infoVersion;
-
-        string helpText = 
-$@"Gitic Strategic Codebase Analysis (v{displayVersion})
-A tool to analyze Git repositories and identify code hotspots, contributor ownership, areas, and temporal coupling.
-
-Usage:
-  gitic <command> [repo_path] [options]
-
-Commands:
-  hotspots [repo_path]                  Identify code hotspots with high complexity/churn
-  areas [repo_path]                     Analyze code ownership and changes across directories
-  contributors [repo_path]              Show contributor metrics and profiles
-  contributor <name> [repo_path]        Analyze a specific contributor's details
-  report [repo_path] [options]          Generate reports (visual HTML, Markdown, and/or SVG)
-  temporal-coupling [repo_path]        Analyze temporal coupling between files
-  lead-time [repo_path]                 Measure code change and merge lead times
-  config init                           Generate a starter config file (.gitic.yml)
-  version                               Show version information
-
-Options:
-  -h, --help                            Show this help menu
-  -v, --version                         Show version information
-  --config <config>                     Path to non-default configuration file
-  --user-config <user-config>           Path to non-default global user configuration file
-  --format <format>                     Output format: human, plain, json (default: human)
-  --color <color>                       Color mode: auto, always, never (default: auto)
-  --html <path>                         Output visual HTML report to path (for report command)
-  --md <path>                           Output Markdown summary report to path (for report command)
-  --svg <path>                          Output SVG reports to path (for report command)
-  --json                                Output results in raw JSON format
-  --all-time                            Analyze all history (ignoring time window settings)
-  --since <since>                       Filter commits since date (YYYY-MM-DD)
-  --until <until>                       Filter commits until date (YYYY-MM-DD)
-  --path <path>                         Filter analysis to files matching glob pattern (e.g. 'src/**')
-  --depth <depth>                       Directory depth for areas analysis (1-10, default: 2)
-  --limit <limit>                       Limit results to top N items
-  --sort <sort>                         Sort results by field
-  --columns <columns>                   Select columns to show
-  --include-merges                      Include merge commits in the analysis
-  --include-deleted                     Include deleted files in stats
-  --merge-by-email                      Merge contributor identities by email
-  --anonymize                           Anonymize contributor names/emails in output
-";
-        reporter?.Write(helpText);
-        return Task.FromResult(Cli.CliSuccess(helpText));
-    }
-}
-
-public class ConfigCommand : ICliCommand
-{
-    private readonly ParsedArgs _parsed;
-
-    public ConfigCommand(ParsedArgs parsed)
-    {
-        _parsed = parsed;
-    }
-
-    public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
-    {
-        if (_parsed.ConfigAction != "init")
-        {
-            string errMsg = "config requires an action. Try: gitic config init\n";
-            reporter?.WriteError(errMsg);
-            return Task.FromResult(Cli.CliFailure(errMsg, exitCode: 2));
-        }
-
-        var engine = new ConfigurationEngine();
-        string stdout = engine.RenderStarterConfig();
-        reporter?.Write(stdout);
-        return Task.FromResult(Cli.CliSuccess(stdout));
-    }
-}
-
 public abstract class BaseAnalysisCommand : ICliCommand
 {
     protected readonly ParsedArgs Parsed;
+    private readonly IGitClient? _gitClient;
+    private readonly IRepositoryAnalyzer? _analyzer;
 
-    protected BaseAnalysisCommand(ParsedArgs parsed)
+    protected BaseAnalysisCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null)
     {
         Parsed = parsed;
+        _gitClient = gitClient;
+        _analyzer = analyzer;
     }
 
     protected abstract AnalysisCommand CommandType { get; }
 
     private async Task<AnalysisResult> ExecuteAnalysisAsync(IConsoleReporter? reporter, CancellationToken cancellationToken)
     {
-        var gitClient = new GitClient(Parsed.RepoPath);
+        var gitClient = _gitClient ?? new GitClient(Parsed.RepoPath);
         string? repoRoot = await gitClient.GetRepositoryRootAsync(cancellationToken);
         if (repoRoot == null)
         {
@@ -188,10 +83,11 @@ public abstract class BaseAnalysisCommand : ICliCommand
             RepoRoot = repoRoot,
             Command = CommandType,
             Settings = Parsed.Settings,
-            ContributorName = Parsed.ContributorName
+            ContributorName = Parsed.ContributorName,
+            GitClient = gitClient
         };
 
-        IRepositoryAnalyzer analyzer = new RepositoryAnalyzer();
+        var analyzer = _analyzer ?? new RepositoryAnalyzer();
         return await analyzer.AnalyzeAsync(input, cancellationToken);
     }
 
@@ -222,7 +118,8 @@ public abstract class BaseAnalysisCommand : ICliCommand
 
 public abstract class StandardRenderAnalysisCommand : BaseAnalysisCommand
 {
-    protected StandardRenderAnalysisCommand(ParsedArgs parsed) : base(parsed) { }
+    protected StandardRenderAnalysisCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+        : base(parsed, gitClient, analyzer) { }
 
     protected override async Task<CliResult> ProcessResultAsync(AnalysisResult result, IConsoleReporter? reporter, CancellationToken cancellationToken = default)
     {
@@ -289,37 +186,43 @@ public abstract class StandardRenderAnalysisCommand : BaseAnalysisCommand
 
 public class HotspotsCommand : StandardRenderAnalysisCommand
 {
-    public HotspotsCommand(ParsedArgs parsed) : base(parsed) { }
+    public HotspotsCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+        : base(parsed, gitClient, analyzer) { }
     protected override AnalysisCommand CommandType => AnalysisCommand.Hotspots;
 }
 
 public class AreasCommand : StandardRenderAnalysisCommand
 {
-    public AreasCommand(ParsedArgs parsed) : base(parsed) { }
+    public AreasCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+        : base(parsed, gitClient, analyzer) { }
     protected override AnalysisCommand CommandType => AnalysisCommand.Areas;
 }
 
 public class ContributorsCommand : StandardRenderAnalysisCommand
 {
-    public ContributorsCommand(ParsedArgs parsed) : base(parsed) { }
+    public ContributorsCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+        : base(parsed, gitClient, analyzer) { }
     protected override AnalysisCommand CommandType => AnalysisCommand.Contributors;
 }
 
 public class TemporalCouplingCommand : StandardRenderAnalysisCommand
 {
-    public TemporalCouplingCommand(ParsedArgs parsed) : base(parsed) { }
+    public TemporalCouplingCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+        : base(parsed, gitClient, analyzer) { }
     protected override AnalysisCommand CommandType => AnalysisCommand.TemporalCoupling;
 }
 
 public class LeadTimeCommand : StandardRenderAnalysisCommand
 {
-    public LeadTimeCommand(ParsedArgs parsed) : base(parsed) { }
+    public LeadTimeCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+        : base(parsed, gitClient, analyzer) { }
     protected override AnalysisCommand CommandType => AnalysisCommand.LeadTime;
 }
 
 public class ContributorCommand : StandardRenderAnalysisCommand
 {
-    public ContributorCommand(ParsedArgs parsed) : base(parsed) { }
+    public ContributorCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+        : base(parsed, gitClient, analyzer) { }
     protected override AnalysisCommand CommandType => AnalysisCommand.Contributor;
 
     protected override async Task<CliResult> ProcessResultAsync(AnalysisResult result, IConsoleReporter? reporter, CancellationToken cancellationToken = default)
@@ -342,7 +245,8 @@ public class ContributorCommand : StandardRenderAnalysisCommand
 
 public class ReportCommand : BaseAnalysisCommand
 {
-    public ReportCommand(ParsedArgs parsed) : base(parsed) { }
+    public ReportCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+        : base(parsed, gitClient, analyzer) { }
     protected override AnalysisCommand CommandType => AnalysisCommand.Report;
 
     protected override async Task<CliResult> ProcessResultAsync(AnalysisResult result, IConsoleReporter? reporter, CancellationToken cancellationToken = default)
@@ -461,7 +365,8 @@ public class ReportCommand : BaseAnalysisCommand
 
 public class GeReportCommand : BaseAnalysisCommand
 {
-    public GeReportCommand(ParsedArgs parsed) : base(parsed) { }
+    public GeReportCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+        : base(parsed, gitClient, analyzer) { }
     protected override AnalysisCommand CommandType => AnalysisCommand.GeReport;
 
     protected override async Task<CliResult> ProcessResultAsync(AnalysisResult result, IConsoleReporter? reporter, CancellationToken cancellationToken = default)
