@@ -9,9 +9,18 @@ using System.Threading.Tasks;
 
 namespace Gitic;
 
-// clean code refactor
+/// <summary>
+/// Renders specialized Git Forensics and engineering efficiency reports in Markdown format.
+/// Supports metrics such as Action Feed, Hotspots, and Contributor/Team profile visualizations.
+/// </summary>
 public class GeReportRenderer : IReportRenderer
 {
+    /// <summary>
+    /// Asynchronously renders the detailed git forensics dashboard.
+    /// </summary>
+    /// <param name="result">The analysis results and metrics.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A string task representing the rendered markdown dashboard output.</returns>
     public Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
