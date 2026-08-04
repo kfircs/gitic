@@ -8,11 +8,6 @@ namespace Gitic;
 
 public class HtmlRenderer : IReportRenderer
 {
-    private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
-    {
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-    };
-
     public async Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
     {
         using var ms = new MemoryStream();
@@ -25,7 +20,7 @@ public class HtmlRenderer : IReportRenderer
     public async Task RenderToStreamAsync(AnalysisResult result, Stream output, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        string rawJson = JsonSerializer.Serialize(result, s_jsonOptions);
+        string rawJson = JsonSerializer.Serialize(result, JsonSerializationDefaults.Compact);
         string data = rawJson.Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
 
         await DashboardTemplateEngine.RenderToStreamAsync(data, output);
