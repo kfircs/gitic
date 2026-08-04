@@ -133,3 +133,4 @@ public class GeReportRenderer : IReportRenderer
         return Task.FromResult(sb.ToString());
     }
 }
+// Refactored: Candidate 7
