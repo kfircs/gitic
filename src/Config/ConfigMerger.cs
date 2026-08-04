@@ -6,6 +6,9 @@ using System.Reflection;
 
 namespace Gitic;
 
+/// <summary>
+/// Defines the contract for merging and deep-cloning Gitic configurations.
+/// </summary>
 public interface IConfigMerger
 {
     GiticConfig CloneDefaultConfig();
@@ -92,12 +95,10 @@ public class ConfigMerger : IConfigMerger
     public GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfigOverrides? overrideConfig = null)
     {
         var cloned = CloneConfig(baseConfig);
-        if (overrideConfig == null)
+        if (overrideConfig != null)
         {
-            return cloned;
+            MergeObjects(cloned, overrideConfig);
         }
-
-        MergeObjects(cloned, overrideConfig);
         return cloned;
     }
 
@@ -114,11 +115,11 @@ public class ConfigMerger : IConfigMerger
         var cloned = CloneConfig(baseConfig);
         if (overrides == null) return cloned;
 
-        foreach (var @override in overrides)
+        foreach (var overrideConfig in overrides)
         {
-            if (@override != null)
+            if (overrideConfig != null)
             {
-                MergeObjects(cloned, @override);
+                MergeObjects(cloned, overrideConfig);
             }
         }
         return cloned;
