@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Gitic;
 // clean code refactor
+/// <summary>
+/// Formats CLI text reports, appending exclusions and warning information to the rendered table.
+/// </summary>
 public class CliReportFormatter
 {
     private readonly AnalysisResult _result;
@@ -15,6 +18,12 @@ public class CliReportFormatter
         _result = result;
     }
 
+    /// <summary>
+    /// Formats the final output string by prepending/appending table metadata, exclusions, and optional warnings.
+    /// </summary>
+    /// <param name="tableString">The core rendered table as a string.</param>
+    /// <param name="includeWarnings">Whether warnings should be formatted and appended.</param>
+    /// <returns>A fully-formatted console-ready report string.</returns>
     public string Format(string tableString, bool includeWarnings = false)
     {
         if (tableString.StartsWith("No contributor activity matched"))
