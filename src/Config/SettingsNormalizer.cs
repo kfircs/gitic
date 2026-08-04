@@ -2,6 +2,9 @@ using System;
 
 namespace Gitic;
 
+/// <summary>
+/// Defines a contract for normalizing analysis settings.
+/// </summary>
 public interface IAnalysisSettingsNormalizer
 {
     AnalysisSettings Normalize(AnalysisSettings settings);
@@ -25,8 +28,11 @@ public class AnalysisSettingsNormalizer : IAnalysisSettingsNormalizer
             Path = settings.Path ?? defaults.Path,
             Anonymize = settings.Anonymize,
             Depth = settings.Depth > UninitializedDepth ? settings.Depth : defaults.Depth,
-            Format = string.IsNullOrEmpty(settings.Format) ? defaults.Format : settings.Format,
-            Color = string.IsNullOrEmpty(settings.Color) ? defaults.Color : settings.Color
+            Format = NormalizeString(settings.Format, defaults.Format),
+            Color = NormalizeString(settings.Color, defaults.Color)
         };
     }
+
+    private static string NormalizeString(string? value, string defaultValue) =>
+        string.IsNullOrEmpty(value) ? defaultValue : value;
 }
