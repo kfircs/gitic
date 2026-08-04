@@ -7,7 +7,10 @@ public class ConfigCommand : ICliCommand
 {
     private readonly ParsedArgs _parsed;
 
-    private bool IsInitAction => _parsed.ConfigAction == "init";
+    /// <summary>
+    /// Gets a value indicating whether the config action is "init".
+    /// </summary>
+    private bool IsInitAction => string.Equals(_parsed.ConfigAction, "init", System.StringComparison.Ordinal);
 
     public ConfigCommand(ParsedArgs parsed)
     {
