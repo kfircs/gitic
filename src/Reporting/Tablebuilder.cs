@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Gitic;
 
+// clean code refactor
 public enum TruncationStyle
 {
     None,
