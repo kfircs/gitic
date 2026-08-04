@@ -18,6 +18,7 @@ public interface ITruckFactorCalculator
 
 public class TruckFactorCalculator : ITruckFactorCalculator
 {
+    // clean code refactor
     private const double TruckFactorThresholdPct = 0.5;
 
     public int CalculateTruckFactor(List<ContributorShare> contributors)
