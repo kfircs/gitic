@@ -17,6 +17,11 @@ public class GeReportRenderer : IReportRenderer
 {
     /// <summary>
     /// Asynchronously renders the detailed git forensics dashboard.
+    /// 
+    /// Structural Mapping Overview:
+    /// 1. Action Feed: Maps high ReworkRate and single-developer folder ownership to immediate prioritized warnings.
+    /// 2. Interactive Maps: Maps File Size vs Churn metrics to a 2D Scatterplot SVG, and Directory structures to a risk Treemap SVG.
+    /// 3. Deep Dives: Maps coupling metrics to dependency graphs, and tabulates the highest AttentionScore files.
     /// </summary>
     /// <param name="result">The analysis results and metrics.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
