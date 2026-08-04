@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Gitic;
+// clean code refactor
 public class CliReportFormatter
 {
     private readonly AnalysisResult _result;
