@@ -93,8 +93,19 @@ public class CachedGlobMatcher : IGlobMatcher
 
 public static class PathUtils
 {
+    /// <summary>
+    /// Constants used for path truncation and formatting operations.
+    /// </summary>
     private const int MinLengthForSplitting = 5;
+    
+    /// <summary>
+    /// The length of the ellipsis indicator.
+    /// </summary>
     private const int EllipsisLength = 3;
+    
+    /// <summary>
+    /// The ellipsis indicator string.
+    /// </summary>
     private const string Ellipsis = "...";
 
     private static IGlobMatcher _matcher = new CachedGlobMatcher();
