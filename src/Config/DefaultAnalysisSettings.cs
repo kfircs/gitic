@@ -1,7 +1,8 @@
-using System;
-
 namespace Gitic;
 
+/// <summary>
+/// Provides default configuration settings for gitic analysis.
+/// </summary>
 public static class DefaultAnalysisSettings
 {
     public static AnalysisSettings Create() => new()
