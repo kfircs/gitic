@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Gitic;
 
+/// <summary>Represents a rule for mapping alias identities to a canonical identity.</summary>
 public class AliasRule
 {
     [JsonPropertyName("canonical")]
