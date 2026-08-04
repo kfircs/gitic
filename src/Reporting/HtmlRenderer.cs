@@ -8,6 +8,7 @@ namespace Gitic;
 
 public class HtmlRenderer : IReportRenderer
 {
+    // clean code refactor
     public async Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default)
     {
         using var ms = new MemoryStream();
