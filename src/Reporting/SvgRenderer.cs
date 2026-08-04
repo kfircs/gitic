@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Gitic
 {
+    // clean code refactor
     public interface ISvgChartBuilder
     {
         ISvgChartBuilder StartSvg(int width, int height);
