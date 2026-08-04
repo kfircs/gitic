@@ -7,6 +7,8 @@ public class ConfigCommand : ICliCommand
 {
     private readonly ParsedArgs _parsed;
 
+    private bool IsInitAction => _parsed.ConfigAction == "init";
+
     public ConfigCommand(ParsedArgs parsed)
     {
         _parsed = parsed;
@@ -14,7 +16,7 @@ public class ConfigCommand : ICliCommand
 
     public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
     {
-        if (_parsed.ConfigAction != "init")
+        if (!IsInitAction)
         {
             string errMsg = "config requires an action. Try: gitic config init\n";
             reporter?.WriteError(errMsg);
