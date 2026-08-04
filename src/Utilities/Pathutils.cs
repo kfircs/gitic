@@ -93,20 +93,27 @@ public class CachedGlobMatcher : IGlobMatcher
 
 public static class PathUtils
 {
+    #region Path Truncation Constants
+
     /// <summary>
-    /// Constants used for path truncation and formatting operations.
+    /// The minimum length of a path (in characters) required to perform split-truncation.
+    /// If the target maximum length is less than or equal to this threshold, we fallback 
+    /// to simple suffix truncation (taking characters only from the end of the path) because 
+    /// there is not enough space to show a start segment, an ellipsis, and an end segment.
     /// </summary>
     private const int MinLengthForSplitting = 5;
-    
+
     /// <summary>
-    /// The length of the ellipsis indicator.
-    /// </summary>
-    private const int EllipsisLength = 3;
-    
-    /// <summary>
-    /// The ellipsis indicator string.
+    /// The ellipsis string sequence appended or inserted to indicate path truncation.
     /// </summary>
     private const string Ellipsis = "...";
+
+    /// <summary>
+    /// The character length of the ellipsis sequence. This must match the actual length of <see cref="Ellipsis"/>.
+    /// </summary>
+    private const int EllipsisLength = 3;
+
+    #endregion
 
     private static IGlobMatcher _matcher = new CachedGlobMatcher();
 
