@@ -166,7 +166,7 @@ namespace Gitic.Tests
                 }
             };
 
-            var options = new JsonSerializerOptions { WriteIndented = true };
+            var options = Gitic.JsonSerializationDefaults.Indented;
             string json = JsonSerializer.Serialize(result, options);
             
             Assert.Contains("\"schema_version\": \"1.1\"", json);
