@@ -7,33 +7,14 @@ using System.Linq;
 
 namespace Gitic;
 
+/// <summary>
+/// Parser responsible for reading command line arguments, validating command boundaries,
+/// and returning a unified ParsedArgs metadata structure.
+/// </summary>
 public class CommandLineParser : ICommandLineParser
 {
     private readonly IReadOnlyList<string> _args;
     private readonly ICliCommandFactory _commandFactory;
-
-    private Option<string> configOption = null!;
-    private Option<string> userConfigOption = null!;
-    private Option<bool> jsonOption = null!;
-    private Option<string> formatOption = null!;
-    private Option<string> colorOption = null!;
-    private Option<bool> allTimeOption = null!;
-    private Option<bool> includeMergesOption = null!;
-    private Option<bool> includeDeletedOption = null!;
-    private Option<bool> mergeByEmailOption = null!;
-    private Option<bool> anonymizeOption = null!;
-    private Option<string> sinceOption = null!;
-    private Option<string> untilOption = null!;
-    private Option<string> pathOption = null!;
-    private Option<int> depthOption = null!;
-    private Option<string> htmlOption = null!;
-    private Option<string> mdOption = null!;
-    private Option<string> svgOption = null!;
-    private Option<int?> limitOption = null!;
-    private Option<string> sortOption = null!;
-    private Option<string> columnsOption = null!;
-    private Option<bool> quietOption = null!;
-    private Argument<string> repoPathArg = null!;
 
     public CommandLineParser(string[] args) : this(args, new CliCommandFactoryImpl())
     {
@@ -75,8 +56,8 @@ public class CommandLineParser : ICommandLineParser
 
         // 1. Build the command model
         var rootCommand = new RootCommand("Gitic Strategic Codebase Analysis");
-
-        ConfigureOptions(rootCommand);
+        var cliOptions = new CliOptions();
+        cliOptions.RegisterOn(rootCommand);
 
         // Intercept help/version checks at the very beginning
         if (_args.Contains("--help") || _args.Contains("-h") || _args.Contains("help"))
@@ -131,14 +112,14 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
             var errors = string.Join("\n", parseResult.Errors.Select(e => 
             {
                 var msg = e.Message;
-                if (msg.Contains("--depth") || (e.SymbolResult is OptionResult optionResult && optionResult.Option == depthOption))
+                if (msg.Contains("--depth") || (e.SymbolResult is OptionResult optionResult && optionResult.Option == cliOptions.DepthOption))
                 {
                     return "--depth must be an integer between 1 and 10.";
                 }
                 return msg;
             }).Distinct());
 
-            if (parseResult.Errors.Any(e => e.Message.Contains("--depth") || (e.SymbolResult is OptionResult optionResult && optionResult.Option == depthOption)))
+            if (parseResult.Errors.Any(e => e.Message.Contains("--depth") || (e.SymbolResult is OptionResult optionResult && optionResult.Option == cliOptions.DepthOption)))
             {
                 throw new CommandLineParseError(errors);
             }
@@ -148,9 +129,9 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
         var settings = DefaultAnalysisSettings.Create();
 
         // Populate settings from options
-        settings.Json = parseResult.GetValue(jsonOption);
+        settings.Json = parseResult.GetValue(cliOptions.JsonOption);
         
-        var formatVal = parseResult.GetValue(formatOption);
+        var formatVal = parseResult.GetValue(cliOptions.FormatOption);
         if (formatVal != null)
         {
             if (!string.Equals(formatVal, "human", StringComparison.OrdinalIgnoreCase) &&
@@ -166,7 +147,7 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
             }
         }
 
-        var colorVal = parseResult.GetValue(colorOption);
+        var colorVal = parseResult.GetValue(cliOptions.ColorOption);
         if (colorVal != null)
         {
             if (!string.Equals(colorVal, "auto", StringComparison.OrdinalIgnoreCase) &&
@@ -178,25 +159,25 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
             settings.Color = colorVal.ToLower();
         }
 
-        settings.AllTime = parseResult.GetValue(allTimeOption);
-        settings.IncludeMerges = parseResult.GetValue(includeMergesOption);
-        settings.IncludeDeleted = parseResult.GetValue(includeDeletedOption);
-        settings.MergeByEmail = parseResult.GetValue(mergeByEmailOption);
-        settings.Anonymize = parseResult.GetValue(anonymizeOption);
+        settings.AllTime = parseResult.GetValue(cliOptions.AllTimeOption);
+        settings.IncludeMerges = parseResult.GetValue(cliOptions.IncludeMergesOption);
+        settings.IncludeDeleted = parseResult.GetValue(cliOptions.IncludeDeletedOption);
+        settings.MergeByEmail = parseResult.GetValue(cliOptions.MergeByEmailOption);
+        settings.Anonymize = parseResult.GetValue(cliOptions.AnonymizeOption);
         
-        settings.Since = parseResult.GetValue(sinceOption);
-        settings.Path = parseResult.GetValue(pathOption);
-        settings.Depth = parseResult.GetValue(depthOption);
-        settings.Limit = parseResult.GetValue(limitOption);
-        settings.Sort = parseResult.GetValue(sortOption);
-        settings.Columns = parseResult.GetValue(columnsOption);
-        settings.Quiet = parseResult.GetValue(quietOption);
+        settings.Since = parseResult.GetValue(cliOptions.SinceOption);
+        settings.Path = parseResult.GetValue(cliOptions.PathOption);
+        settings.Depth = parseResult.GetValue(cliOptions.DepthOption);
+        settings.Limit = parseResult.GetValue(cliOptions.LimitOption);
+        settings.Sort = parseResult.GetValue(cliOptions.SortOption);
+        settings.Columns = parseResult.GetValue(cliOptions.ColumnsOption);
+        settings.Quiet = parseResult.GetValue(cliOptions.QuietOption);
 
-        string repoPath = parseResult.GetValue(repoPathArg) ?? ".";
+        string repoPath = parseResult.GetValue(cliOptions.RepoPathArg) ?? ".";
 
-        string? htmlPath = parseResult.GetValue(htmlOption);
-        string? mdPath = parseResult.GetValue(mdOption);
-        string? svgPath = parseResult.GetValue(svgOption);
+        string? htmlPath = parseResult.GetValue(cliOptions.HtmlOption);
+        string? mdPath = parseResult.GetValue(cliOptions.MdOption);
+        string? svgPath = parseResult.GetValue(cliOptions.SvgOption);
 
         return new ParsedArgs
         {
@@ -209,93 +190,5 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
             SvgPath = svgPath,
             ConfigAction = null
         };
-    }
-
-    private void ConfigureOptions(RootCommand rootCommand)
-    {
-        configOption = new Option<string>("--config") { Description = "Path to non-default configuration file", Recursive = true };
-        userConfigOption = new Option<string>("--user-config") { Description = "Path to non-default global user configuration file", Recursive = true };
-        jsonOption = new Option<bool>("--json") { Description = "Output results in raw JSON format", Recursive = true };
-        
-        formatOption = new Option<string>("--format") 
-        { 
-            Description = "Output format: human, plain, json", 
-            DefaultValueFactory = _ => "human",
-            Recursive = true 
-        };
-        
-        colorOption = new Option<string>("--color") 
-        { 
-            Description = "Color mode: auto, always, never", 
-            DefaultValueFactory = _ => "auto",
-            Recursive = true 
-        };
-        
-        allTimeOption = new Option<bool>("--all-time") { Description = "Analyze all history (ignoring time window settings)", Recursive = true };
-        includeMergesOption = new Option<bool>("--include-merges") { Description = "Include merge commits in the analysis", Recursive = true };
-        includeDeletedOption = new Option<bool>("--include-deleted") { Description = "Include deleted files in stats", Recursive = true };
-        mergeByEmailOption = new Option<bool>("--merge-by-email") { Description = "Merge contributor identities by email", Recursive = true };
-        anonymizeOption = new Option<bool>("--anonymize") { Description = "Anonymize contributor names/emails in output", Recursive = true };
-        sinceOption = new Option<string>("--since") { Description = "Filter commits since date (YYYY-MM-DD)", Recursive = true };
-        untilOption = new Option<string>("--until") { Description = "Filter commits until date (YYYY-MM-DD)", Recursive = true };
-        pathOption = new Option<string>("--path") { Description = "Filter analysis to files matching glob pattern", Recursive = true };
-        
-        depthOption = new Option<int>("--depth") 
-        { 
-            Description = "Directory depth for areas analysis (1-10)", 
-            DefaultValueFactory = _ => 2,
-            Recursive = true 
-        };
-        depthOption.Validators.Add(result =>
-        {
-            try
-            {
-                var value = result.GetValue(depthOption);
-                if (value < 1 || value > 10)
-                {
-                    result.AddError("--depth must be an integer between 1 and 10.");
-                }
-            }
-            catch
-            {
-                result.AddError("--depth must be an integer between 1 and 10.");
-            }
-        });
-
-        htmlOption = new Option<string>("--html") { Description = "Output visual HTML report to path", Recursive = true, HelpName = "path" };
-        mdOption = new Option<string>("--md") { Description = "Output Markdown summary report to path", Recursive = true, HelpName = "path" };
-        svgOption = new Option<string>("--svg") { Description = "Output SVG reports to path", Recursive = true, HelpName = "path" };
-
-        limitOption = new Option<int?>("--limit") { Description = "Limit results to top N items", Recursive = true };
-        sortOption = new Option<string>("--sort") { Description = "Sort results by field", Recursive = true };
-        columnsOption = new Option<string>("--columns") { Description = "Select columns to show", Recursive = true };
-        quietOption = new Option<bool>("--quiet") { Description = "Suppress non-critical warnings", Recursive = true };
-
-        // Add global options
-        rootCommand.Options.Add(configOption);
-        rootCommand.Options.Add(userConfigOption);
-        rootCommand.Options.Add(jsonOption);
-        rootCommand.Options.Add(formatOption);
-        rootCommand.Options.Add(colorOption);
-        rootCommand.Options.Add(allTimeOption);
-        rootCommand.Options.Add(includeMergesOption);
-        rootCommand.Options.Add(includeDeletedOption);
-        rootCommand.Options.Add(mergeByEmailOption);
-        rootCommand.Options.Add(anonymizeOption);
-        rootCommand.Options.Add(sinceOption);
-        rootCommand.Options.Add(untilOption);
-        rootCommand.Options.Add(pathOption);
-        rootCommand.Options.Add(depthOption);
-        rootCommand.Options.Add(htmlOption);
-        rootCommand.Options.Add(mdOption);
-        rootCommand.Options.Add(svgOption);
-        rootCommand.Options.Add(limitOption);
-        rootCommand.Options.Add(sortOption);
-        rootCommand.Options.Add(columnsOption);
-        rootCommand.Options.Add(quietOption);
-
-        // Single root argument for repository path
-        repoPathArg = new Argument<string>("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
-        rootCommand.Arguments.Add(repoPathArg);
     }
 }
