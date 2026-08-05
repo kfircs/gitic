@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Gitic;
 
@@ -11,6 +12,37 @@ public interface ICuratedReportsEngine
 
 public class CuratedReportsEngine : ICuratedReportsEngine
 {
+    private readonly ICommitClassifier _classifier;
+
+    private static readonly List<ClassificationRule> CuratedRules = new List<ClassificationRule>
+    {
+        new ClassificationRule(
+            "bugfix",
+            new Regex(@"(?:bug|fix|revert|issue|crash|error|prevent|problem|fail|correct|leak)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            new Regex(@"^(?:fix|revert)(?:\(.+\))?:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
+        ),
+        new ClassificationRule(
+            "feature",
+            new Regex(@"(?:feat|feature|add|implement|introduce)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            new Regex(@"^feat(?:\(.+\))?:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
+        ),
+        new ClassificationRule(
+            "refactor",
+            new Regex(@"(?:refactor|debt|cleanup|tech debt)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            new Regex(@"^refactor(?:\(.+\))?:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
+        ),
+        new ClassificationRule(
+            "chore",
+            new Regex(@"(?:chore|docs|test|build|ci)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            new Regex(@"^(?:chore|docs|test|build|ci)(?:\(.+\))?:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
+        )
+    };
+
+    public CuratedReportsEngine(ICommitClassifier? classifier = null)
+    {
+        _classifier = classifier ?? new CommitClassifier(CuratedRules);
+    }
+
     public CuratedReports Calculate(List<GitCommitRecord> commits, List<FileMetric> files, LeadTimesInfo? leadTimes)
     {
         CuratedReports reports = new();
@@ -28,17 +60,25 @@ public class CuratedReportsEngine : ICuratedReportsEngine
     {
         foreach (var c in commits)
         {
-            string msg = c.Message.ToLowerInvariant();
-            if (msg.Contains("feat") || msg.Contains("feature") || msg.Contains("add") || msg.Contains("new"))
-                report.Features++;
-            else if (msg.Contains("fix") || msg.Contains("bug") || msg.Contains("resolve"))
-                report.Bugs++;
-            else if (msg.Contains("refactor") || msg.Contains("debt") || msg.Contains("cleanup") || msg.Contains("tech debt"))
-                report.TechnicalDebt++;
-            else if (msg.Contains("chore") || msg.Contains("docs") || msg.Contains("test") || msg.Contains("build") || msg.Contains("ci"))
-                report.Chores++;
-            else
-                report.Unclassified++;
+            var category = _classifier.Classify(c.Message);
+            switch (category)
+            {
+                case "feature":
+                    report.Features++;
+                    break;
+                case "bugfix":
+                    report.Bugs++;
+                    break;
+                case "refactor":
+                    report.TechnicalDebt++;
+                    break;
+                case "chore":
+                    report.Chores++;
+                    break;
+                default:
+                    report.Unclassified++;
+                    break;
+            }
         }
     }
 

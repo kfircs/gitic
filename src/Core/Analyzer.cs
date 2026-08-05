@@ -28,17 +28,20 @@ public class RepositoryAnalyzer : IRepositoryAnalyzer
     private readonly IAnalysisPipeline _pipeline;
     private readonly IMetricProcessorService _metricProcessorService;
     private readonly IResultAnonymizer _anonymizer;
+    private readonly ICuratedReportsEngine _curatedReportsEngine;
 
     public RepositoryAnalyzer(
         IConfigurationEngine? configEngine = null,
         IAnalysisPipeline? pipeline = null,
         IMetricProcessorService? metricProcessorService = null,
-        IResultAnonymizer? anonymizer = null)
+        IResultAnonymizer? anonymizer = null,
+        ICuratedReportsEngine? curatedReportsEngine = null)
     {
         _configEngine = configEngine ?? new ConfigurationEngine();
         _pipeline = pipeline ?? new AnalysisPipeline();
         _metricProcessorService = metricProcessorService ?? new MetricProcessorService();
         _anonymizer = anonymizer ?? new ResultAnonymizer();
+        _curatedReportsEngine = curatedReportsEngine ?? new CuratedReportsEngine();
     }
 
     public static async Task<AnalysisResult> AnalyzeRepositoryAsync(AnalyzeInput input)
@@ -75,9 +78,7 @@ public class RepositoryAnalyzer : IRepositoryAnalyzer
         var provider = input.FileStatsProvider ?? new DiskFileStatsProvider();
         var fileMetrics = await provider.EnrichFileMetricsAsync(input.RepoRoot, pipelineResult.Files);
 
-        var curatedReportsEngine = new CuratedReportsEngine();
-
-        var result = CreateAnalysisResult(input, commits, settings, config, pipelineResult, fileMetrics, curatedReportsEngine);
+        var result = CreateAnalysisResult(input, commits, settings, config, pipelineResult, fileMetrics, _curatedReportsEngine);
 
         _metricProcessorService.SortMetrics(result, input.Command);
 
@@ -96,7 +97,7 @@ public class RepositoryAnalyzer : IRepositoryAnalyzer
         GiticConfig config,
         AnalysisPipelineResult pipelineResult,
         List<FileMetric> fileMetrics,
-        CuratedReportsEngine curatedReportsEngine)
+        ICuratedReportsEngine curatedReportsEngine)
     {
         return new AnalysisResult
         {
