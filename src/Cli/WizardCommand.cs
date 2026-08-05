@@ -74,21 +74,22 @@ namespace Gitic
                 var mainChoice = PromptSingleSelection(
                     "Select an analysis view or action:",
                     new[] {
+                        "🖥️  Interactive TUI Codebase Explorer (Structure & Reports)",
                         "📊 Generate Curated Report (HTML/Markdown/SVG)",
-                        "🔥 Run Code Hotspots Analysis",
-                        "📂 Run Code Ownership & Areas Analysis",
-                        "👥 Run Contributor Profiles & Metrics",
-                        "👤 Analyze Specific Contributor",
-                        "🔄 Run Temporal Coupling Analysis",
-                        "⏱️ Run Lead-Time Metrics Analysis",
-                        "🌐 Generate Gemini Enterprise (GE) Report",
-                        "🛠️ Generate Starter Config File (.gitic.yml)",
+                        // "🔥 Run Code Hotspots Analysis",
+                        // "📂 Run Code Ownership & Areas Analysis",
+                        // "👥 Run Contributor Profiles & Metrics",
+                        // "👤 Analyze Specific Contributor",
+                        // "🔄 Run Temporal Coupling Analysis",
+                        // "⏱️ Run Lead-Time Metrics Analysis",
+                        // "🌐 Generate Gemini Enterprise (GE) Report",
+                        // "🛠️ Generate Starter Config File (.gitic.yml)",
                         "ℹ️ Show Version Information",
                         "❌ Exit"
                     }
                 );
 
-                if (mainChoice == 10 || mainChoice == -1) // Exit or EOF/redirected input exhaustion
+                if (mainChoice == 11 || mainChoice == -1) // Exit or EOF/redirected input exhaustion
                 {
                     exit = true;
                     break;
@@ -100,50 +101,67 @@ namespace Gitic
                 {
                     switch (mainChoice)
                     {
-                        case 0: // Generate Curated Report
+                        case 0: // Interactive TUI Codebase Explorer
+                            {
+                                var gitClient = new GitClient(_parsed.RepoPath);
+                                string? repoRoot = await gitClient.GetRepositoryRootAsync(cancellationToken);
+                                if (repoRoot == null)
+                                {
+                                    Console.WriteLine($"Path {_parsed.RepoPath} is not inside a Git repository.");
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Analyzing repository for TUI Explorer...");
+                                    var result = await ExecuteAnalysisAsync(repoRoot, cancellationToken);
+                                    var explorer = new TuiExplorer();
+                                    await explorer.LaunchAsync(result);
+                                }
+                            }
+                            break;
+                        case 1: // Generate Curated Report
                             await GenerateCuratedReportAsync(reporter, cancellationToken);
                             break;
-                        case 1: // Run Code Hotspots Analysis
-                            await new HotspotsCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
-                            break;
-                        case 2: // Run Code Ownership & Areas Analysis
-                            await new AreasCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
-                            break;
-                        case 3: // Run Contributor Profiles & Metrics
-                            await new ContributorsCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
-                            break;
-                        case 4: // Analyze Specific Contributor
-                            Console.Write("Enter contributor name to analyze: ");
-                            string? name = Console.ReadLine();
-                            if (string.IsNullOrWhiteSpace(name))
-                            {
-                                Console.WriteLine("Invalid contributor name.");
-                            }
-                            else
-                            {
-                                var parsedContributor = new ParsedArgs
-                                {
-                                    Command = "contributor",
-                                    RepoPath = _parsed.RepoPath,
-                                    Settings = _parsed.Settings,
-                                    ContributorName = name
-                                };
-                                await new ContributorCommand(parsedContributor).ExecuteAsync(reporter, cancellationToken);
-                            }
-                            break;
-                        case 5: // Run Temporal Coupling Analysis
-                            await new TemporalCouplingCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
-                            break;
-                        case 6: // Run Lead-Time Metrics Analysis
-                            await new LeadTimeCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
-                            break;
-                        case 7: // Generate Gemini Enterprise (GE) Report
-                            await new GeReportCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
-                            break;
-                        case 8: // Generate Starter Config File (.gitic.yml)
-                            await new ConfigCommand(new ParsedArgs { Command = "config", ConfigAction = "init" }).ExecuteAsync(reporter, cancellationToken);
-                            break;
-                        case 9: // Show Version Information
+                        // case 2: // Run Code Hotspots Analysis
+                        //     await new HotspotsCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
+                        //     break;
+                        // case 3: // Run Code Ownership & Areas Analysis
+                        //     await new AreasCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
+                        //     break;
+                        // case 4: // Run Contributor Profiles & Metrics
+                        //     await new ContributorsCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
+                        //     break;
+                        // case 5: // Analyze Specific Contributor
+                        //     Console.Write("Enter contributor name to analyze: ");
+                        //     string? name = Console.ReadLine();
+                        //     if (string.IsNullOrWhiteSpace(name))
+                        //     {
+                        //         Console.WriteLine("Invalid contributor name.");
+                        //     }
+                        //     else
+                        //     {
+                        //         var parsedContributor = new ParsedArgs
+                        //         {
+                        //             Command = "contributor",
+                        //             RepoPath = _parsed.RepoPath,
+                        //             Settings = _parsed.Settings,
+                        //             ContributorName = name
+                        //         };
+                        //         await new ContributorCommand(parsedContributor).ExecuteAsync(reporter, cancellationToken);
+                        //     }
+                        //     break;
+                        // case 6: // Run Temporal Coupling Analysis
+                        //     await new TemporalCouplingCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
+                        //     break;
+                        // case 7: // Run Lead-Time Metrics Analysis
+                        //     await new LeadTimeCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
+                        //     break;
+                        // case 8: // Generate Gemini Enterprise (GE) Report
+                        //     await new GeReportCommand(_parsed).ExecuteAsync(reporter, cancellationToken);
+                        //     break;
+                        // case 9: // Generate Starter Config File (.gitic.yml)
+                        //     await new ConfigCommand(new ParsedArgs { Command = "config", ConfigAction = "init" }).ExecuteAsync(reporter, cancellationToken);
+                        //     break;
+                        case 10: // Show Version Information
                             await new VersionCommand().ExecuteAsync(reporter, cancellationToken);
                             break;
                     }

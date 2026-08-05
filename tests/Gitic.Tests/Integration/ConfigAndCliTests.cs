@@ -862,11 +862,11 @@ bin/
                 Settings = new AnalysisSettings()
             };
 
-            // Option 0: Generate Curated Report (TUI Menu)
+            // Option 1: Generate Curated Report (TUI Menu)
             // Option 0: Developer Onboarding & Collaboration Profile
             // Option 0: Markdown (.md)
-            // Option 10: Exit (from menu)
-            string inputLines = "0\n0\n0\n10\n";
+            // Option 11: Exit (from menu)
+            string inputLines = "1\n0\n0\n11\n";
             var originalIn = Console.In;
             var originalOut = Console.Out;
 
@@ -926,14 +926,14 @@ bin/
                 Settings = new AnalysisSettings()
             };
 
-            // Option 0: Generate Curated Report (TUI Menu)
+            // Option 1: Generate Curated Report (TUI Menu)
             // Option 0: Developer Onboarding & Collaboration Profile
             // Option escape: Go back from format selection to report type selection
             // Option 4: Custom Report
             // Option escape: Go back from custom sections selection to report type selection
             // Option escape: Go back from report type selection to main menu
-            // Option 10: Exit (from menu)
-            string inputLines = "0\n0\nescape\n4\nescape\nescape\n10\n";
+            // Option 11: Exit (from menu)
+            string inputLines = "1\n0\nescape\n4\nescape\nescape\n11\n";
             var originalIn = Console.In;
             var originalOut = Console.Out;
 

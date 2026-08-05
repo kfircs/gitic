@@ -12,8 +12,8 @@ cd "$PROJECT_ROOT"
 echo "Building and packing Gitic..."
 dotnet pack -c Release
 
-PACKAGE_PATH="$PROJECT_ROOT/nupkg"
-VERSION="0.1.0"
+PACKAGE_PATH="$PROJECT_ROOT/src/nupkg"
+VERSION="0.2.0"
 
 echo "Uninstalling any existing global tool..."
 dotnet tool uninstall -g gitic || true

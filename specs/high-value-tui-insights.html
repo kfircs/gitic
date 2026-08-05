@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plan: High-Value Interactive TUI Insights & Supporting Components</title>
+    <style>
+      :root {
+        --bg-color: #1e1e2e;
+        --surface-color: #252538;
+        --border-color: #45475a;
+        --text-color: #cdd6f4;
+        --text-dim: #a6adc8;
+        --primary-color: #b4befe;
+        --secondary-color: #89b4fa;
+        --accent-color: #f38ba8;
+        --success-color: #a6e22e;
+        --warning-color: #f9e2af;
+        --font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      }
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        font-family: var(--font-family);
+        line-height: 1.6;
+        margin: 0;
+        padding: 2rem;
+      }
+      main {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      header {
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 1.5rem;
+        margin-bottom: 2rem;
+      }
+      h1, h2, h3, h4 {
+        color: var(--primary-color);
+      }
+      h1 {
+        font-size: 2.25rem;
+        margin-top: 0;
+      }
+      h2 {
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+        margin-top: 2rem;
+      }
+      h3 {
+        color: var(--secondary-color);
+        margin-top: 1.5rem;
+      }
+      code {
+        background-color: var(--surface-color);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.9em;
+        color: var(--secondary-color);
+      }
+      pre {
+        background-color: var(--surface-color);
+        border: 1px solid var(--border-color);
+        padding: 1rem;
+        border-radius: 6px;
+        overflow-x: auto;
+      }
+      pre code {
+        padding: 0;
+        background: none;
+        color: var(--text-color);
+      }
+      ul {
+        padding-left: 1.5rem;
+      }
+      li {
+        margin-bottom: 0.5rem;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: bold;
+        padding: 0.1rem 0.5rem;
+        border-radius: 3px;
+        text-transform: uppercase;
+        margin-right: 0.5rem;
+      }
+      .tag.existing {
+        background-color: var(--border-color);
+        color: var(--text-color);
+      }
+      .tag.new {
+        background-color: var(--secondary-color);
+        color: var(--bg-color);
+      }
+      figure {
+        margin: 2rem 0;
+        text-align: center;
+        background: var(--surface-color);
+        border: 1px solid var(--border-color);
+        padding: 1rem;
+        border-radius: 8px;
+      }
+      figcaption {
+        margin-top: 0.75rem;
+        font-size: 0.85rem;
+        color: var(--text-dim);
+      }
+      .meta dl {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 0.5rem;
+        margin: 0;
+      }
+      .meta dt {
+        font-weight: bold;
+        color: var(--secondary-color);
+      }
+      .meta dd {
+        margin: 0;
+      }
+      .phase {
+        border-left: 3px solid var(--secondary-color);
+        padding-left: 1.5rem;
+        margin-bottom: 2.5rem;
+      }
+      .phase h3 {
+        margin-top: 0;
+      }
+      .checklist {
+        list-style-type: none;
+        padding-left: 0;
+      }
+      .checklist li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .status {
+        font-weight: bold;
+        font-family: monospace;
+        color: var(--primary-color);
+      }
+      .loop {
+        background-color: rgba(137, 180, 250, 0.1);
+        border: 1px dashed var(--secondary-color);
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- ===== HEADER + UPDATABLE METADATA ===== -->
+      <header>
+        <h1>Plan: High-Value Interactive TUI Insights &amp; Supporting Components</h1>
+        <details class="meta" open>
+          <summary>Metadata</summary>
+          <dl>
+            <dt>created</dt>
+            <dd>2026-08-05</dd>
+            <dt>modified</dt>
+            <dd>2026-08-05</dd>
+            <dt>commits</dt>
+            <dd>17c4f74</dd>
+            <dt>agent name</dt>
+            <dd>Gemini CLI</dd>
+            <dt>session id</dt>
+            <dd>tui-refactor-session-1</dd>
+            <dt>back refs</dt>
+            <dd>N/A</dd>
+            <dt>forward refs</dt>
+            <dd>N/A</dd>
+          </dl>
+        </details>
+      </header>
+
+      <!-- Hero image of the high-value dashboard layout -->
+      <figure>
+        <svg width="100%" height="240" viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg" style="background:#252538; border-radius:6px;">
+          <!-- Header Bar -->
+          <rect x="10" y="10" width="780" height="30" rx="3" fill="#1e1e2e" stroke="#45475a" />
+          <text x="25" y="30" fill="#89b4fa" font-family="monospace" font-size="14" font-weight="bold">🖥️ Gitic High-Value Decision Support TUI</text>
+          <text x="550" y="30" fill="#a6e22e" font-family="monospace" font-size="12">Perspective: [Areas &amp; Hotspot Density]</text>
+          
+          <!-- Left Column (Nav Tree) -->
+          <rect x="10" y="45" width="280" height="150" rx="3" fill="#1e1e2e" stroke="#45475a" />
+          <text x="25" y="70" fill="#cdd6f4" font-family="monospace" font-size="12">📁 Core</text>
+          <text x="45" y="90" fill="#cdd6f4" font-family="monospace" font-size="12">📁 Metrics</text>
+          <text x="65" y="110" fill="#a6e22e" font-family="monospace" font-size="12">󰅂 📁 TemporalCoupling</text>
+          <text x="85" y="130" fill="#cdd6f4" font-family="monospace" font-size="12">📄 Engine.cs (3 Hotspots)</text>
+          <text x="45" y="150" fill="#cdd6f4" font-family="monospace" font-size="12">📁 Git</text>
+          <text x="25" y="170" fill="#cdd6f4" font-family="monospace" font-size="12">📁 Cli</text>
+
+          <!-- Right Column (Details Pane) -->
+          <rect x="300" y="45" width="490" height="150" rx="3" fill="#1e1e2e" stroke="#45475a" />
+          <text x="320" y="70" fill="#b4befe" font-family="monospace" font-size="14" font-weight="bold">📂 Subsystem: Core/Metrics/TemporalCoupling</text>
+          
+          <!-- High-Value Stats Indicators -->
+          <text x="320" y="100" fill="#f38ba8" font-family="monospace" font-size="12">🔥 Hotspot Density:   [████░░░░░░] 40.0% (Systemic Risk!)</text>
+          <text x="320" y="118" fill="#f9e2af" font-family="monospace" font-size="12">👤 Key-Person Silo:   [████████░░] 80.0% (Single Author: Alice)</text>
+          <text x="320" y="136" fill="#89b4fa" font-family="monospace" font-size="12">🔂 Rework Rate:       [██░░░░░░░░] 20.0% (Average Stability)</text>
+          <text x="320" y="154" fill="#cdd6f4" font-family="monospace" font-size="12">⏱️ Median Lead Time:  14.5 hours (P90 Tail: 108.2 hrs)</text>
+          <text x="320" y="172" fill="#cdd6f4" font-family="monospace" font-size="12">👥 Active Developers: 3 (1 former/inactive employee)</text>
+
+          <!-- Footer Bar -->
+          <rect x="10" y="200" width="780" height="30" rx="3" fill="#1e1e2e" stroke="#45475a" />
+          <text x="20" y="220" fill="#f9e2af" font-family="monospace" font-size="11">Shortcuts: j/k:Move │ l/Enter:Drill │ h:Back │ 1-4:Perspectives │ q:Quit │ /:Search</text>
+        </svg>
+        <figcaption>Gitic High-Value Interactive Decision-Support TUI Mockup showing multi-dimensional subsystem stats.</figcaption>
+      </figure>
+
+      <!-- ===== PURPOSE / PROBLEM / SOLUTION ===== -->
+      <section id="purpose">
+        <h2>Purpose</h2>
+        <p>This plan aims to replace the simplistic and low-value bottom-up "Min, Max, Average" statistical calculations currently replicated across the codebase (e.g., Min Attention, Avg Attention, Min Line Width) with highly strategic, domain-specific <strong>"high-value slices"</strong> that offer actionable insights to architects and managers. In addition, it outlines specialized architectural components to calculate and render these rich insights in an interactive TUI.</p>
+      </section>
+
+      <section id="problem">
+        <h2>Problem</h2>
+        <p>The current implementation of Gitic's TUI uses a basic physical directory aggregation in <code>TuiNode.AggregateStats</code> that computes the minimum, maximum, and average values for Lines of Code and Line Widths. Replicating this "Min, Max, Avg" pattern to other reports (like Areas, Temporal Coupling, and Lead Times) yields minimal practical value:</p>
+        <ul>
+          <li><strong>Min metrics are usually noise:</strong> The minimum attention score or rework rate in any directory is almost always 0. Knowing that the fastest PR took 1 minute is statistically meaningless.</li>
+          <li><strong>Avg metrics are diluted:</strong> Averaging risk metrics across hundreds of tiny, stable, untouched files completely washes out extreme hotspots, leading to a false sense of security.</li>
+          <li><strong>Max metrics lack systemic context:</strong> Knowing the maximum attention score points to a single file, but doesn't tell you if the entire subsystem is experiencing structural decay.</li>
+        </ul>
+        <figure>
+          <svg width="100%" height="160" viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg" style="background:#252538; border-radius:6px;">
+            <!-- Diluted Average -->
+            <rect x="30" y="30" width="240" height="100" rx="4" fill="#1e1e2e" stroke="#f38ba8" />
+            <text x="45" y="55" fill="#f38ba8" font-family="monospace" font-size="12" font-weight="bold">The Dilution Trap (Average)</text>
+            <text x="45" y="80" fill="#cdd6f4" font-family="monospace" font-size="11">99 Stable files: 0.0 attention</text>
+            <text x="45" y="95" fill="#cdd6f4" font-family="monospace" font-size="11">1 Hotspot file:  95.0 attention</text>
+            <text x="45" y="115" fill="#f38ba8" font-family="monospace" font-size="12">Average Score:   0.95 (Safe? No!)</text>
+
+            <!-- Noise Minimum -->
+            <rect x="330" y="30" width="240" height="100" rx="4" fill="#1e1e2e" stroke="#f9e2af" />
+            <text x="345" y="55" fill="#f9e2af" font-family="monospace" font-size="12" font-weight="bold">The Noise Trap (Minimum)</text>
+            <text x="345" y="80" fill="#cdd6f4" font-family="monospace" font-size="11">Fastest PR: 1.5 mins (Noise)</text>
+            <text x="345" y="95" fill="#cdd6f4" font-family="monospace" font-size="11">Typical PR: 24.0 hours</text>
+            <text x="345" y="115" fill="#f9e2af" font-family="monospace" font-size="12">Minimum value tells us nothing</text>
+          </svg>
+          <figcaption>Visual explanation of why generic Average and Minimum metrics fail to represent codebase reality accurately.</figcaption>
+        </figure>
+      </section>
+
+      <section id="solution">
+        <h2>Solution</h2>
+        <p>Implement a modular, multi-perspective interactive TUI dashboard. Each report slice is equipped with its own dedicated mathematical formulas and high-value metrics, fully decoupled from simple directory hierarchies. We will build a unified set of supporting core components that process these analytics, render clean visual sparklines in console-safe ASCII, and allow users to filter, search, and drill down interactively.</p>
+        <figure>
+          <svg width="100%" height="160" viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg" style="background:#252538; border-radius:6px;">
+            <!-- High value slices -->
+            <rect x="20" y="30" width="160" height="100" rx="4" fill="#1e1e2e" stroke="#89b4fa" />
+            <text x="30" y="55" fill="#89b4fa" font-family="monospace" font-size="12" font-weight="bold">Risk Slices</text>
+            <text x="30" y="80" fill="#a6e22e" font-family="monospace" font-size="10">🔥 Hotspot Density %</text>
+            <text x="30" y="95" fill="#a6e22e" font-family="monospace" font-size="10">👤 Key-Person Silos %</text>
+            <text x="30" y="110" fill="#a6e22e" font-family="monospace" font-size="10">🔄 Rework Concentration</text>
+
+            <!-- Delivery Slices -->
+            <rect x="210" y="30" width="180" height="100" rx="4" fill="#1e1e2e" stroke="#89b4fa" />
+            <text x="220" y="55" fill="#89b4fa" font-family="monospace" font-size="12" font-weight="bold">Velocity Slices</text>
+            <text x="220" y="80" fill="#a6e22e" font-family="monospace" font-size="10">⏱️ Median Lead Time (P50)</text>
+            <text x="220" y="95" fill="#a6e22e" font-family="monospace" font-size="10">🐌 Tail Latency (P90)</text>
+            <text x="220" y="110" fill="#a6e22e" font-family="monospace" font-size="10">🛑 SLA Stall Rate %</text>
+
+            <!-- Coupling Slices -->
+            <rect x="420" y="30" width="160" height="100" rx="4" fill="#1e1e2e" stroke="#89b4fa" />
+            <text x="430" y="55" fill="#89b4fa" font-family="monospace" font-size="12" font-weight="bold">Structure Slices</text>
+            <text x="430" y="80" fill="#a6e22e" font-family="monospace" font-size="10">🧲 Coupling Hubs</text>
+            <text x="430" y="95" fill="#a6e22e" font-family="monospace" font-size="10">🌐 Crossing Rate %</text>
+            <text x="430" y="110" fill="#a6e22e" font-family="monospace" font-size="10">👥 Co-change Clusters</text>
+          </svg>
+          <figcaption>The 9 High-Value Metric Slices that replace simple "Min, Max, Avg" across perspectives.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ===== RELEVANT FILES ===== -->
+      <section id="files" class="files">
+        <h2>Relevant Files</h2>
+
+        <h3>Existing Files</h3>
+        <ul>
+          <li>
+            <span class="tag existing">existing</span>
+            <code>src/Cli/TuiExplorer.cs</code> — Contains the core loop, input reader, and switch-based sidebar rendering. Needs refactoring into decoupled perspectives.
+          </li>
+          <li>
+            <span class="tag existing">existing</span>
+            <code>src/Cli/TuiNode.cs</code> — Contains tree structure and directory-level LoC aggregates. Needs generalization for multiple hierarchies.
+          </li>
+          <li>
+            <span class="tag existing">existing</span>
+            <code>src/Core/Types.cs</code> — Contains domain metric classes. Needs additions for new high-value statistical types.
+          </li>
+          <li>
+            <span class="tag existing">existing</span>
+            <code>tests/Gitic.Tests/Cli/TuiExplorerTests.cs</code> — Unit tests. Needs expansion for new perspectives and aggregators.
+          </li>
+        </ul>
+
+        <h3>New Files</h3>
+        <ul>
+          <li>
+            <span class="tag new">new</span> <code>src/Cli/Tui/ITuiPerspective.cs</code> — Interface defining the navigation tree and sidebar rendering contracts.
+          </li>
+          <li>
+            <span class="tag new">new</span> <code>src/Utilities/PercentileCalculator.cs</code> — High-performance utility to compute P50, P90, and other statistical percentiles safely.
+          </li>
+          <li>
+            <span class="tag new">new</span> <code>src/Cli/Tui/Perspectives/AreasPerspective.cs</code> — Sidebar renderer showing Hotspot Density, Silo Risk, and Rework Concentration.
+          </li>
+          <li>
+            <span class="tag new">new</span> <code>src/Cli/Tui/Perspectives/LeadTimePerspective.cs</code> — Sidebar renderer showing P50, P90 cycle times, and SLA Stall Rates.
+          </li>
+          <li>
+            <span class="tag new">new</span> <code>src/Cli/Tui/Perspectives/CouplingPerspective.cs</code> — Sidebar renderer showing coupling hubs and cross-boundary coupling leaks.
+          </li>
+          <li>
+            <span class="tag new">new</span> <code>src/Cli/Tui/Components/TuiSparkline.cs</code> — Console-safe ASCII sparkline/horizontal progress bar drawing helper.
+          </li>
+          <li>
+            <span class="tag new">new</span> <code>src/Cli/Tui/Components/TuiModal.cs</code> — UI overlay rendering subsystem for interactive help menus and description sheets.
+          </li>
+        </ul>
+      </section>
+
+      <!-- ===== IMPLEMENTATION PHASES ===== -->
+      <section id="phases">
+        <h2>Implementation Phases</h2>
+        <p>
+          <strong>IMPORTANT:</strong> Execute every phase and task step by step, in order, top to bottom.
+        </p>
+
+        <!-- Phase 1 -->
+        <div class="phase">
+          <h3>
+            <code class="status">[]</code> Phase 1: Core Mathematical Foundation &amp; Percentile Calculator
+          </h3>
+          <p>Implement the statistical tools needed to move beyond simple averages. This includes sorting-based percentile calculations for Medians (P50) and Tail Latency (P90).</p>
+
+          <h4>1.1. Create PercentileCalculator</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Author <code>src/Utilities/PercentileCalculator.cs</code>.</li>
+            <li><code class="status">[]</code> Implement <code>double CalculatePercentile(IEnumerable&lt;double&gt; values, double percentile)</code>.</li>
+            <li><code class="status">[]</code> Handle empty sequences, negative values, and percentiles outside 0..100.</li>
+            <li><code class="status">[]</code> Add unit tests in <code>tests/Gitic.Tests/Utilities/PercentileCalculatorTests.cs</code>.</li>
+          </ul>
+
+          <h4>1.2. Define High-Value Metric Structs</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Add <code>SubsystemHealthStats</code> and <code>SubsystemDeliveryStats</code> to <code>src/Core/Types.cs</code>.</li>
+            <li><code class="status">[]</code> Ensure they support JSON serialization defaults if necessary.</li>
+          </ul>
+
+          <h4>1.3. Testing Strategy</h4>
+          <p>Verify percentiles are correctly calculated for both standard, skewed, and edge-case (single-item) arrays.</p>
+          <ul class="checklist">
+            <li>
+              <code class="status">[]</code>
+              <code>dotnet test --filter "FullyQualifiedName~PercentileCalculatorTests"</code> — Proves percentile correctness.
+            </li>
+          </ul>
+          <div class="loop">
+            🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="phase">
+          <h3>
+            <code class="status">[]</code> Phase 2: Structural Refactoring (The "Perspective Pattern")
+          </h3>
+          <p>Decouple the existing monolithic rendering and input-handling switches in <code>TuiExplorer.cs</code> by creating a clean, extensible polymorphic interface.</p>
+
+          <h4>2.1. Define ITuiPerspective</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Create <code>src/Cli/Tui/ITuiPerspective.cs</code> with <code>BuildLeftNavigationTree</code> and <code>GetRightSidebarLines</code>.</li>
+          </ul>
+
+          <h4>2.2. Extract Existing Perspectives</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Move Perspective 1 (Lines &amp; Structure) to <code>src/Cli/Tui/Perspectives/LinesStructurePerspective.cs</code>.</li>
+            <li><code class="status">[]</code> Move Perspectives 2-5 to their respective decoupled classes.</li>
+          </ul>
+
+          <h4>2.3. Wire Up TuiExplorer to use ITuiPerspective</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Refactor <code>TuiExplorer.cs</code> to hold a list of perspectives and invoke the active one.</li>
+            <li><code class="status">[]</code> Ensure backward compatibility: confirm that existing tests still compile and pass perfectly.</li>
+          </ul>
+
+          <h4>2.4. Testing Strategy</h4>
+          <p>Run the full test suite to guarantee the refactoring did not break any existing TUI structures or aggregators.</p>
+          <ul class="checklist">
+            <li>
+              <code class="status">[]</code>
+              <code>dotnet test --filter "FullyQualifiedName~TuiExplorerTests"</code> — Verifies refactoring safety.
+            </li>
+          </ul>
+          <div class="loop">
+            🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+          </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="phase">
+          <h3>
+            <code class="status">[]</code> Phase 3: Implement High-Value Perspectives
+          </h3>
+          <p>Build the specific high-value slices for Areas, Delivery Velocity, and Structural Coupling Networks, incorporating the new statistical aggregates.</p>
+
+          <h4>3.1. Build AreasPerspective (Hotspot Density &amp; Silos)</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Map files to logical Areas recursively.</li>
+            <li><code class="status">[]</code> Calculate Hotspot Density: % of files with attention score > 60.</li>
+            <li><code class="status">[]</code> Calculate Key-Person Silos: % of files with single-contributor ownership.</li>
+            <li><code class="status">[]</code> Render horizontal ASCII progress bars representing risk densities.</li>
+          </ul>
+
+          <h4>3.2. Build LeadTimePerspective (Median &amp; P90)</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Group merges by Area or Author.</li>
+            <li><code class="status">[]</code> Use <code>PercentileCalculator</code> to compute P50 (median) and P90 (tail latency).</li>
+            <li><code class="status">[]</code> Calculate SLA Stall Rate (% of merges exceeding 72 hours).</li>
+          </ul>
+
+          <h4>3.3. Build CouplingPerspective (Hubs &amp; Crossing Rate)</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Compute Boundary Crossing Rate for selected directories.</li>
+            <li><code class="status">[]</code> List coupling "hubs" (files coupled to multiple targets).</li>
+          </ul>
+
+          <h4>3.4. Testing Strategy</h4>
+          <p>Write targeted unit tests to verify that hotspot density and percentile-based lead times are computed correctly during tree aggregation.</p>
+          <ul class="checklist">
+            <li>
+              <code class="status">[]</code>
+              <code>dotnet test</code> — Proves accuracy of the high-value calculations.
+            </li>
+          </ul>
+          <div class="loop">
+            🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+          </div>
+        </div>
+
+        <!-- Phase 4 -->
+        <div class="phase">
+          <h3>
+            <code class="status">[]</code> Phase 4: Supporting TUI Components (Sparklines, Modals, Search)
+          </h3>
+          <p>Enhance the developer UX of the interactive terminal by implementing visual sparklines, details modals, and left-tree filtering.</p>
+
+          <h4>4.1. Create TuiSparkline Component</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Implement <code>src/Cli/Tui/Components/TuiSparkline.cs</code>.</li>
+            <li><code class="status">[]</code> Create a helper that returns a colored horizontal bar like <code>[████░░░░░░] 40%</code> with safe ANSI padding.</li>
+          </ul>
+
+          <h4>4.2. Create Help Modals Subsystem</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Implement <code>src/Cli/Tui/Components/TuiModal.cs</code>.</li>
+            <li><code class="status">[]</code> Capture the <code>?</code> keypress in <code>TuiExplorer</code>.</li>
+            <li><code class="status">[]</code> Draw a centered, double-bordered popup box explaining what Hotspot Density, P90, and Stall Rates represent.</li>
+          </ul>
+
+          <h4>4.3. Implement Dynamic Tree Filtering (Search Panel)</h4>
+          <ul class="checklist">
+            <li><code class="status">[]</code> Listen for <code>/</code> keystroke.</li>
+            <li><code class="status">[]</code> Prompt the user for a search pattern.</li>
+            <li><code class="status">[]</code> Filter the left-hand navigation tree in real-time, matching folders or files that contain the term.</li>
+          </ul>
+
+          <h4>4.4. Testing Strategy</h4>
+          <p>Validate the visual components on dummy terminal grids and write mock unit tests for tree filtering.</p>
+          <ul class="checklist">
+            <li>
+              <code class="status">[]</code>
+              <code>dotnet test --filter "FullyQualifiedName~TuiComponentTests"</code> — Confirms UI engine stability.
+            </li>
+          </ul>
+          <div class="loop">
+            🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== GLOBAL VALIDATION ===== -->
+      <section id="validation">
+        <h2>Validation Commands</h2>
+        <p>Execute these commands to validate the entire plan is complete and pristine:</p>
+        <ul class="checklist">
+          <li>
+            <code class="status">[]</code> <code>dotnet build --configuration Release</code> — Proves code is compile-error free.
+          </li>
+          <li>
+            <code class="status">[]</code> <code>dotnet test</code> — Proves all new mathematical models, percentiles, aggregators, and search filters work securely.
+          </li>
+        </ul>
+        <div class="loop">
+          🔁 <strong>The plan is not complete until every box is checked and every command passes.</strong>
+        </div>
+      </section>
+
+      <!-- ===== NOTES ===== -->
+      <section id="notes">
+        <h2>Notes</h2>
+        <h3>Percentile Calculation Formula (Linear Interpolation)</h3>
+        <p>To calculate the P-th percentile (e.g., P90) of a sorted array of <code>N</code> values (0-indexed):</p>
+        <pre><code>double idx = (percentile / 100.0) * (N - 1);
+int low = (int)Math.Floor(idx);
+int high = (int)Math.Ceiling(idx);
+if (low == high) return sorted[low];
+return sorted[low] + (idx - low) * (sorted[high] - sorted[low]);</code></pre>
+
+        <h3>Encapsulation Boundary Check</h3>
+        <p>A temporal coupling pair involving <code>FileA</code> and <code>FileB</code> is "cross-boundary" if:</p>
+        <pre><code>string areaA = GetAreaOfPath(fileA);
+string areaB = GetAreaOfPath(fileB);
+bool crosses = !string.Equals(areaA, areaB, StringComparison.OrdinalIgnoreCase);</code></pre>
+      </section>
+    </main>
+  </body>
+</html>
