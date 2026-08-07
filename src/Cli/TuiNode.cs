@@ -32,6 +32,9 @@ public class TuiNode
     // Reference to raw FileMetric if IsDirectory is false
     public FileMetric? FileMetric { get; set; }
 
+    // Aggregated Work Classification
+    public WorkClassificationMetrics WorkClassification { get; set; } = new();
+
     public static bool IsExcluded(string relativePath)
     {
         if (string.IsNullOrEmpty(relativePath)) return true;
@@ -154,6 +157,10 @@ public class TuiNode
             node.TotalChurn = node.FileMetric?.Churn ?? 0;
             node.MaxHeatScore = node.FileMetric?.HeatScore ?? 0.0;
             node.MaxAttentionScore = node.FileMetric?.AttentionScore ?? 0.0;
+            if (node.FileMetric != null)
+            {
+                node.WorkClassification = node.FileMetric.WorkClassification ?? new();
+            }
             return;
         }
 
@@ -170,6 +177,8 @@ public class TuiNode
         int totalChurn = 0;
         double maxHeatScore = 0.0;
         double maxAttentionScore = 0.0;
+
+        var wc = new WorkClassificationMetrics();
 
         foreach (var child in node.Children)
         {
@@ -194,6 +203,12 @@ public class TuiNode
             {
                 minWidth = child.MinWidth;
             }
+
+            wc.Features += child.WorkClassification.Features;
+            wc.Bugs += child.WorkClassification.Bugs;
+            wc.TechnicalDebt += child.WorkClassification.TechnicalDebt;
+            wc.Chores += child.WorkClassification.Chores;
+            wc.Unclassified += child.WorkClassification.Unclassified;
         }
 
         node.FileCount = fileCount;
@@ -209,6 +224,8 @@ public class TuiNode
 
         node.MaxWidth = maxWidth;
         node.MinWidth = (minWidth == int.MaxValue) ? 0 : minWidth;
+
+        node.WorkClassification = wc;
     }
 
     public TuiNode? FindMinLoCFile()
