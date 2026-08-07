@@ -286,6 +286,9 @@ public class FileMetric
 
     [JsonPropertyName("lines")]
     public int? Lines { get; set; }
+
+    [JsonPropertyName("work_classification")]
+    public WorkClassificationMetrics WorkClassification { get; set; } = new();
 }
 
 public class AreaMetric
@@ -499,6 +502,9 @@ public class CodeRotMetric
 
     [JsonPropertyName("zombie_lines")]
     public int ZombieLines { get; set; }
+
+    [JsonPropertyName("threshold_days")]
+    public int ThresholdDays { get; set; } = 365;
 }
 
 public class ReviewCollaborationMetric
@@ -661,4 +667,31 @@ public class ContributorAccumulator
 public class CommitFileSet
 {
     public List<string> Files { get; set; } = new();
+}
+
+public class SubsystemHealthStats
+{
+    [JsonPropertyName("hotspot_density")]
+    public double HotspotDensity { get; set; }
+
+    [JsonPropertyName("single_owner_ratio")]
+    public double SingleOwnerRatio { get; set; }
+
+    [JsonPropertyName("rework_rate")]
+    public double ReworkRate { get; set; }
+
+    [JsonPropertyName("active_contributors")]
+    public int ActiveContributors { get; set; }
+}
+
+public class SubsystemDeliveryStats
+{
+    [JsonPropertyName("median_lead_time_hours")]
+    public double MedianLeadTimeHours { get; set; }
+
+    [JsonPropertyName("tail_lead_time_hours")]
+    public double TailLeadTimeHours { get; set; }
+
+    [JsonPropertyName("stall_rate")]
+    public double StallRate { get; set; }
 }

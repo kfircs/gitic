@@ -47,17 +47,40 @@ public class CuratedReportsEngine : ICuratedReportsEngine
     {
         CuratedReports reports = new();
 
-        CalculateWorkClassification(commits, reports.WorkClassification);
+        int thresholdDays = 365;
+        if (commits.Count > 0)
+        {
+            long minTimestamp = commits.Min(c => c.Timestamp);
+            long maxTimestamp = commits.Max(c => c.Timestamp);
+            double spanDays = (maxTimestamp - minTimestamp) / 86400000.0;
+            
+            if (spanDays < 90) // under 3 months
+            {
+                thresholdDays = 14; // 14 days
+            }
+            else if (spanDays < 365) // under 1 year
+            {
+                thresholdDays = 90; // 90 days (approx 3 months)
+            }
+        }
+
+        CalculateWorkClassification(commits, files, reports.WorkClassification);
         CalculateOnboarding(commits, reports.Onboarding);
         CalculateReviewCollaboration(commits, reports.ReviewCollaboration);
-        CalculateCodeRot(files, reports.CodeRot);
+        CalculateCodeRot(files, reports.CodeRot, thresholdDays);
         CalculateAiCodeStrain(commits, reports.AiCodeStrain);
 
         return reports;
     }
 
-    private void CalculateWorkClassification(List<GitCommitRecord> commits, WorkClassificationMetrics report)
+    private void CalculateWorkClassification(List<GitCommitRecord> commits, List<FileMetric> files, WorkClassificationMetrics report)
     {
+        var fileLookup = files.ToDictionary(
+            f => NormalizePath(f.Path),
+            f => f,
+            StringComparer.OrdinalIgnoreCase
+        );
+
         foreach (var c in commits)
         {
             var category = _classifier.Classify(c.Message);
@@ -79,7 +102,44 @@ public class CuratedReportsEngine : ICuratedReportsEngine
                     report.Unclassified++;
                     break;
             }
+
+            // Also associate this commit classification with each of the touched files
+            foreach (var gitFile in c.Files)
+            {
+                string normPath = NormalizePath(gitFile.Path);
+                if (fileLookup.TryGetValue(normPath, out var fileMetric))
+                {
+                    if (fileMetric.WorkClassification == null)
+                    {
+                        fileMetric.WorkClassification = new WorkClassificationMetrics();
+                    }
+                    switch (category)
+                    {
+                        case "feature":
+                            fileMetric.WorkClassification.Features++;
+                            break;
+                        case "bugfix":
+                            fileMetric.WorkClassification.Bugs++;
+                            break;
+                        case "refactor":
+                            fileMetric.WorkClassification.TechnicalDebt++;
+                            break;
+                        case "chore":
+                            fileMetric.WorkClassification.Chores++;
+                            break;
+                        default:
+                            fileMetric.WorkClassification.Unclassified++;
+                            break;
+                    }
+                }
+            }
         }
+    }
+
+    private string NormalizePath(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return string.Empty;
+        return path.Replace('\\', '/').Trim('/');
     }
 
     private void CalculateOnboarding(List<GitCommitRecord> commits, List<DeveloperOnboardingMetric> onboarding)
@@ -144,9 +204,10 @@ public class CuratedReportsEngine : ICuratedReportsEngine
         report.ReviewerSilos = silos;
     }
 
-    private void CalculateCodeRot(List<FileMetric> files, CodeRotMetric report)
+    private void CalculateCodeRot(List<FileMetric> files, CodeRotMetric report, int thresholdDays)
     {
-        long oneYearAgoMs = DateTimeOffset.UtcNow.AddYears(-1).ToUnixTimeMilliseconds();
+        report.ThresholdDays = thresholdDays;
+        long thresholdMs = DateTimeOffset.UtcNow.AddDays(-thresholdDays).ToUnixTimeMilliseconds();
 
         foreach (var f in files)
         {
@@ -154,7 +215,7 @@ public class CuratedReportsEngine : ICuratedReportsEngine
             {
                 if (DateTimeOffset.TryParse(f.LastTouched, out var lastTouchedDt))
                 {
-                    if (lastTouchedDt.ToUnixTimeMilliseconds() < oneYearAgoMs)
+                    if (lastTouchedDt.ToUnixTimeMilliseconds() < thresholdMs)
                     {
                         report.ZombieFileCount++;
                         report.ZombieLines += f.Lines ?? 0;
