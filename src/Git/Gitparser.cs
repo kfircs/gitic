@@ -88,11 +88,7 @@ internal class GitParser : IGitParser
 
         var parents = ParseParents(commitMetadata.ParentsLine);
 
-        long timestamp = 0;
-        if (DateTimeOffset.TryParse(commitMetadata.Date.Trim(), out var parsedDate))
-        {
-            timestamp = parsedDate.ToUnixTimeMilliseconds();
-        }
+        long timestamp = ParseDateToTimestamp(commitMetadata.Date);
 
         return new GitCommitRecord
         {
@@ -155,6 +151,15 @@ internal class GitParser : IGitParser
             ParentsLine: metadata[4],
             MessageLines: metadata.Skip(5).ToList()
         );
+    }
+
+    private static long ParseDateToTimestamp(string dateStr)
+    {
+        if (DateTimeOffset.TryParse(dateStr.Trim(), out var parsedDate))
+        {
+            return parsedDate.ToUnixTimeMilliseconds();
+        }
+        return 0;
     }
 
     private static List<string> ParseParents(string parentsLine) =>
