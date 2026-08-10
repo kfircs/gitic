@@ -116,6 +116,15 @@ public class ChangeAccumulator : IChangeAccumulator
 
         filesInCommit.Add(path);
 
+        RecordParticipantActivity(fileAccumulator, areaAccumulator, areaName, participants);
+    }
+
+    private void RecordParticipantActivity(
+        ItemAccumulator fileAccumulator,
+        ItemAccumulator areaAccumulator,
+        string areaName,
+        List<ParticipantInfo> participants)
+    {
         foreach (var participant in participants)
         {
             if (_identityRegistry.IsBot(participant.Identity))
