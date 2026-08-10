@@ -249,6 +249,20 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
             }
         }
 
+        int ResolveColumnWidth(ColumnDef col)
+        {
+            if (col.WidthPolicy == WidthPolicy.Stretch && assignedWidths.TryGetValue(col.Name, out int w))
+            {
+                return w;
+            }
+            if (col.Width != null)
+            {
+                return col.Width.Value;
+            }
+            int maxValLength = _rows.Select(r => r.TryGetValue(col.Name, out string? v) ? GetVisibleLength(v ?? string.Empty) : 0).DefaultIfEmpty(0).Max();
+            return Math.Max(col.Name.Length, maxValLength);
+        }
+
         // 4. Format row helper
         string FormatRow(List<string> cells)
         {
@@ -263,18 +277,9 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
                 }
                 var col = visibleColDefs[i];
 
-                int? colWidth = null;
-                if (col.WidthPolicy == WidthPolicy.Stretch)
-                {
-                    if (assignedWidths.TryGetValue(col.Name, out int w))
-                    {
-                        colWidth = w;
-                    }
-                }
-                else
-                {
-                    colWidth = col.Width;
-                }
+                int? colWidth = col.WidthPolicy == WidthPolicy.Stretch
+                    ? (assignedWidths.TryGetValue(col.Name, out int w) ? w : null)
+                    : col.Width;
 
                 if (colWidth == null && !EnableBorders)
                 {
@@ -282,13 +287,7 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
                     continue;
                 }
 
-                if (colWidth == null)
-                {
-                    int maxValLength = _rows.Select(r => r.TryGetValue(col.Name, out string? v) ? GetVisibleLength(v ?? string.Empty) : 0).DefaultIfEmpty(0).Max();
-                    colWidth = Math.Max(col.Name.Length, maxValLength);
-                }
-
-                int width = colWidth.Value;
+                int width = ResolveColumnWidth(col);
                 string align = col.Align ?? "left";
 
                 // Truncate cell value if necessary
@@ -342,25 +341,7 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
             List<string> segments = [];
             foreach (var col in visibleColDefs)
             {
-                int? colWidth = null;
-                if (col.WidthPolicy == WidthPolicy.Stretch)
-                {
-                    if (assignedWidths.TryGetValue(col.Name, out int w))
-                    {
-                        colWidth = w;
-                    }
-                }
-                else
-                {
-                    colWidth = col.Width;
-                }
-
-                if (colWidth == null)
-                {
-                    int maxValLength = _rows.Select(r => r.TryGetValue(col.Name, out string? v) ? GetVisibleLength(v ?? string.Empty) : 0).DefaultIfEmpty(0).Max();
-                    colWidth = Math.Max(col.Name.Length, maxValLength);
-                }
-                int wVal = colWidth.Value;
+                int wVal = ResolveColumnWidth(col);
                 segments.Add(new string(segment[0], wVal));
             }
             string line = left + string.Join(middle, segments) + right;
