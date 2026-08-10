@@ -216,6 +216,22 @@ public class YamlSubsetParser
         return ParseMapping(indent);
     }
 
+    private object? ParseSequenceItemValue(string remainder, int indent, int lineNumber)
+    {
+        if (remainder.Length == 0)
+        {
+            return ParseEmptySequenceItem(indent);
+        }
+
+        var splitResult = SplitMappingEntry(remainder);
+        if (splitResult == null)
+        {
+            return ParseScalar(remainder);
+        }
+
+        return ParseInlineMappingSequenceItem(remainder, indent, lineNumber);
+    }
+
     /// <summary>
     /// Parses a sequence block (YAML list) with items starting with "- ".
     /// </summary>
@@ -241,20 +257,7 @@ public class YamlSubsetParser
             string remainder = line.Text.Substring(2).Trim();
             _stream.Consume();
 
-            if (remainder.Length == 0)
-            {
-                result.Add(ParseEmptySequenceItem(indent));
-                continue;
-            }
-
-            var splitResult = SplitMappingEntry(remainder);
-            if (splitResult == null)
-            {
-                result.Add(ParseScalar(remainder));
-                continue;
-            }
-
-            result.Add(ParseInlineMappingSequenceItem(remainder, indent, line.LineNumber));
+            result.Add(ParseSequenceItemValue(remainder, indent, line.LineNumber));
         }
 
         return result;
