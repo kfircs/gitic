@@ -44,31 +44,31 @@ public class ConfigValidator : IConfigValidator
 
         if (record.TryGetValue("aliases", out var aliasesVal))
         {
-            ValidateAliases(aliasesVal, source, errors);
+            AliasValidator.ValidateAliases(aliasesVal, source, errors);
         }
         if (record.TryGetValue("bots", out var botsVal))
         {
-            ValidateBots(botsVal, source, errors);
+            BotValidator.ValidateBots(botsVal, source, errors);
         }
         if (record.TryGetValue("excludes", out var excludesVal))
         {
-            ValidateExcludes(excludesVal, source, errors);
+            ExcludeValidator.ValidateExcludes(excludesVal, source, errors);
         }
         if (record.TryGetValue("areas", out var areasVal))
         {
-            ValidateAreas(areasVal, source, errors);
+            AreaValidator.ValidateAreas(areasVal, source, errors);
         }
         if (record.TryGetValue("scoring", out var scoringVal))
         {
-            ValidateScoring(scoringVal, source, errors);
+            ScoringValidator.ValidateScoring(scoringVal, source, errors);
         }
         if (record.TryGetValue("identity", out var identityVal))
         {
-            ValidateIdentityConfig(identityVal, source, errors);
+            IdentityConfigValidator.ValidateIdentityConfig(identityVal, source, errors);
         }
         if (record.TryGetValue("metrics", out var metricsVal))
         {
-            ValidateMetricsConfig(metricsVal, source, errors);
+            MetricsConfigValidator.ValidateMetricsConfig(metricsVal, source, errors);
         }
 
         if (errors.Count > 0)
@@ -82,47 +82,10 @@ public class ConfigValidator : IConfigValidator
         string source,
         List<string>? errors = null)
     {
-        errors ??= new List<string>();
-
-        ValidateWeightValue(attention.Churn, "churn", source, errors);
-        ValidateWeightValue(attention.Recency, "recency", source, errors);
-        ValidateWeightValue(attention.ContributorSpread, "contributor_spread", source, errors);
-        ValidateWeightValue(attention.LowFamiliarityConcentration, "low_familiarity_concentration", source, errors);
-
-        double sum = attention.Churn + attention.Recency + attention.ContributorSpread + attention.LowFamiliarityConcentration;
-        if (Math.Abs(sum - 1.0) > 0.0001)
-        {
-            errors.Add($"{source}: scoring.attention weights must sum to 1. Current sum: {sum:F6}.");
-        }
-
-        if (errors.Count > 0)
-        {
-            throw new ConfigValidationError(errors);
-        }
+        ScoringValidator.ValidateAttentionWeights(attention, source, errors);
     }
 
-    internal static bool ValidateWeightValue(
-        double value,
-        string key,
-        string source,
-        List<string> errors)
-    {
-        if (double.IsNaN(value) || double.IsInfinity(value))
-        {
-            errors.Add($"{source}: scoring.attention.{key} must be a finite number.");
-            return false;
-        }
-
-        if (value < 0.0 || value > 1.0)
-        {
-            errors.Add($"{source}: scoring.attention.{key} must be between 0 and 1.");
-            return false;
-        }
-
-        return true;
-    }
-
-    private static bool IsRecord(object? value, out Dictionary<string, object?> record)
+    internal static bool IsRecord(object? value, out Dictionary<string, object?> record)
     {
         if (value is Dictionary<string, object?> dict)
         {
@@ -133,7 +96,7 @@ public class ConfigValidator : IConfigValidator
         return false;
     }
 
-    private static bool RequireRecord(
+    internal static bool RequireRecord(
         object? value,
         string errorMsg,
         List<string> errors,
@@ -147,7 +110,7 @@ public class ConfigValidator : IConfigValidator
         return true;
     }
 
-    private static bool RequireArray(
+    internal static bool RequireArray(
         object? value,
         string errorMsg,
         List<string> errors,
@@ -163,7 +126,7 @@ public class ConfigValidator : IConfigValidator
         return false;
     }
 
-    private static bool RequireNonEmptyArray(
+    internal static bool RequireNonEmptyArray(
         object? value,
         string errorMsg,
         List<string> errors,
@@ -179,7 +142,7 @@ public class ConfigValidator : IConfigValidator
         return false;
     }
 
-    private static string? RequireNonEmptyString(
+    internal static string? RequireNonEmptyString(
         object? value,
         string path,
         List<string> errors)
@@ -192,7 +155,7 @@ public class ConfigValidator : IConfigValidator
         return result;
     }
 
-    private static string? NormalizeNonEmptyString(object? value)
+    internal static string? NormalizeNonEmptyString(object? value)
     {
         if (value is string s)
         {
@@ -202,7 +165,7 @@ public class ConfigValidator : IConfigValidator
         return null;
     }
 
-    private static string? NormalizeOptionalString(
+    internal static string? NormalizeOptionalString(
         object? value,
         string path,
         List<string> errors)
@@ -219,7 +182,7 @@ public class ConfigValidator : IConfigValidator
         return normalized;
     }
 
-    private static void CheckUnknownKeys(
+    internal static void CheckUnknownKeys(
         Dictionary<string, object?> entry,
         List<string> allowed,
         string path,
@@ -239,10 +202,13 @@ public class ConfigValidator : IConfigValidator
             }
         }
     }
+}
 
-    private static void ValidateAliases(object? value, string source, List<string> errors)
+public class AliasValidator
+{
+    public static void ValidateAliases(object? value, string source, List<string> errors)
     {
-        if (!RequireArray(value, $"{source}: aliases must be an array.", errors, out var array))
+        if (!ConfigValidator.RequireArray(value, $"{source}: aliases must be an array.", errors, out var array))
         {
             return;
         }
@@ -251,18 +217,18 @@ public class ConfigValidator : IConfigValidator
         {
             object? entry = array[i];
             string path = $"aliases[{i}]";
-            if (!RequireRecord(entry, $"{source}: {path} must be an object.", errors, out var entryRecord))
+            if (!ConfigValidator.RequireRecord(entry, $"{source}: {path} must be an object.", errors, out var entryRecord))
             {
                 continue;
             }
 
-            CheckUnknownKeys(entryRecord, new List<string> { "canonical", "identities" }, path, source, errors);
+            ConfigValidator.CheckUnknownKeys(entryRecord, new List<string> { "canonical", "identities" }, path, source, errors);
 
             entryRecord.TryGetValue("canonical", out var canonicalVal);
             ValidateIdentity(canonicalVal, $"{path}.canonical", source, errors);
 
             entryRecord.TryGetValue("identities", out var identitiesVal);
-            if (!RequireNonEmptyArray(identitiesVal, $"{source}: {path}.identities must be a non-empty array.", errors, out var identitiesArr))
+            if (!ConfigValidator.RequireNonEmptyArray(identitiesVal, $"{source}: {path}.identities must be a non-empty array.", errors, out var identitiesArr))
             {
                 continue;
             }
@@ -274,29 +240,32 @@ public class ConfigValidator : IConfigValidator
         }
     }
 
-    private static void ValidateIdentity(
+    public static void ValidateIdentity(
         object? value,
         string path,
         string source,
         List<string> errors)
     {
-        if (!RequireRecord(value, $"{source}: {path} must be an object with name and email.", errors, out var record))
+        if (!ConfigValidator.RequireRecord(value, $"{source}: {path} must be an object with name and email.", errors, out var record))
         {
             return;
         }
 
-        CheckUnknownKeys(record, new List<string> { "name", "email" }, path, source, errors);
+        ConfigValidator.CheckUnknownKeys(record, new List<string> { "name", "email" }, path, source, errors);
 
         record.TryGetValue("name", out var nameVal);
         record.TryGetValue("email", out var emailVal);
 
-        RequireNonEmptyString(nameVal, $"{source}: {path}.name", errors);
-        RequireNonEmptyString(emailVal, $"{source}: {path}.email", errors);
+        ConfigValidator.RequireNonEmptyString(nameVal, $"{source}: {path}.name", errors);
+        ConfigValidator.RequireNonEmptyString(emailVal, $"{source}: {path}.email", errors);
     }
+}
 
-    private static void ValidateBots(object? value, string source, List<string> errors)
+public class BotValidator
+{
+    public static void ValidateBots(object? value, string source, List<string> errors)
     {
-        if (!RequireArray(value, $"{source}: bots must be an array.", errors, out var array))
+        if (!ConfigValidator.RequireArray(value, $"{source}: bots must be an array.", errors, out var array))
         {
             return;
         }
@@ -305,20 +274,20 @@ public class ConfigValidator : IConfigValidator
         {
             object? entry = array[i];
             string path = $"bots[{i}]";
-            if (!RequireRecord(entry, $"{source}: {path} must be an object.", errors, out var record))
+            if (!ConfigValidator.RequireRecord(entry, $"{source}: {path} must be an object.", errors, out var record))
             {
                 continue;
             }
 
-            CheckUnknownKeys(record, new List<string> { "name", "email", "pattern" }, path, source, errors);
+            ConfigValidator.CheckUnknownKeys(record, new List<string> { "name", "email", "pattern" }, path, source, errors);
 
             record.TryGetValue("name", out var nameVal);
             record.TryGetValue("email", out var emailVal);
             record.TryGetValue("pattern", out var patternVal);
 
-            string? name = NormalizeOptionalString(nameVal, $"{source}: {path}.name", errors);
-            string? email = NormalizeOptionalString(emailVal, $"{source}: {path}.email", errors);
-            string? pattern = NormalizeOptionalString(patternVal, $"{source}: {path}.pattern", errors);
+            string? name = ConfigValidator.NormalizeOptionalString(nameVal, $"{source}: {path}.name", errors);
+            string? email = ConfigValidator.NormalizeOptionalString(emailVal, $"{source}: {path}.email", errors);
+            string? pattern = ConfigValidator.NormalizeOptionalString(patternVal, $"{source}: {path}.pattern", errors);
 
             if (name == null && email == null && pattern == null)
             {
@@ -326,10 +295,13 @@ public class ConfigValidator : IConfigValidator
             }
         }
     }
+}
 
-    private static void ValidateExcludes(object? value, string source, List<string> errors)
+public class ExcludeValidator
+{
+    public static void ValidateExcludes(object? value, string source, List<string> errors)
     {
-        if (!RequireArray(value, $"{source}: excludes must be an array.", errors, out var array))
+        if (!ConfigValidator.RequireArray(value, $"{source}: excludes must be an array.", errors, out var array))
         {
             return;
         }
@@ -338,24 +310,27 @@ public class ConfigValidator : IConfigValidator
         {
             object? entry = array[i];
             string path = $"excludes[{i}]";
-            if (!RequireRecord(entry, $"{source}: {path} must be an object.", errors, out var record))
+            if (!ConfigValidator.RequireRecord(entry, $"{source}: {path} must be an object.", errors, out var record))
             {
                 continue;
             }
 
-            CheckUnknownKeys(record, new List<string> { "pattern", "category" }, path, source, errors);
+            ConfigValidator.CheckUnknownKeys(record, new List<string> { "pattern", "category" }, path, source, errors);
 
             record.TryGetValue("pattern", out var patternVal);
             record.TryGetValue("category", out var categoryVal);
 
-            RequireNonEmptyString(patternVal, $"{source}: {path}.pattern", errors);
-            RequireNonEmptyString(categoryVal, $"{source}: {path}.category", errors);
+            ConfigValidator.RequireNonEmptyString(patternVal, $"{source}: {path}.pattern", errors);
+            ConfigValidator.RequireNonEmptyString(categoryVal, $"{source}: {path}.category", errors);
         }
     }
+}
 
-    private static void ValidateAreas(object? value, string source, List<string> errors)
+public class AreaValidator
+{
+    public static void ValidateAreas(object? value, string source, List<string> errors)
     {
-        if (!RequireArray(value, $"{source}: areas must be an array.", errors, out var array))
+        if (!ConfigValidator.RequireArray(value, $"{source}: areas must be an array.", errors, out var array))
         {
             return;
         }
@@ -364,86 +339,40 @@ public class ConfigValidator : IConfigValidator
         {
             object? entry = array[i];
             string path = $"areas[{i}]";
-            if (!RequireRecord(entry, $"{source}: {path} must be an object.", errors, out var record))
+            if (!ConfigValidator.RequireRecord(entry, $"{source}: {path} must be an object.", errors, out var record))
             {
                 continue;
             }
 
-            CheckUnknownKeys(record, new List<string> { "name", "paths" }, path, source, errors);
+            ConfigValidator.CheckUnknownKeys(record, new List<string> { "name", "paths" }, path, source, errors);
 
             record.TryGetValue("name", out var nameVal);
-            RequireNonEmptyString(nameVal, $"{source}: {path}.name", errors);
+            ConfigValidator.RequireNonEmptyString(nameVal, $"{source}: {path}.name", errors);
 
             record.TryGetValue("paths", out var pathsVal);
-            if (!RequireNonEmptyArray(pathsVal, $"{source}: {path}.paths must be a non-empty array of strings.", errors, out var pathsArr))
+            if (!ConfigValidator.RequireNonEmptyArray(pathsVal, $"{source}: {path}.paths must be a non-empty array of strings.", errors, out var pathsArr))
             {
                 continue;
             }
 
             for (int j = 0; j < pathsArr.Count; j++)
             {
-                RequireNonEmptyString(pathsArr[j], $"{source}: {path}.paths[{j}]", errors);
+                ConfigValidator.RequireNonEmptyString(pathsArr[j], $"{source}: {path}.paths[{j}]", errors);
             }
         }
     }
+}
 
-    private static void ValidateIdentityConfig(object? value, string source, List<string> errors)
+public class ScoringValidator
+{
+    public static void ValidateScoring(object? value, string source, List<string> errors)
     {
-        if (!RequireRecord(value, $"{source}: identity must be an object.", errors, out var record))
+        if (!ConfigValidator.RequireRecord(value, $"{source}: scoring must be an object.", errors, out var record))
         {
             return;
         }
 
-        CheckUnknownKeys(record, new List<string> { "merge_on_email" }, "identity", source, errors);
-
-        if (record.TryGetValue("merge_on_email", out var raw))
-        {
-            if (raw is not bool)
-            {
-                errors.Add($"{source}: identity.merge_on_email must be a boolean.");
-            }
-        }
-    }
-
-    private static void ValidateMetricsConfig(object? value, string source, List<string> errors)
-    {
-        if (!RequireRecord(value, $"{source}: metrics must be an object.", errors, out var record))
-        {
-            return;
-        }
-
-        CheckUnknownKeys(record, new List<string> { "temporal_coupling_max_commit_file_count" }, "metrics", source, errors);
-
-        if (record.TryGetValue("temporal_coupling_max_commit_file_count", out var raw))
-        {
-            int val = 20;
-            bool valid = false;
-            if (raw is int i)
-            {
-                val = i;
-                valid = true;
-            }
-            else if (raw is long l)
-            {
-                val = (int)l;
-                valid = true;
-            }
-
-            if (!valid || val < 1)
-            {
-                errors.Add($"{source}: metrics.temporal_coupling_max_commit_file_count must be a positive integer.");
-            }
-        }
-    }
-
-    private void ValidateScoring(object? value, string source, List<string> errors)
-    {
-        if (!RequireRecord(value, $"{source}: scoring must be an object.", errors, out var record))
-        {
-            return;
-        }
-
-        CheckUnknownKeys(record, new List<string> { "attention" }, "scoring", source, errors);
+        ConfigValidator.CheckUnknownKeys(record, new List<string> { "attention" }, "scoring", source, errors);
 
         if (record.TryGetValue("attention", out var attentionVal))
         {
@@ -452,12 +381,12 @@ public class ConfigValidator : IConfigValidator
                 return;
             }
 
-            if (!RequireRecord(attentionVal, $"{source}: scoring.attention must be an object.", errors, out var attentionRecord))
+            if (!ConfigValidator.RequireRecord(attentionVal, $"{source}: scoring.attention must be an object.", errors, out var attentionRecord))
             {
                 return;
             }
 
-            CheckUnknownKeys(attentionRecord, AttentionWeightKeys, "scoring.attention", source, errors);
+            ConfigValidator.CheckUnknownKeys(attentionRecord, ConfigValidator.AttentionWeightKeys, "scoring.attention", source, errors);
 
             double? churn = null;
             double? recency = null;
@@ -514,6 +443,51 @@ public class ConfigValidator : IConfigValidator
         }
     }
 
+    public static void ValidateAttentionWeights(
+        AttentionWeights attention,
+        string source,
+        List<string>? errors = null)
+    {
+        errors ??= new List<string>();
+
+        ValidateWeightValue(attention.Churn, "churn", source, errors);
+        ValidateWeightValue(attention.Recency, "recency", source, errors);
+        ValidateWeightValue(attention.ContributorSpread, "contributor_spread", source, errors);
+        ValidateWeightValue(attention.LowFamiliarityConcentration, "low_familiarity_concentration", source, errors);
+
+        double sum = attention.Churn + attention.Recency + attention.ContributorSpread + attention.LowFamiliarityConcentration;
+        if (Math.Abs(sum - 1.0) > 0.0001)
+        {
+            errors.Add($"{source}: scoring.attention weights must sum to 1. Current sum: {sum:F6}.");
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new ConfigValidationError(errors);
+        }
+    }
+
+    internal static bool ValidateWeightValue(
+        double value,
+        string key,
+        string source,
+        List<string> errors)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            errors.Add($"{source}: scoring.attention.{key} must be a finite number.");
+            return false;
+        }
+
+        if (value < 0.0 || value > 1.0)
+        {
+            errors.Add($"{source}: scoring.attention.{key} must be between 0 and 1.");
+            return false;
+        }
+
+        return true;
+    }
+
     private static bool ValidateWeightObject(
         object? value,
         string key,
@@ -543,3 +517,57 @@ public class ConfigValidator : IConfigValidator
     }
 }
 
+public class IdentityConfigValidator
+{
+    public static void ValidateIdentityConfig(object? value, string source, List<string> errors)
+    {
+        if (!ConfigValidator.RequireRecord(value, $"{source}: identity must be an object.", errors, out var record))
+        {
+            return;
+        }
+
+        ConfigValidator.CheckUnknownKeys(record, new List<string> { "merge_on_email" }, "identity", source, errors);
+
+        if (record.TryGetValue("merge_on_email", out var raw))
+        {
+            if (raw is not bool)
+            {
+                errors.Add($"{source}: identity.merge_on_email must be a boolean.");
+            }
+        }
+    }
+}
+
+public class MetricsConfigValidator
+{
+    public static void ValidateMetricsConfig(object? value, string source, List<string> errors)
+    {
+        if (!ConfigValidator.RequireRecord(value, $"{source}: metrics must be an object.", errors, out var record))
+        {
+            return;
+        }
+
+        ConfigValidator.CheckUnknownKeys(record, new List<string> { "temporal_coupling_max_commit_file_count" }, "metrics", source, errors);
+
+        if (record.TryGetValue("temporal_coupling_max_commit_file_count", out var raw))
+        {
+            int val = 20;
+            bool valid = false;
+            if (raw is int i)
+            {
+                val = i;
+                valid = true;
+            }
+            else if (raw is long l)
+            {
+                val = (int)l;
+                valid = true;
+            }
+
+            if (!valid || val < 1)
+            {
+                errors.Add($"{source}: metrics.temporal_coupling_max_commit_file_count must be a positive integer.");
+            }
+        }
+    }
+}
