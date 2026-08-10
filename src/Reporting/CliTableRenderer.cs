@@ -64,8 +64,8 @@ public class CliReportFormatter
 public class CliTableRenderer : IReportRenderer
 {
     private readonly AnalysisCommand _command;
-    private readonly AnalysisSettings _settings;
-    private readonly TerminalFormatter _termFormatter;
+    internal readonly AnalysisSettings _settings;
+    internal readonly TerminalFormatter _termFormatter;
 
     public CliTableRenderer(AnalysisCommand command, AnalysisSettings? settings = null)
     {
@@ -85,27 +85,27 @@ public class CliTableRenderer : IReportRenderer
         string content = "";
         if (_command == AnalysisCommand.Contributors)
         {
-            content = RenderContributorTable(result);
+            content = TableRenderStrategies.RenderContributorTable(this, result);
         }
         else if (_command == AnalysisCommand.Contributor)
         {
-            content = RenderSingleContributorTable(result);
+            content = TableRenderStrategies.RenderSingleContributorTable(this, result);
         }
         else if (_command == AnalysisCommand.Areas)
         {
-            content = RenderAreaTable(result);
+            content = TableRenderStrategies.RenderAreaTable(this, result);
         }
         else if (_command == AnalysisCommand.TemporalCoupling)
         {
-            content = RenderTemporalCouplingTable(result);
+            content = TableRenderStrategies.RenderTemporalCouplingTable(this, result);
         }
         else if (_command == AnalysisCommand.LeadTime)
         {
-            content = RenderLeadTimeTable(result);
+            content = TableRenderStrategies.RenderLeadTimeTable(this, result);
         }
         else
         {
-            content = RenderHotspotTable(result);
+            content = TableRenderStrategies.RenderHotspotTable(this, result);
         }
 
         if (string.Equals(_settings.Format, "human", StringComparison.OrdinalIgnoreCase))
@@ -158,23 +158,12 @@ public class CliTableRenderer : IReportRenderer
         return sb.ToString();
     }
 
-    private struct CombinedContributor
-    {
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public string Type { get; set; }
-        public double Activity { get; set; }
-        public double Share { get; set; }
-        public double Familiarity { get; set; }
-        public string TopAreas { get; set; }
-    }
-
     /// <summary>
     /// Attempts to determine the actual width of the console window to dynamically size table columns.
     /// Falls back to a safe default if output is redirected or width cannot be determined.
     /// Bounds the width between 40 and 200 characters to prevent extreme layouts.
     /// </summary>
-    private int GetConsoleWidth()
+    internal int GetConsoleWidth()
     {
         int consoleWidth = 80;
         try
@@ -195,7 +184,7 @@ public class CliTableRenderer : IReportRenderer
     /// Determines which columns should be visible based on user settings or the available console width.
     /// Automatically drops less important columns when space is constrained.
     /// </summary>
-    private List<string> GetVisibleColumns(int consoleWidth, Func<int, List<string>> defaultColumnsSelector)
+    internal List<string> GetVisibleColumns(int consoleWidth, Func<int, List<string>> defaultColumnsSelector)
     {
         if (!string.IsNullOrEmpty(_settings.Columns))
         {
@@ -211,7 +200,7 @@ public class CliTableRenderer : IReportRenderer
     /// Configures the base console table builder with the dynamically determined layout settings,
     /// enabling borders and unicode drawing characters if the terminal and output format support them.
     /// </summary>
-    private IConsoleTableBuilder CreateTableBuilder(List<string> visibleColumns)
+    internal IConsoleTableBuilder CreateTableBuilder(List<string> visibleColumns)
     {
         bool enableBorders = string.Equals(_settings.Format, "human", StringComparison.OrdinalIgnoreCase);
         return new ConsoleTableBuilder()
@@ -219,32 +208,46 @@ public class CliTableRenderer : IReportRenderer
             .WithVisibleColumns(visibleColumns)
             .WithBorders(enableBorders, _termFormatter.UseUnicode, _termFormatter.IsColorEnabled);
     }
+}
 
-    private string RenderTemporalCouplingTable(AnalysisResult result)
+public static class TableRenderStrategies
+{
+    private struct CombinedContributor
+    {
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public string Type { get; set; }
+        public double Activity { get; set; }
+        public double Share { get; set; }
+        public double Familiarity { get; set; }
+        public string TopAreas { get; set; }
+    }
+
+    public static string RenderTemporalCouplingTable(CliTableRenderer renderer, AnalysisResult result)
     {
         if (result.TemporalCoupling == null || result.TemporalCoupling.Count == 0)
         {
             return "No temporal coupling pairs found (requires >= 3 shared commits). Try widening the analysis window, modifying limits, or specifying --include-merges.\n";
         }
 
-        int consoleWidth = GetConsoleWidth();
-        var visibleColumns = GetVisibleColumns(consoleWidth, _ => new List<string> { "file_a", "file_b", "shared", "coupling" });
+        int consoleWidth = renderer.GetConsoleWidth();
+        var visibleColumns = renderer.GetVisibleColumns(consoleWidth, _ => new List<string> { "file_a", "file_b", "shared", "coupling" });
 
-        var table = CreateTableBuilder(visibleColumns)
+        var table = renderer.CreateTableBuilder(visibleColumns)
             .AddColumnEx("file_a", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, minWidth: 12)
             .AddColumnEx("file_b", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, minWidth: 12)
             .AddColumnEx("shared", width: 8, align: "right")
             .AddColumnEx("coupling", width: 10, align: "right");
 
-        int limit = _settings.Limit ?? 20;
+        int limit = renderer._settings.Limit ?? 20;
         foreach (var item in result.TemporalCoupling.Take(limit))
         {
             double couplingVal = item.CouplingDegree;
             string displayVal = $"{Math.Round(couplingVal * 100)}%";
             string formattedCoupling = couplingVal >= 0.7
-                ? _termFormatter.FormatHeat(100.0, displayVal)
+                ? renderer._termFormatter.FormatHeat(100.0, displayVal)
                 : couplingVal >= 0.5
-                    ? _termFormatter.FormatAttention(50.0, displayVal)
+                    ? renderer._termFormatter.FormatAttention(50.0, displayVal)
                     : displayVal;
 
             table.AddRow(new Dictionary<string, string>
@@ -259,15 +262,15 @@ public class CliTableRenderer : IReportRenderer
         return table.Render();
     }
 
-    private string RenderLeadTimeTable(AnalysisResult result)
+    public static string RenderLeadTimeTable(CliTableRenderer renderer, AnalysisResult result)
     {
         if (result.LeadTimes?.Merges == null || result.LeadTimes.Merges.Count == 0)
         {
             return "No merge commits in the analysis window; branch lead time is unmeasured. Run with --include-merges or widen the window to measure lead time.\n";
         }
 
-        int consoleWidth = GetConsoleWidth();
-        var visibleColumns = GetVisibleColumns(consoleWidth, cw =>
+        int consoleWidth = renderer.GetConsoleWidth();
+        var visibleColumns = renderer.GetVisibleColumns(consoleWidth, cw =>
         {
             if (cw < 60)
             {
@@ -280,7 +283,7 @@ public class CliTableRenderer : IReportRenderer
             return new List<string> { "hash", "date", "lead_time", "author", "files", "message" };
         });
 
-        var table = CreateTableBuilder(visibleColumns)
+        var table = renderer.CreateTableBuilder(visibleColumns)
             .AddColumnEx("hash", width: 8, align: "left")
             .AddColumnEx("date", width: 20, align: "left")
             .AddColumnEx("lead_time", width: 15, align: "right")
@@ -288,7 +291,7 @@ public class CliTableRenderer : IReportRenderer
             .AddColumnEx("files", width: 8, align: "right")
             .AddColumnEx("message", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Standard, minWidth: 10);
 
-        int limit = _settings.Limit ?? 20;
+        int limit = renderer._settings.Limit ?? 20;
         foreach (var m in result.LeadTimes.Merges.Take(limit))
         {
             string hash = m.Hash.Length > 7 ? m.Hash.Substring(0, 7) : m.Hash;
@@ -312,15 +315,15 @@ public class CliTableRenderer : IReportRenderer
         return prependString + tableRendered;
     }
 
-    private string RenderHotspotTable(AnalysisResult result)
+    public static string RenderHotspotTable(CliTableRenderer renderer, AnalysisResult result)
     {
         if (result.Files == null || result.Files.Count == 0)
         {
             return string.Empty;
         }
 
-        int consoleWidth = GetConsoleWidth();
-        var visibleColumns = GetVisibleColumns(consoleWidth, cw =>
+        int consoleWidth = renderer.GetConsoleWidth();
+        var visibleColumns = renderer.GetVisibleColumns(consoleWidth, cw =>
         {
             if (cw < 60)
             {
@@ -333,7 +336,7 @@ public class CliTableRenderer : IReportRenderer
             return new List<string> { "file", "attention", "heat", "ownership", "rework", "coordination", "reasons" };
         });
 
-        var table = CreateTableBuilder(visibleColumns)
+        var table = renderer.CreateTableBuilder(visibleColumns)
             .AddColumnEx("file", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, minWidth: 12)
             .AddColumnEx("attention", width: 10, align: "right")
             .AddColumnEx("heat", width: 6, align: "right")
@@ -344,7 +347,7 @@ public class CliTableRenderer : IReportRenderer
             .AddColumnEx("coordination", width: 12, align: "right")
             .AddColumnEx("reasons", width: 25, align: "left");
 
-        int limit = _settings.Limit ?? 20;
+        int limit = renderer._settings.Limit ?? 20;
         foreach (var file in result.Files.Take(limit))
         {
             double share = file.KnowledgeSilo?.TopOwnerShare ?? 0;
@@ -354,8 +357,8 @@ public class CliTableRenderer : IReportRenderer
             table.AddRow(new Dictionary<string, string>
             {
                 { "file", file.Path },
-                { "attention", _termFormatter.FormatAttention(file.AttentionScore, file.AttentionScore.ToString("F1")) },
-                { "heat", _termFormatter.FormatHeat(file.HeatScore, file.HeatScore.ToString("F1")) },
+                { "attention", renderer._termFormatter.FormatAttention(file.AttentionScore, file.AttentionScore.ToString("F1")) },
+                { "heat", renderer._termFormatter.FormatHeat(file.HeatScore, file.HeatScore.ToString("F1")) },
                 { "churn", file.Churn.ToString() },
                 { "contributors", file.ContributorCount.ToString() },
                 { "ownership", $"{Math.Round(share * 100)}%" },
@@ -368,15 +371,15 @@ public class CliTableRenderer : IReportRenderer
         return table.Render();
     }
 
-    private string RenderAreaTable(AnalysisResult result)
+    public static string RenderAreaTable(CliTableRenderer renderer, AnalysisResult result)
     {
         if (result.Areas == null || result.Areas.Count == 0)
         {
             return string.Empty;
         }
 
-        int consoleWidth = GetConsoleWidth();
-        var visibleColumns = GetVisibleColumns(consoleWidth, cw =>
+        int consoleWidth = renderer.GetConsoleWidth();
+        var visibleColumns = renderer.GetVisibleColumns(consoleWidth, cw =>
         {
             if (cw < 60)
             {
@@ -389,7 +392,7 @@ public class CliTableRenderer : IReportRenderer
             return new List<string> { "area", "attention", "heat", "ownership", "rework", "contributors", "reasons" };
         });
 
-        var table = CreateTableBuilder(visibleColumns)
+        var table = renderer.CreateTableBuilder(visibleColumns)
             .AddColumnEx("area", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, minWidth: 12)
             .AddColumnEx("attention", width: 10, align: "right")
             .AddColumnEx("heat", width: 6, align: "right")
@@ -398,7 +401,7 @@ public class CliTableRenderer : IReportRenderer
             .AddColumnEx("contributors", width: 12, align: "right")
             .AddColumnEx("reasons", width: 25, align: "left");
 
-        int limit = _settings.Limit ?? 20;
+        int limit = renderer._settings.Limit ?? 20;
         foreach (var area in result.Areas.Take(limit))
         {
             double rework = area.ReworkRate ?? 0;
@@ -406,8 +409,8 @@ public class CliTableRenderer : IReportRenderer
             table.AddRow(new Dictionary<string, string>
             {
                 { "area", area.Area },
-                { "attention", _termFormatter.FormatAttention(area.AttentionScore, area.AttentionScore.ToString("F1")) },
-                { "heat", _termFormatter.FormatHeat(area.HeatScore, area.HeatScore.ToString("F1")) },
+                { "attention", renderer._termFormatter.FormatAttention(area.AttentionScore, area.AttentionScore.ToString("F1")) },
+                { "heat", renderer._termFormatter.FormatHeat(area.HeatScore, area.HeatScore.ToString("F1")) },
                 { "ownership", TopContributor(area.Contributors) },
                 { "rework", $"{Math.Round(rework * 100)}%" },
                 { "contributors", area.ContributorCount.ToString() },
@@ -418,7 +421,7 @@ public class CliTableRenderer : IReportRenderer
         return table.Render();
     }
 
-    private string RenderContributorTable(AnalysisResult result)
+    public static string RenderContributorTable(CliTableRenderer renderer, AnalysisResult result)
     {
         var combined = new List<CombinedContributor>();
 
@@ -465,9 +468,9 @@ public class CliTableRenderer : IReportRenderer
         }
 
         // Apply custom Sorting
-        if (!string.IsNullOrEmpty(_settings.Sort))
+        if (!string.IsNullOrEmpty(renderer._settings.Sort))
         {
-            string sortField = _settings.Sort.ToLower();
+            string sortField = renderer._settings.Sort.ToLower();
             if (sortField == "name" || sortField == "contributor")
             {
                 combined = combined.OrderBy(c => c.Name).ToList();
@@ -487,8 +490,8 @@ public class CliTableRenderer : IReportRenderer
             combined = combined.OrderByDescending(c => c.Activity).ToList();
         }
 
-        int consoleWidth = GetConsoleWidth();
-        var visibleColumns = GetVisibleColumns(consoleWidth, cw =>
+        int consoleWidth = renderer.GetConsoleWidth();
+        var visibleColumns = renderer.GetVisibleColumns(consoleWidth, cw =>
         {
             if (cw < 60)
             {
@@ -501,7 +504,7 @@ public class CliTableRenderer : IReportRenderer
             return new List<string> { "contributor", "type", "activity", "share", "familiarity", "top areas" };
         });
 
-        var table = CreateTableBuilder(visibleColumns)
+        var table = renderer.CreateTableBuilder(visibleColumns)
             .AddColumnEx("contributor", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, stretchRatio: 0.45, minWidth: 12)
             .AddColumnEx("type", width: 8, align: "left")
             .AddColumnEx("activity", width: 10, align: "right")
@@ -509,7 +512,7 @@ public class CliTableRenderer : IReportRenderer
             .AddColumnEx("familiarity", width: 11, align: "right")
             .AddColumnEx("top areas", align: "left", widthPolicy: WidthPolicy.Stretch, truncation: TruncationStyle.Path, stretchRatio: 0.55, minWidth: 12);
 
-        int limit = _settings.Limit ?? 20;
+        int limit = renderer._settings.Limit ?? 20;
         foreach (var item in combined.Take(limit))
         {
             table.AddRow(new Dictionary<string, string>
@@ -526,7 +529,7 @@ public class CliTableRenderer : IReportRenderer
         return table.Render();
     }
 
-    private string RenderSingleContributorTable(AnalysisResult result)
+    public static string RenderSingleContributorTable(CliTableRenderer renderer, AnalysisResult result)
     {
         if (result.Contributors == null || result.Contributors.Count == 0)
         {
@@ -534,10 +537,10 @@ public class CliTableRenderer : IReportRenderer
         }
 
         var contributor = result.Contributors[0];
-        bool enableBorders = string.Equals(_settings.Format, "human", StringComparison.OrdinalIgnoreCase);
+        bool enableBorders = string.Equals(renderer._settings.Format, "human", StringComparison.OrdinalIgnoreCase);
         IConsoleTableBuilder table = new ConsoleTableBuilder()
-            .WithConsoleWidth(GetConsoleWidth())
-            .WithBorders(enableBorders, _termFormatter.UseUnicode, _termFormatter.IsColorEnabled)
+            .WithConsoleWidth(renderer.GetConsoleWidth())
+            .WithBorders(enableBorders, renderer._termFormatter.UseUnicode, renderer._termFormatter.IsColorEnabled)
             .AddColumnEx("area", width: 28, align: "left")
             .AddColumnEx("familiarity", width: 11, align: "right")
             .AddColumnEx("activity", width: 8, align: "right")
@@ -557,7 +560,7 @@ public class CliTableRenderer : IReportRenderer
         return $"{contributor.Name} <{contributor.Email}>\n{table.Render()}";
     }
 
-    private string TopContributor(List<ContributorShare> contributors)
+    private static string TopContributor(List<ContributorShare> contributors)
     {
         if (contributors == null || contributors.Count == 0)
         {
@@ -567,7 +570,7 @@ public class CliTableRenderer : IReportRenderer
         return $"{contributor.Name} {Math.Round(contributor.ActivityShare * 100)}%";
     }
 
-    private string ScoreReasons(ScoreBreakdown breakdown)
+    private static string ScoreReasons(ScoreBreakdown breakdown)
     {
         var reasons = new List<Tuple<string, double>>
         {
@@ -698,6 +701,3 @@ public class TerminalFormatter
         return textValue;
     }
 }
-// Refactored: Candidate 2
-// Clean code review completed.
-// refactored
