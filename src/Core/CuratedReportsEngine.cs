@@ -45,6 +45,7 @@ public class CuratedReportsEngine : ICuratedReportsEngine
 
     public CuratedReports Calculate(List<GitCommitRecord> commits, List<FileMetric> files, LeadTimesInfo? leadTimes)
     {
+        commits ??= new List<GitCommitRecord>();
         CuratedReports reports = new();
 
         int thresholdDays = 365;
@@ -65,7 +66,7 @@ public class CuratedReportsEngine : ICuratedReportsEngine
         }
 
         DateTimeOffset referenceDate = DateTimeOffset.UtcNow;
-        if (commits != null && commits.Count > 0)
+        if (commits.Count > 0)
         {
             DateTimeOffset maxDate = DateTimeOffset.MinValue;
             foreach (var c in commits)
