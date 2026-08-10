@@ -115,12 +115,7 @@ public static class PathUtils
 
     #endregion
 
-    private static IGlobMatcher _matcher = new CachedGlobMatcher();
-
-    public static void SetMatcher(IGlobMatcher matcher)
-    {
-        _matcher = matcher ?? throw new ArgumentNullException(nameof(matcher));
-    }
+    private static readonly IGlobMatcher _matcher = new CachedGlobMatcher();
 
     public static string NormalizeGitPath(string? path)
     {
