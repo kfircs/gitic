@@ -7,7 +7,7 @@ namespace Gitic;
 /// Simplifies the surface area by only exposing high-leverage operations 
 /// (building log arguments and parsing the complete log).
 /// </summary>
-internal interface IGitParser
+public interface IGitParser
 {
     string CommitMarker { get; }
     string NumstatMarker { get; }

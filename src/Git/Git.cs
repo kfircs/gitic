@@ -162,14 +162,13 @@ public class GitClient : IGitClient
 {
     private readonly string _repoRoot;
     private readonly IGitExecutor _executor;
-    private readonly GitParser _parser;
+    private readonly IGitParser _parser;
 
-    public GitClient(string repoRoot, IGitExecutor? executor = null)
+    public GitClient(string repoRoot, IGitExecutor? executor = null, IGitParser? parser = null)
     {
         _repoRoot = string.IsNullOrEmpty(repoRoot) ? Directory.GetCurrentDirectory() : Path.GetFullPath(repoRoot);
         _executor = executor ?? new ExecFileGitExecutor();
-        GitPatchParser patchParser = new();
-        _parser = new GitParser(patchParser);
+        _parser = parser ?? new GitParser(new GitPatchParser());
     }
 
     public async Task<string?> GetRepositoryRootAsync(CancellationToken cancellationToken = default)
