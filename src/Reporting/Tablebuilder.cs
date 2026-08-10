@@ -72,15 +72,9 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
         return this;
     }
 
-    private static readonly Regex AnsiRegex = new("\x1B\\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
-
     private static int GetVisibleLength(string text)
     {
-        if (string.IsNullOrEmpty(text))
-        {
-            return 0;
-        }
-        return AnsiRegex.Replace(text, string.Empty).Length;
+        return AnsiUtils.GetVisibleLength(text);
     }
 
     public static string TruncateStandard(string value, int maxLength)
@@ -105,7 +99,7 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
 
     private static string StripAnsiAndTruncate(string value, int length)
     {
-        string clean = AnsiRegex.Replace(value, string.Empty);
+        string clean = AnsiUtils.StripAnsi(value);
         if (clean.Length <= length) return clean;
         return clean.Substring(0, length);
     }
@@ -435,6 +429,29 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
         }
 
         return string.Join("\n", allRows);
+    }
+}
+
+public static class AnsiUtils
+{
+    private static readonly Regex AnsiRegex = new("\x1B\\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
+
+    public static int GetVisibleLength(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return 0;
+        }
+        return AnsiRegex.Replace(text, string.Empty).Length;
+    }
+
+    public static string StripAnsi(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return string.Empty;
+        }
+        return AnsiRegex.Replace(text, string.Empty);
     }
 }
 // Refactored: Candidate 5
