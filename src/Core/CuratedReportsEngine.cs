@@ -113,24 +113,7 @@ public class CuratedReportsEngine : ICuratedReportsEngine
         foreach (var c in commits)
         {
             var category = _classifier.Classify(c.Message);
-            switch (category)
-            {
-                case "feature":
-                    report.Features++;
-                    break;
-                case "bugfix":
-                    report.Bugs++;
-                    break;
-                case "refactor":
-                    report.TechnicalDebt++;
-                    break;
-                case "chore":
-                    report.Chores++;
-                    break;
-                default:
-                    report.Unclassified++;
-                    break;
-            }
+            IncrementWorkClassification(report, category);
 
             // Also associate this commit classification with each of the touched files
             foreach (var gitFile in c.Files)
@@ -142,26 +125,31 @@ public class CuratedReportsEngine : ICuratedReportsEngine
                     {
                         fileMetric.WorkClassification = new WorkClassificationMetrics();
                     }
-                    switch (category)
-                    {
-                        case "feature":
-                            fileMetric.WorkClassification.Features++;
-                            break;
-                        case "bugfix":
-                            fileMetric.WorkClassification.Bugs++;
-                            break;
-                        case "refactor":
-                            fileMetric.WorkClassification.TechnicalDebt++;
-                            break;
-                        case "chore":
-                            fileMetric.WorkClassification.Chores++;
-                            break;
-                        default:
-                            fileMetric.WorkClassification.Unclassified++;
-                            break;
-                    }
+                    IncrementWorkClassification(fileMetric.WorkClassification, category);
                 }
             }
+        }
+    }
+
+    private static void IncrementWorkClassification(WorkClassificationMetrics metrics, string category)
+    {
+        switch (category)
+        {
+            case "feature":
+                metrics.Features++;
+                break;
+            case "bugfix":
+                metrics.Bugs++;
+                break;
+            case "refactor":
+                metrics.TechnicalDebt++;
+                break;
+            case "chore":
+                metrics.Chores++;
+                break;
+            default:
+                metrics.Unclassified++;
+                break;
         }
     }
 
