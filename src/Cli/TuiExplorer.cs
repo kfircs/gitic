@@ -70,30 +70,24 @@ public class TuiExplorer
     private void Render()
     {
         Console.Clear();
-        int width = 80;
-        int height = 24;
+        int rawWidth = 80;
+        int rawHeight = 24;
         try
         {
-            if (!Console.IsOutputRedirected && Console.WindowWidth > 0) width = Console.WindowWidth;
-            if (!Console.IsOutputRedirected && Console.WindowHeight > 0) height = Console.WindowHeight;
+            if (!Console.IsOutputRedirected && Console.WindowWidth > 0) rawWidth = Console.WindowWidth;
+            if (!Console.IsOutputRedirected && Console.WindowHeight > 0) rawHeight = Console.WindowHeight;
         }
         catch { }
 
-        // Enforce safe minimum bounds and subtract 1 row to prevent terminal scrolling
-        width = Math.Max(70, width);
-        height = Math.Max(15, height - 1);
-
-        // We want the total visible width of borders and content lines to be exactly safeWidth (or width - 2 for safety)
-        int safeWidth = width - 2; // Subtract 2 characters for safety against terminal border wraps
-        int leftWidth = (int)(safeWidth * 0.33);
-        leftWidth = Math.Max(20, leftWidth);
-        int rightWidth = safeWidth - leftWidth - 7; // leaves 7 chars for: border (1) + space (1) + border (1) + space (1) + border (1) + spaces (2)
-        rightWidth = Math.Max(30, rightWidth);
+        var viewport = TuiViewport.Calculate(rawWidth, rawHeight);
+        int leftWidth = viewport.LeftWidth;
+        int rightWidth = viewport.RightWidth;
+        int contentHeight = viewport.ContentHeight;
 
         // Header Border and Line Layouts (exactly safeWidth long!)
         string title = " 🖥️  Gitic Interactive TUI Explorer ";
         string perspectiveTitle = $"Perspective: [{_perspective}] {GetPerspectiveName()}";
-        string breadcrumbs = GetBreadcrumbs(safeWidth - 4);
+        string breadcrumbs = GetBreadcrumbs(viewport.SafeWidth - 4);
 
         string topBorder = "┌" + new string('─', leftWidth + 2) + "┬" + new string('─', rightWidth + 2) + "┐";
         string midBorder1 = "├" + new string('─', leftWidth + 2) + "┼" + new string('─', rightWidth + 2) + "┤";
@@ -106,22 +100,12 @@ public class TuiExplorer
         Console.WriteLine($"\x1b[38;2;108;112;147m{midBorder2}\x1b[0m");
 
         // List & Detail Panel Setup
-        int contentHeight = height - 8; // Adjust for header and footer rows
         var children = _current.Node.Children;
         
-        // Ensure index in bounds
-        if (_current.SelectedIndex < 0) _current.SelectedIndex = 0;
-        if (children.Count > 0 && _current.SelectedIndex >= children.Count) _current.SelectedIndex = children.Count - 1;
-
-        // Manage scrolling
-        if (_current.SelectedIndex < _current.ScrollOffset)
-        {
-            _current.ScrollOffset = _current.SelectedIndex;
-        }
-        else if (children.Count > 0 && _current.SelectedIndex >= _current.ScrollOffset + contentHeight)
-        {
-            _current.ScrollOffset = _current.SelectedIndex - contentHeight + 1;
-        }
+        // Manage scrolling and boundary logic using TuiScrollManager
+        var (clampedIndex, newScrollOffset) = TuiScrollManager.AdjustScroll(_current.SelectedIndex, _current.ScrollOffset, children.Count, contentHeight);
+        _current.SelectedIndex = clampedIndex;
+        _current.ScrollOffset = newScrollOffset;
 
         TuiNode? selectedNode = children.Count > 0 ? children[_current.SelectedIndex] : null;
         var activePerspective = _perspectives.TryGetValue(_perspective, out var p) ? p : _perspectives[1];

@@ -100,4 +100,44 @@ public class TuiExplorerTests
         Assert.Equal(120, cli.MinWidth);
         Assert.Equal(120, cli.MaxWidth);
     }
+
+    [Fact]
+    public void TuiViewport_Calculate_AppliesSaneBounds()
+    {
+        // Test standard bounds
+        var normal = TuiViewport.Calculate(80, 24);
+        Assert.Equal(80, normal.Width);
+        Assert.Equal(23, normal.Height); // Height - 1
+        Assert.Equal(78, normal.SafeWidth);
+        Assert.Equal(15, normal.ContentHeight); // Height - 8 = 23 - 8 = 15
+
+        // Test minimum bounds
+        var tooSmall = TuiViewport.Calculate(40, 10);
+        Assert.Equal(70, tooSmall.Width); // clamped to 70
+        Assert.Equal(15, tooSmall.Height); // clamped to 15
+    }
+
+    [Fact]
+    public void TuiScrollManager_AdjustScroll_ClampsAndScrollsCorrectly()
+    {
+        // 0 items
+        var (idx0, scroll0) = TuiScrollManager.AdjustScroll(5, 2, 0, 10);
+        Assert.Equal(0, idx0);
+        Assert.Equal(0, scroll0);
+
+        // Within content height, no scrolling needed
+        var (idx1, scroll1) = TuiScrollManager.AdjustScroll(3, 0, 20, 10);
+        Assert.Equal(3, idx1);
+        Assert.Equal(0, scroll1);
+
+        // Clamping selected index to bounds
+        var (idx2, scroll2) = TuiScrollManager.AdjustScroll(25, 0, 20, 10);
+        Assert.Equal(19, idx2); // Clamped to itemCount - 1
+        Assert.Equal(10, scroll2); // ScrollOffset adjusts to show index 19 (19 - 10 + 1 = 10)
+
+        // Scrolling up
+        var (idx3, scroll3) = TuiScrollManager.AdjustScroll(2, 5, 20, 10);
+        Assert.Equal(2, idx3);
+        Assert.Equal(2, scroll3); // ScrollOffset goes to selected index when scrolling up
+    }
 }
