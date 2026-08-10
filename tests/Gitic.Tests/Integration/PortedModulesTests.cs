@@ -666,7 +666,7 @@ __GITIC_NUMSTAT__
         [Fact]
         public void TestMetricProcessors()
         {
-            var service = new MetricProcessorService();
+            var service = new MetricsEngine();
             var accums = new List<ContributorAccumulator>
             {
                 new()
@@ -724,13 +724,13 @@ __GITIC_NUMSTAT__
         [Fact]
         public void TestTemporalCouplingEngine()
         {
-            var engine = new TemporalCouplingEngine(10);
+            var engine = new MetricsEngine();
 
             var result = engine.CalculateTemporalCoupling(new List<CommitFileSet> {
                 new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts" } },
                 new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts" } },
                 new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts" } }
-            });
+            }, new TemporalCouplingConfig { MaxCommitFileCount = 10 });
             Assert.Single(result.Couplings);
             Assert.Equal("fileA.ts", result.Couplings[0].FileA);
             Assert.Equal("fileB.ts", result.Couplings[0].FileB);
@@ -743,14 +743,14 @@ __GITIC_NUMSTAT__
         [Fact]
         public void TestTemporalCouplingEngine_FiltersAndOversized()
         {
-            var engine = new TemporalCouplingEngine(2);
+            var engine = new MetricsEngine();
 
             // too few shared commits, plus an oversized commit in a single calculation
             var result = engine.CalculateTemporalCoupling(new List<CommitFileSet> {
                 new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts" } },
                 new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts" } },
                 new CommitFileSet { Files = new List<string> { "fileA.ts", "fileB.ts", "fileC.ts" } }
-            });
+            }, new TemporalCouplingConfig { MaxCommitFileCount = 2 });
             Assert.Empty(result.Couplings);
             Assert.Equal(1, result.OversizedCommitCount);
             Assert.Equal(3, result.MaxObservedFiles);
@@ -760,7 +760,7 @@ __GITIC_NUMSTAT__
         [Fact]
         public void TestLeadTimeEngine()
         {
-            var engine = new LeadTimeEngine();
+            var engine = new MetricsEngine();
             var alice = new GitIdentity { Name = "Alice", Email = "alice@example.com" };
 
             var commits = new List<GitCommitRecord>
@@ -2480,7 +2480,7 @@ __GITIC_NUMSTAT__
                 public bool CalculateDebtVolatilityCalled { get; set; }
                 public bool CalculateCoordinationOverlapCalled { get; set; }
 
-                public double CalculateRecencyScore(long timestamp)
+                public double CalculateRecencyScore(long timestamp, DateTimeOffset? referenceDate = null)
                 {
                     CalculateRecencyScoreCalled = true;
                     return 0.5;

@@ -64,10 +64,38 @@ public class CuratedReportsEngine : ICuratedReportsEngine
             }
         }
 
+        DateTimeOffset referenceDate = DateTimeOffset.UtcNow;
+        if (commits != null && commits.Count > 0)
+        {
+            DateTimeOffset maxDate = DateTimeOffset.MinValue;
+            foreach (var c in commits)
+            {
+                DateTimeOffset commitDate = DateTimeOffset.MinValue;
+                if (!string.IsNullOrEmpty(c.Date) && DateTimeOffset.TryParse(c.Date, out var parsedDt))
+                {
+                    commitDate = parsedDt;
+                }
+                else if (c.Timestamp > 0)
+                {
+                    commitDate = DateTimeOffset.FromUnixTimeMilliseconds(c.Timestamp);
+                }
+
+                if (commitDate > maxDate)
+                {
+                    maxDate = commitDate;
+                }
+            }
+
+            if (maxDate > DateTimeOffset.MinValue)
+            {
+                referenceDate = maxDate;
+            }
+        }
+
         CalculateWorkClassification(commits, files, reports.WorkClassification);
         CalculateOnboarding(commits, reports.Onboarding);
         CalculateReviewCollaboration(commits, reports.ReviewCollaboration);
-        CalculateCodeRot(files, reports.CodeRot, thresholdDays);
+        CalculateCodeRot(files, reports.CodeRot, thresholdDays, referenceDate);
         CalculateAiCodeStrain(commits, reports.AiCodeStrain);
 
         return reports;
@@ -76,7 +104,7 @@ public class CuratedReportsEngine : ICuratedReportsEngine
     private void CalculateWorkClassification(List<GitCommitRecord> commits, List<FileMetric> files, WorkClassificationMetrics report)
     {
         var fileLookup = files.ToDictionary(
-            f => NormalizePath(f.Path),
+            f => PathUtils.NormalizeGitPath(f.Path),
             f => f,
             StringComparer.OrdinalIgnoreCase
         );
@@ -106,7 +134,7 @@ public class CuratedReportsEngine : ICuratedReportsEngine
             // Also associate this commit classification with each of the touched files
             foreach (var gitFile in c.Files)
             {
-                string normPath = NormalizePath(gitFile.Path);
+                string normPath = PathUtils.NormalizeGitPath(gitFile.Path);
                 if (fileLookup.TryGetValue(normPath, out var fileMetric))
                 {
                     if (fileMetric.WorkClassification == null)
@@ -134,12 +162,6 @@ public class CuratedReportsEngine : ICuratedReportsEngine
                 }
             }
         }
-    }
-
-    private string NormalizePath(string path)
-    {
-        if (string.IsNullOrEmpty(path)) return string.Empty;
-        return path.Replace('\\', '/').Trim('/');
     }
 
     private void CalculateOnboarding(List<GitCommitRecord> commits, List<DeveloperOnboardingMetric> onboarding)
@@ -204,10 +226,10 @@ public class CuratedReportsEngine : ICuratedReportsEngine
         report.ReviewerSilos = silos;
     }
 
-    private void CalculateCodeRot(List<FileMetric> files, CodeRotMetric report, int thresholdDays)
+    private void CalculateCodeRot(List<FileMetric> files, CodeRotMetric report, int thresholdDays, DateTimeOffset referenceDate)
     {
         report.ThresholdDays = thresholdDays;
-        long thresholdMs = DateTimeOffset.UtcNow.AddDays(-thresholdDays).ToUnixTimeMilliseconds();
+        long thresholdMs = referenceDate.AddDays(-thresholdDays).ToUnixTimeMilliseconds();
 
         foreach (var f in files)
         {

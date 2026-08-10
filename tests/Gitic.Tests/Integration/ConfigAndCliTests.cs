@@ -712,7 +712,7 @@ bin/
             };
 
             // Test 1: Sorting and Limit
-            var service = new MetricProcessorService();
+            var service = new MetricsEngine();
             service.SortMetrics(result, AnalysisCommand.Hotspots);
 
             // Churn sort should put FileB first, then FileA, then FileC
@@ -758,7 +758,7 @@ bin/
             };
 
             // Test Areas custom sort
-            var service = new MetricProcessorService();
+            var service = new MetricsEngine();
             service.SortMetrics(result, AnalysisCommand.Areas);
 
             // Heat sort should put AreaB first
@@ -805,7 +805,7 @@ bin/
             };
 
             // 1. Test Temporal Coupling Sorting & Limit
-            var service = new MetricProcessorService();
+            var service = new MetricsEngine();
             service.SortMetrics(result, AnalysisCommand.TemporalCoupling);
 
             // Coupling Degree sort should put src/User.cs & src/Auth.cs first (0.9 > 0.8)

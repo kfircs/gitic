@@ -101,7 +101,7 @@ namespace Gitic.Tests
 
         private class MockScoringUtility : IScoringUtilityService
         {
-            public double CalculateRecencyScore(long timestamp) => 0.9;
+            public double CalculateRecencyScore(long timestamp, DateTimeOffset? referenceDate = null) => 0.9;
             public double CalculateDebtVolatility(ItemAccumulator item, double maxChurn, double maxNetLines) => 42.0;
             public double CalculateCoordinationOverlap(List<ContributorShare> contributors, int itemTouches) => 88.0;
         }

@@ -26,20 +26,20 @@ public class RepositoryAnalyzer : IRepositoryAnalyzer
 {
     private readonly IConfigurationEngine _configEngine;
     private readonly IAnalysisPipeline _pipeline;
-    private readonly IMetricProcessorService _metricProcessorService;
+    private readonly IMetricsEngine _metricsEngine;
     private readonly IResultAnonymizer _anonymizer;
     private readonly ICuratedReportsEngine _curatedReportsEngine;
 
     public RepositoryAnalyzer(
         IConfigurationEngine? configEngine = null,
         IAnalysisPipeline? pipeline = null,
-        IMetricProcessorService? metricProcessorService = null,
+        IMetricsEngine? metricsEngine = null,
         IResultAnonymizer? anonymizer = null,
         ICuratedReportsEngine? curatedReportsEngine = null)
     {
         _configEngine = configEngine ?? new ConfigurationEngine();
         _pipeline = pipeline ?? new AnalysisPipeline();
-        _metricProcessorService = metricProcessorService ?? new MetricProcessorService();
+        _metricsEngine = metricsEngine ?? new MetricsEngine();
         _anonymizer = anonymizer ?? new ResultAnonymizer();
         _curatedReportsEngine = curatedReportsEngine ?? new CuratedReportsEngine();
     }
@@ -80,7 +80,7 @@ public class RepositoryAnalyzer : IRepositoryAnalyzer
 
         var result = CreateAnalysisResult(input, commits, settings, config, pipelineResult, fileMetrics, _curatedReportsEngine);
 
-        _metricProcessorService.SortMetrics(result, input.Command);
+        _metricsEngine.SortMetrics(result, input.Command);
 
         if (settings.Anonymize)
         {

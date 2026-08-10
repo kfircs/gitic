@@ -42,9 +42,7 @@ public class AnalysisPipelineResult
 
 public class PipelineDependencies
 {
-    public ITemporalCouplingEngine? TemporalCouplingEngine { get; set; }
-    public ILeadTimeEngine? LeadTimeEngine { get; set; }
-    public IMetricProcessorService? MetricProcessorService { get; set; }
+    public IMetricsEngine? MetricsEngine { get; set; }
     public IFamiliarityScoringEngine? ScoringEngine { get; set; }
     public IWarningCollector? WarningCollector { get; set; }
     public IIdentityRegistry? IdentityRegistry { get; set; }
@@ -56,9 +54,7 @@ public class PipelineDependencies
 
 public class AnalysisPipeline : IAnalysisPipeline
 {
-    private readonly ITemporalCouplingEngine? _temporalCouplingEngine;
-    private readonly ILeadTimeEngine _leadTimeEngine;
-    private readonly IMetricProcessorService _metricProcessorService;
+    private readonly IMetricsEngine _metricsEngine;
     private readonly IFamiliarityScoringEngine? _scoringEngine;
     private readonly IWarningCollector _warningCollector;
     private readonly IIdentityRegistry? _identityRegistry;
@@ -70,9 +66,7 @@ public class AnalysisPipeline : IAnalysisPipeline
     public AnalysisPipeline(PipelineDependencies? deps = null)
     {
         deps ??= new PipelineDependencies();
-        _temporalCouplingEngine = deps.TemporalCouplingEngine;
-        _leadTimeEngine = deps.LeadTimeEngine ?? new LeadTimeEngine();
-        _metricProcessorService = deps.MetricProcessorService ?? new MetricProcessorService();
+        _metricsEngine = deps.MetricsEngine ?? new MetricsEngine();
         _scoringEngine = deps.ScoringEngine;
         _warningCollector = deps.WarningCollector ?? new WarningCollector();
         _identityRegistry = deps.IdentityRegistry;
@@ -117,21 +111,21 @@ public class AnalysisPipeline : IAnalysisPipeline
         var allIncludedCommits = rawIncludedCommits.Select(files => new CommitFileSet { Files = files }).ToList();
 
         int temporalCouplingLimit = config.Metrics?.TemporalCouplingMaxCommitFileCount ?? 20;
-        ITemporalCouplingEngine actualTemporalCouplingEngine = _temporalCouplingEngine ?? new TemporalCouplingEngine(temporalCouplingLimit);
-        ILeadTimeEngine actualLeadTimeEngine = _leadTimeEngine;
-        IMetricProcessorService actualMetricProcessorService = _metricProcessorService;
+        var actualMetricsEngine = _metricsEngine;
 
-        var activeContributorKeys = actualMetricProcessorService.GetActiveContributorKeys(commits);
+        var activeContributorKeys = actualMetricsEngine.GetActiveContributorKeys(commits);
         IFamiliarityScoringEngine actualScoringEngine = _scoringEngine ?? _scoringEngineFactory(config, activeContributorKeys, settings.Depth);
 
         var rawFileMetrics = actualScoringEngine.ScoreFiles(actualAccumulator.GetFiles().Values.ToList(), settings.Depth);
         var areaMetrics = actualScoringEngine.ScoreAreas(actualAccumulator.GetAreas().Values.ToList());
 
-        var contributorMetrics = actualMetricProcessorService.RenderContributors(actualAccumulator.GetContributors().Values.ToList());
-        var automationMetrics = actualMetricProcessorService.RenderAutomation(actualAccumulator.GetAutomation().Values.ToList());
+        var contributorMetrics = actualMetricsEngine.RenderContributors(actualAccumulator.GetContributors().Values.ToList());
+        var automationMetrics = actualMetricsEngine.RenderAutomation(actualAccumulator.GetAutomation().Values.ToList());
 
-        var couplingResult = actualTemporalCouplingEngine.CalculateTemporalCoupling(allIncludedCommits);
-        var leadTimes = actualLeadTimeEngine.CalculateLeadTimes(commits);
+        var couplingConfig = new TemporalCouplingConfig { MaxCommitFileCount = temporalCouplingLimit };
+        var couplingResult = actualMetricsEngine.CalculateTemporalCoupling(allIncludedCommits, couplingConfig);
+        var leadTimeConfig = new LeadTimeConfig();
+        var leadTimes = actualMetricsEngine.CalculateLeadTimes(commits, leadTimeConfig);
 
         IWarningCollector actualWarningCollector = _warningCollector;
         var warningContext = new WarningContext

@@ -88,7 +88,7 @@ public class KnowledgeSiloCalculator : IKnowledgeSiloCalculator
 
 public interface IScoringUtilityService
 {
-    double CalculateRecencyScore(long timestamp);
+    double CalculateRecencyScore(long timestamp, DateTimeOffset? referenceDate = null);
     double CalculateDebtVolatility(ItemAccumulator item, double maxChurn, double maxNetLines);
     double CalculateCoordinationOverlap(List<ContributorShare> contributors, int itemTouches);
 }
@@ -104,13 +104,13 @@ public class ScoringUtilityService : IScoringUtilityService
     private const int CoordinationMaxTouches = 10;
     private const double CoordinationMultiplier = 2.0;
 
-    public double CalculateRecencyScore(long timestamp)
+    public double CalculateRecencyScore(long timestamp, DateTimeOffset? referenceDate = null)
     {
         if (timestamp == 0)
         {
             return 0;
         }
-        double nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        double nowMs = (referenceDate ?? DateTimeOffset.UtcNow).ToUnixTimeMilliseconds();
         double ageDays = (nowMs - timestamp) / MsPerDay;
         return Math.Exp(-ageDays * (Math.Log(2.0) / RecencyDecayHalfLifeDays));
     }
@@ -186,9 +186,9 @@ public static class ScoringUtils
 
     public static double RoundActivity(double value) => RoundRatio(value);
 
-    public static double CalculateRecencyScore(long timestamp)
+    public static double CalculateRecencyScore(long timestamp, DateTimeOffset? referenceDate = null)
     {
-        return _defaultService.CalculateRecencyScore(timestamp);
+        return _defaultService.CalculateRecencyScore(timestamp, referenceDate);
     }
 
     public static double CalculateDebtVolatility(
@@ -278,6 +278,7 @@ public class FamiliarityScoringEngine : IFamiliarityScoringEngine
         public double MaxChurn { get; set; }
         public double MaxRecency { get; set; }
         public double MaxNetLines { get; set; }
+        public DateTimeOffset ReferenceDate { get; set; }
 
         public static ScoringContext Create(List<ItemAccumulator> items, IScoringUtilityService scoringUtilityService)
         {
@@ -287,7 +288,12 @@ public class FamiliarityScoringEngine : IFamiliarityScoringEngine
             double maxChurn = items.Count > 0 ? items.Max(item => item.Churn) : 1.0;
             if (maxChurn < 1.0) maxChurn = 1.0;
 
-            double maxRecency = items.Count > 0 ? items.Max(item => scoringUtilityService.CalculateRecencyScore(item.LastTouched)) : 0.001;
+            long maxLastTouched = items.Count > 0 ? items.Max(item => item.LastTouched) : 0;
+            DateTimeOffset referenceDate = maxLastTouched > 0
+                ? DateTimeOffset.FromUnixTimeMilliseconds(maxLastTouched)
+                : DateTimeOffset.UtcNow;
+
+            double maxRecency = items.Count > 0 ? items.Max(item => scoringUtilityService.CalculateRecencyScore(item.LastTouched, referenceDate)) : 0.001;
             if (maxRecency < 0.001) maxRecency = 0.001;
 
             double maxNetLines = items.Count > 0 ? items.Max(item => Math.Max(0.0, item.Added - item.Deleted)) : 1.0;
@@ -298,7 +304,8 @@ public class FamiliarityScoringEngine : IFamiliarityScoringEngine
                 MaxTouches = maxTouches,
                 MaxChurn = maxChurn,
                 MaxRecency = maxRecency,
-                MaxNetLines = maxNetLines
+                MaxNetLines = maxNetLines,
+                ReferenceDate = referenceDate
             };
         }
     }
@@ -335,7 +342,7 @@ public class FamiliarityScoringEngine : IFamiliarityScoringEngine
         {
             Touches = ScoringUtils.RoundRatio(item.Touches / context.MaxTouches),
             Churn = ScoringUtils.RoundRatio(item.Churn / context.MaxChurn),
-            Recency = ScoringUtils.RoundRatio(_scoringUtilityService.CalculateRecencyScore(item.LastTouched) / context.MaxRecency),
+            Recency = ScoringUtils.RoundRatio(_scoringUtilityService.CalculateRecencyScore(item.LastTouched, context.ReferenceDate) / context.MaxRecency),
             ContributorSpread = item.Touches > 0 ? ScoringUtils.RoundRatio((double)item.ContributorCredits.Count / item.Touches) : 0.0,
             LowFamiliarityConcentration = lowFamiliarityConcentration
         };

@@ -3,6 +3,34 @@ using System.Collections.Generic;
 
 namespace Gitic;
 
+public class LeadTimeConfig
+{
+    public int MainAncestorsMaxDepth { get; set; } = 150;
+    public int BranchCommitsMaxDepth { get; set; } = 100;
+    public double MinHours { get; set; } = 0.1;
+}
+
+public interface IMergeLeadTimeCalculator
+{
+    MergeLeadTimeRecord? CalculateMergeLeadTime(GitCommitRecord mergeCommit, Dictionary<string, GitCommitRecord> commitMap);
+}
+
+public class TemporalCouplingResult
+{
+    public List<TemporalCoupling> Couplings { get; set; } = new();
+    public int OversizedCommitCount { get; set; }
+    public int MaxObservedFiles { get; set; }
+    public int Limit { get; set; }
+}
+
+public class TemporalCouplingConfig
+{
+    public int MinSharedCommits { get; set; } = 3;
+    public double MinCouplingDegree { get; set; } = 0.25;
+    public int MaxResults { get; set; } = 15;
+    public int MaxCommitFileCount { get; set; } = 20;
+}
+
 public class MetricsCalculationRequest
 {
     public List<GitCommitRecord> Commits { get; set; } = new();
