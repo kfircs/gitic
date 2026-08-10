@@ -182,21 +182,7 @@ public class ConsoleTableBuilder : IConsoleTableBuilder
     public string Render()
     {
         // 1. Determine console width
-        int consoleWidth = _consoleWidth ?? 80;
-        if (_consoleWidth == null)
-        {
-            try
-            {
-                if (!Console.IsOutputRedirected)
-                {
-                    consoleWidth = Console.WindowWidth;
-                }
-            }
-            catch { }
-
-            if (consoleWidth < 40) consoleWidth = 40;
-            if (consoleWidth > 200) consoleWidth = 200;
-        }
+        int consoleWidth = ConsoleUtils.GetBoundedConsoleWidth(_consoleWidth);
 
         // 2. Determine visible columns
         List<ColumnDef> visibleColDefs = [];

@@ -212,19 +212,7 @@ public class CliTableRenderer : IReportRenderer
     /// </summary>
     internal int GetConsoleWidth()
     {
-        int consoleWidth = 80;
-        try
-        {
-            if (!Console.IsOutputRedirected)
-            {
-                consoleWidth = Console.WindowWidth;
-            }
-        }
-        catch { }
-
-        if (consoleWidth < 40) consoleWidth = 40;
-        if (consoleWidth > 200) consoleWidth = 200;
-        return consoleWidth;
+        return ConsoleUtils.GetBoundedConsoleWidth(null);
     }
 
     /// <summary>
