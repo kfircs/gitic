@@ -9,12 +9,15 @@ obj/
 *.user
 *.userosscache
 *.sln.docstates
+.idea/
+*.sln.iml
 
 # OS generated files
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 .DS_Store
+._*
 
 # Output
 nupkg/
