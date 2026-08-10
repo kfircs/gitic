@@ -30,11 +30,7 @@ public class ReportCommand : BaseAnalysisCommand
             if (Parsed.HtmlPath != null)
             {
                 var htmlRenderer = new HtmlRenderer();
-                string targetPath = Parsed.HtmlPath;
-                if (Directory.Exists(targetPath))
-                {
-                    targetPath = Path.Combine(targetPath, "report.html");
-                }
+                string targetPath = ResolveTargetPath(Parsed.HtmlPath, "report.html");
                 
                 string dir = Path.GetDirectoryName(targetPath) ?? ".";
                 string tempPath = Path.Combine(dir, $".report.html.{Path.GetRandomFileName()}.tmp");
@@ -50,11 +46,7 @@ public class ReportCommand : BaseAnalysisCommand
             {
                 var mdRenderer = new MarkdownRenderer();
                 string mdContent = await mdRenderer.RenderAsync(result, cancellationToken);
-                string targetPath = Parsed.MdPath;
-                if (Directory.Exists(targetPath))
-                {
-                    targetPath = Path.Combine(targetPath, "report.md");
-                }
+                string targetPath = ResolveTargetPath(Parsed.MdPath, "report.md");
                 
                 string dir = Path.GetDirectoryName(targetPath) ?? ".";
                 string tempPath = Path.Combine(dir, $".report.md.{Path.GetRandomFileName()}.tmp");
@@ -70,17 +62,16 @@ public class ReportCommand : BaseAnalysisCommand
                 string svgContent = await svgSummaryRenderer.RenderAsync(result, cancellationToken);
                 string complexitySvgContent = await svgComplexityRenderer.RenderAsync(result, cancellationToken);
                 
-                string targetPath = Parsed.SvgPath;
+                string targetPath = ResolveTargetPath(Parsed.SvgPath, "report.svg");
                 string targetComplexityPath = Parsed.SvgPath;
-                if (Directory.Exists(targetPath))
+                if (Directory.Exists(Parsed.SvgPath))
                 {
-                    targetPath = Path.Combine(targetPath, "report.svg");
                     targetComplexityPath = Path.Combine(targetComplexityPath, "report-complexity.svg");
                 }
                 else
                 {
-                    string dir = Path.GetDirectoryName(targetPath) ?? ".";
-                    string name = Path.GetFileNameWithoutExtension(targetPath);
+                    string dir = Path.GetDirectoryName(Parsed.SvgPath) ?? ".";
+                    string name = Path.GetFileNameWithoutExtension(Parsed.SvgPath);
                     targetComplexityPath = Path.Combine(dir, $"{name}-complexity.svg");
                 }
                 
@@ -125,5 +116,14 @@ public class ReportCommand : BaseAnalysisCommand
         string reportOutput = outputSb.ToString();
         reporter?.Write(reportOutput);
         return Cli.CliSuccess(reportOutput);
+    }
+
+    private static string ResolveTargetPath(string inputPath, string defaultFileName)
+    {
+        if (Directory.Exists(inputPath))
+        {
+            return Path.Combine(inputPath, defaultFileName);
+        }
+        return inputPath;
     }
 }
