@@ -16,20 +16,10 @@ public class MarkdownRenderer : IReportRenderer
     {
         cancellationToken.ThrowIfCancellationRequested();
         StringBuilder sb = new();
-        
-        string repoName = Path.GetFileName(result.Analysis.RepoRoot.TrimEnd(Path.DirectorySeparatorChar));
-        if (string.IsNullOrEmpty(repoName)) repoName = "Repository";
 
+        string repoName = ReportUtils.GetRepositoryName(result.Analysis.RepoRoot);
         sb.AppendLine($"# 📊 Gitic Analysis Report: {repoName}");
-        string genDateStr;
-        if (DateTimeOffset.TryParse(result.Analysis.GeneratedAt, out var parsedGenAt))
-        {
-            genDateStr = parsedGenAt.ToString("yyyy-MM-dd HH:mm:ss") + " UTC";
-        }
-        else
-        {
-            genDateStr = result.Analysis.GeneratedAt;
-        }
+        string genDateStr = ReportUtils.FormatGeneratedAt(result.Analysis.GeneratedAt);
         sb.AppendLine($"Generated on: {genDateStr}\n");
 
         sb.AppendLine("## 📈 Repository Overview");
