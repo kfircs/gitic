@@ -21,14 +21,16 @@ namespace Gitic.Tests
             {
                 return new List<GitCommitRecord>
                 {
-                    new GitCommitRecord(
-                        "mock_hash",
-                        new AuthorRecord("Mock Author", "mock@example.com", "2026-06-01T12:00:00Z"),
-                        "Mock message",
-                        new List<string>(),
-                        new List<FileMetric>(),
-                        new List<AuthorRecord>()
-                    )
+                    new GitCommitRecord
+                    {
+                        Hash = "mock_hash",
+                        Author = new GitIdentity { Name = "Mock Author", Email = "mock@example.com" },
+                        Message = "Mock message",
+                        Date = "2026-06-01T12:00:00Z",
+                        Parents = new List<string>(),
+                        CoAuthors = new List<GitIdentity>(),
+                        Files = new List<GitFileChange>()
+                    }
                 };
             }
         }

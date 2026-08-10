@@ -119,17 +119,27 @@ public class PathClassifier : IPathClassifier
         return rules;
     }
 
-    public static List<ExcludeRule> LoadGitignoreRules(string repoRoot)
+    public static List<ExcludeRule> LoadGitignoreRules(string repoRoot, IFileSystem? fileSystem = null)
     {
+        fileSystem ??= new PhysicalFileSystem();
         try
         {
             string gitignorePath = Path.Combine(repoRoot, ".gitignore");
-            if (!File.Exists(gitignorePath))
+            if (!fileSystem.FileExists(gitignorePath))
             {
                 return [];
             }
 
-            var lines = File.ReadAllLines(gitignorePath);
+            var lines = new List<string>();
+            using (var stream = fileSystem.OpenRead(gitignorePath))
+            using (var reader = new StreamReader(stream))
+            {
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    lines.Add(line);
+                }
+            }
             return ParseGitignoreLines(lines);
         }
         catch
