@@ -388,39 +388,10 @@ public class ScoringValidator
 
             ConfigValidator.CheckUnknownKeys(attentionRecord, ConfigValidator.AttentionWeightKeys, "scoring.attention", source, errors);
 
-            double? churn = null;
-            double? recency = null;
-            double? contributorSpread = null;
-            double? lowFamiliarityConcentration = null;
-
-            if (attentionRecord.TryGetValue("churn", out var churnVal))
-            {
-                if (ValidateWeightObject(churnVal, "churn", source, errors))
-                {
-                    churn = ConfigUtils.ConvertToDouble(churnVal);
-                }
-            }
-            if (attentionRecord.TryGetValue("recency", out var recencyVal))
-            {
-                if (ValidateWeightObject(recencyVal, "recency", source, errors))
-                {
-                    recency = ConfigUtils.ConvertToDouble(recencyVal);
-                }
-            }
-            if (attentionRecord.TryGetValue("contributor_spread", out var csVal))
-            {
-                if (ValidateWeightObject(csVal, "contributor_spread", source, errors))
-                {
-                    contributorSpread = ConfigUtils.ConvertToDouble(csVal);
-                }
-            }
-            if (attentionRecord.TryGetValue("low_familiarity_concentration", out var lfcVal))
-            {
-                if (ValidateWeightObject(lfcVal, "low_familiarity_concentration", source, errors))
-                {
-                    lowFamiliarityConcentration = ConfigUtils.ConvertToDouble(lfcVal);
-                }
-            }
+            double? churn = ExtractAttentionWeight(attentionRecord, "churn", source, errors);
+            double? recency = ExtractAttentionWeight(attentionRecord, "recency", source, errors);
+            double? contributorSpread = ExtractAttentionWeight(attentionRecord, "contributor_spread", source, errors);
+            double? lowFamiliarityConcentration = ExtractAttentionWeight(attentionRecord, "low_familiarity_concentration", source, errors);
 
             var attention = new AttentionWeights
             {
@@ -486,6 +457,18 @@ public class ScoringValidator
         }
 
         return true;
+    }
+
+    private static double? ExtractAttentionWeight(Dictionary<string, object?> attentionRecord, string key, string source, List<string> errors)
+    {
+        if (attentionRecord.TryGetValue(key, out var val))
+        {
+            if (ValidateWeightObject(val, key, source, errors))
+            {
+                return ConfigUtils.ConvertToDouble(val);
+            }
+        }
+        return null;
     }
 
     private static bool ValidateWeightObject(
