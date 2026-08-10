@@ -61,11 +61,74 @@ public class CliReportFormatter
     }
 }
 
+public interface ITableRenderStrategy
+{
+    string Render(CliTableRenderer renderer, AnalysisResult result);
+}
+
+public class ContributorTableStrategy : ITableRenderStrategy
+{
+    public string Render(CliTableRenderer renderer, AnalysisResult result)
+    {
+        return TableRenderStrategies.RenderContributorTable(renderer, result);
+    }
+}
+
+public class SingleContributorTableStrategy : ITableRenderStrategy
+{
+    public string Render(CliTableRenderer renderer, AnalysisResult result)
+    {
+        return TableRenderStrategies.RenderSingleContributorTable(renderer, result);
+    }
+}
+
+public class AreaTableStrategy : ITableRenderStrategy
+{
+    public string Render(CliTableRenderer renderer, AnalysisResult result)
+    {
+        return TableRenderStrategies.RenderAreaTable(renderer, result);
+    }
+}
+
+public class TemporalCouplingTableStrategy : ITableRenderStrategy
+{
+    public string Render(CliTableRenderer renderer, AnalysisResult result)
+    {
+        return TableRenderStrategies.RenderTemporalCouplingTable(renderer, result);
+    }
+}
+
+public class LeadTimeTableStrategy : ITableRenderStrategy
+{
+    public string Render(CliTableRenderer renderer, AnalysisResult result)
+    {
+        return TableRenderStrategies.RenderLeadTimeTable(renderer, result);
+    }
+}
+
+public class HotspotTableStrategy : ITableRenderStrategy
+{
+    public string Render(CliTableRenderer renderer, AnalysisResult result)
+    {
+        return TableRenderStrategies.RenderHotspotTable(renderer, result);
+    }
+}
+
 public class CliTableRenderer : IReportRenderer
 {
     private readonly AnalysisCommand _command;
     internal readonly AnalysisSettings _settings;
     internal readonly TerminalFormatter _termFormatter;
+
+    private static readonly Dictionary<AnalysisCommand, ITableRenderStrategy> _strategies = new()
+    {
+        { AnalysisCommand.Contributors, new ContributorTableStrategy() },
+        { AnalysisCommand.Contributor, new SingleContributorTableStrategy() },
+        { AnalysisCommand.Areas, new AreaTableStrategy() },
+        { AnalysisCommand.TemporalCoupling, new TemporalCouplingTableStrategy() },
+        { AnalysisCommand.LeadTime, new LeadTimeTableStrategy() },
+        { AnalysisCommand.Hotspots, new HotspotTableStrategy() }
+    };
 
     public CliTableRenderer(AnalysisCommand command, AnalysisSettings? settings = null)
     {
@@ -83,25 +146,9 @@ public class CliTableRenderer : IReportRenderer
         }
 
         string content = "";
-        if (_command == AnalysisCommand.Contributors)
+        if (_strategies.TryGetValue(_command, out var strategy))
         {
-            content = TableRenderStrategies.RenderContributorTable(this, result);
-        }
-        else if (_command == AnalysisCommand.Contributor)
-        {
-            content = TableRenderStrategies.RenderSingleContributorTable(this, result);
-        }
-        else if (_command == AnalysisCommand.Areas)
-        {
-            content = TableRenderStrategies.RenderAreaTable(this, result);
-        }
-        else if (_command == AnalysisCommand.TemporalCoupling)
-        {
-            content = TableRenderStrategies.RenderTemporalCouplingTable(this, result);
-        }
-        else if (_command == AnalysisCommand.LeadTime)
-        {
-            content = TableRenderStrategies.RenderLeadTimeTable(this, result);
+            content = strategy.Render(this, result);
         }
         else
         {
