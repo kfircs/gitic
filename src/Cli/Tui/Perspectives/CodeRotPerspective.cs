@@ -19,6 +19,15 @@ public class CodeRotPerspective : ITuiPerspective
             return lines;
         }
 
+        DateTime referenceDate = DateTime.UtcNow;
+        if (result.Analysis != null && !string.IsNullOrEmpty(result.Analysis.GeneratedAt))
+        {
+            if (DateTime.TryParse(result.Analysis.GeneratedAt, out var parsed))
+            {
+                referenceDate = parsed;
+            }
+        }
+
         var rot = result.CuratedReports.CodeRot;
         int thresholdDays = rot.ThresholdDays > 0 ? rot.ThresholdDays : 365;
         string thresholdLabel = thresholdDays >= 365 ? "1 year" : $"{thresholdDays} days";
@@ -33,10 +42,10 @@ public class CodeRotPerspective : ITuiPerspective
         lines.Add($"\x1b[1mScope-Specific Analysis:\x1b[0m");
         lines.Add($"  Hovered: \x1b[1;38;2;137;180;250m{node.Name}\x1b[0m");
 
-        int zombieCountInHovered = CountZombiesUnderNode(node, thresholdDays);
+        int zombieCountInHovered = CountZombiesUnderNode(node, thresholdDays, referenceDate);
         lines.Add($"  ├─ Zombie Files in this folder: {zombieCountInHovered:N0}");
 
-        long zombieLinesInHovered = CountZombieLinesUnderNode(node, thresholdDays);
+        long zombieLinesInHovered = CountZombieLinesUnderNode(node, thresholdDays, referenceDate);
         lines.Add($"  └─ Zombie Lines in this folder: {zombieLinesInHovered:N0}");
 
         lines.Add("");
@@ -46,30 +55,30 @@ public class CodeRotPerspective : ITuiPerspective
         return lines;
     }
 
-    private int CountZombiesUnderNode(TuiNode node, int thresholdDays)
+    private int CountZombiesUnderNode(TuiNode node, int thresholdDays, DateTime referenceDate)
     {
         if (!node.IsDirectory)
         {
-            return IsZombieFile(node.FileMetric, thresholdDays) ? 1 : 0;
+            return IsZombieFile(node.FileMetric, thresholdDays, referenceDate) ? 1 : 0;
         }
-        return node.Children.Sum(c => CountZombiesUnderNode(c, thresholdDays));
+        return node.Children.Sum(c => CountZombiesUnderNode(c, thresholdDays, referenceDate));
     }
 
-    private long CountZombieLinesUnderNode(TuiNode node, int thresholdDays)
+    private long CountZombieLinesUnderNode(TuiNode node, int thresholdDays, DateTime referenceDate)
     {
         if (!node.IsDirectory)
         {
-            return IsZombieFile(node.FileMetric, thresholdDays) ? (node.FileMetric?.Lines ?? 0) : 0;
+            return IsZombieFile(node.FileMetric, thresholdDays, referenceDate) ? (node.FileMetric?.Lines ?? 0) : 0;
         }
-        return node.Children.Sum(c => CountZombieLinesUnderNode(c, thresholdDays));
+        return node.Children.Sum(c => CountZombieLinesUnderNode(c, thresholdDays, referenceDate));
     }
 
-    private bool IsZombieFile(FileMetric? f, int thresholdDays)
+    private bool IsZombieFile(FileMetric? f, int thresholdDays, DateTime referenceDate)
     {
         if (f == null || string.IsNullOrEmpty(f.LastTouched)) return false;
         if (DateTime.TryParse(f.LastTouched, out var date))
         {
-            return (DateTime.Now - date).TotalDays > thresholdDays;
+            return (referenceDate - date).TotalDays > thresholdDays;
         }
         return false;
     }

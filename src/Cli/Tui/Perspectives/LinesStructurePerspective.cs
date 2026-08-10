@@ -13,6 +13,16 @@ public class LinesStructurePerspective : ITuiPerspective
     public List<string> GetRightSidebarLines(TuiNode node, int width, AnalysisResult result)
     {
         var lines = new List<string>();
+
+        DateTime referenceDate = DateTime.UtcNow;
+        if (result?.Analysis != null && !string.IsNullOrEmpty(result.Analysis.GeneratedAt))
+        {
+            if (DateTime.TryParse(result.Analysis.GeneratedAt, out var parsed))
+            {
+                referenceDate = parsed;
+            }
+        }
+
         if (node.IsDirectory)
         {
             var minFile = node.FindMinLoCFile();
@@ -94,7 +104,7 @@ public class LinesStructurePerspective : ITuiPerspective
             lines.Add($"\x1b[1m{CatppuccinMocha.Pink}Git Metrics:{CatppuccinMocha.Reset}");
             lines.Add($"  {CatppuccinMocha.Gray}├─{CatppuccinMocha.Text} Cumulative Touches:  {CatppuccinMocha.Green}{metric.Touches:N0}{CatppuccinMocha.Text} times{CatppuccinMocha.Reset}");
             lines.Add($"  {CatppuccinMocha.Gray}├─{CatppuccinMocha.Text} Cumulative Churn:    {CatppuccinMocha.Green}{metric.Churn:N0}{CatppuccinMocha.Text} lines changed{CatppuccinMocha.Reset}");
-            lines.Add($"  {CatppuccinMocha.Gray}└─{CatppuccinMocha.Text} Last Touched:        {CatppuccinMocha.Green}{metric.LastTouched}{CatppuccinMocha.Text} {CatppuccinMocha.Lavender}({GetDaysAgoString(metric.LastTouched)}){CatppuccinMocha.Reset}");
+            lines.Add($"  {CatppuccinMocha.Gray}└─{CatppuccinMocha.Text} Last Touched:        {CatppuccinMocha.Green}{metric.LastTouched}{CatppuccinMocha.Text} {CatppuccinMocha.Lavender}({GetDaysAgoString(metric.LastTouched, referenceDate)}){CatppuccinMocha.Reset}");
             lines.Add("");
             lines.Add($"\x1b[1m{CatppuccinMocha.Pink}Hotspot Risk Profile:{CatppuccinMocha.Reset}");
 
@@ -122,12 +132,12 @@ public class LinesStructurePerspective : ITuiPerspective
         return $"{CatppuccinMocha.Text}  {text}";
     }
 
-    private static string GetDaysAgoString(string lastTouched)
+    private static string GetDaysAgoString(string lastTouched, DateTime referenceDate)
     {
         if (string.IsNullOrEmpty(lastTouched)) return "N/A";
         if (DateTime.TryParse(lastTouched, out var date))
         {
-            int days = (int)(DateTime.Now - date).TotalDays;
+            int days = (int)(referenceDate - date).TotalDays;
             return days <= 0 ? "today" : days == 1 ? "1 day ago" : $"{days} days ago";
         }
         return "N/A";
