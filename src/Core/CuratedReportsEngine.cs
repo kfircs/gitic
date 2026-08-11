@@ -48,50 +48,8 @@ public class CuratedReportsEngine : ICuratedReportsEngine
         commits ??= new List<GitCommitRecord>();
         CuratedReports reports = new();
 
-        int thresholdDays = 365;
-        if (commits.Count > 0)
-        {
-            long minTimestamp = commits.Min(c => c.Timestamp);
-            long maxTimestamp = commits.Max(c => c.Timestamp);
-            double spanDays = (maxTimestamp - minTimestamp) / 86400000.0;
-
-            if (spanDays < 90) // under 3 months
-            {
-                thresholdDays = 14; // 14 days
-            }
-            else if (spanDays < 365) // under 1 year
-            {
-                thresholdDays = 90; // 90 days (approx 3 months)
-            }
-        }
-
-        DateTimeOffset referenceDate = DateTimeOffset.UtcNow;
-        if (commits.Count > 0)
-        {
-            DateTimeOffset maxDate = DateTimeOffset.MinValue;
-            foreach (var c in commits)
-            {
-                DateTimeOffset commitDate = DateTimeOffset.MinValue;
-                if (!string.IsNullOrEmpty(c.Date) && DateTimeOffset.TryParse(c.Date, out var parsedDt))
-                {
-                    commitDate = parsedDt;
-                }
-                else if (c.Timestamp > 0)
-                {
-                    commitDate = DateTimeOffset.FromUnixTimeMilliseconds(c.Timestamp);
-                }
-
-                if (commitDate > maxDate)
-                {
-                    maxDate = commitDate;
-                }
-            }
-
-            if (maxDate > DateTimeOffset.MinValue)
-            {
-                referenceDate = maxDate;
-            }
-        }
+        int thresholdDays = DetermineThresholdDays(commits);
+        DateTimeOffset referenceDate = DetermineReferenceDate(commits);
 
         CalculateWorkClassification(commits, files, reports.WorkClassification);
         CalculateOnboarding(commits, reports.Onboarding);
@@ -100,6 +58,58 @@ public class CuratedReportsEngine : ICuratedReportsEngine
         CalculateAiCodeStrain(commits, reports.AiCodeStrain);
 
         return reports;
+    }
+
+    private int DetermineThresholdDays(List<GitCommitRecord> commits)
+    {
+        if (commits == null || commits.Count == 0)
+        {
+            return 365;
+        }
+
+        long minTimestamp = commits.Min(c => c.Timestamp);
+        long maxTimestamp = commits.Max(c => c.Timestamp);
+        double spanDays = (maxTimestamp - minTimestamp) / 86400000.0;
+
+        if (spanDays < 90) // under 3 months
+        {
+            return 14; // 14 days
+        }
+        if (spanDays < 365) // under 1 year
+        {
+            return 90; // 90 days (approx 3 months)
+        }
+
+        return 365;
+    }
+
+    private DateTimeOffset DetermineReferenceDate(List<GitCommitRecord> commits)
+    {
+        if (commits == null || commits.Count == 0)
+        {
+            return DateTimeOffset.UtcNow;
+        }
+
+        DateTimeOffset maxDate = DateTimeOffset.MinValue;
+        foreach (var c in commits)
+        {
+            DateTimeOffset commitDate = DateTimeOffset.MinValue;
+            if (!string.IsNullOrEmpty(c.Date) && DateTimeOffset.TryParse(c.Date, out var parsedDt))
+            {
+                commitDate = parsedDt;
+            }
+            else if (c.Timestamp > 0)
+            {
+                commitDate = DateTimeOffset.FromUnixTimeMilliseconds(c.Timestamp);
+            }
+
+            if (commitDate > maxDate)
+            {
+                maxDate = commitDate;
+            }
+        }
+
+        return maxDate > DateTimeOffset.MinValue ? maxDate : DateTimeOffset.UtcNow;
     }
 
     private void CalculateWorkClassification(List<GitCommitRecord> commits, List<FileMetric> files, WorkClassificationMetrics report)
