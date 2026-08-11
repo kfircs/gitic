@@ -2,23 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Kfc.Cli.Core;
 
 namespace Gitic;
 
-/// <summary>
-/// Defines console reporting operations for displaying messages, errors, and diagnostics.
-/// </summary>
-public interface IConsoleReporter
+public static class ConsoleReporterExtensions
 {
-    void Write(string message);
-    void WriteLine(string message);
-    void WriteError(string message);
-    void WriteErrorLine(string message);
+    public static void WriteErrorLine(this IConsoleReporter reporter, string message)
+    {
+        reporter.WriteError(message);
+    }
 
     /// <summary>
     /// Writes a collection of diagnostics directly to standard error, automatically handling grouping, sorting, and quiet filtering.
     /// </summary>
-    void WriteDiagnostics(IEnumerable<Diagnostic> diagnostics, bool quiet = false)
+    public static void WriteDiagnostics(this IConsoleReporter reporter, IEnumerable<Diagnostic> diagnostics, bool quiet = false)
     {
         if (diagnostics == null) return;
 
@@ -53,13 +51,13 @@ public interface IConsoleReporter
             }
         }
 
-        WriteError(sb.ToString());
+        reporter.WriteError(sb.ToString());
     }
 
     /// <summary>
     /// Formats and writes an exclusion summary to standard error.
     /// </summary>
-    void WriteExclusions(IEnumerable<ExclusionSummary> exclusions)
+    public static void WriteExclusions(this IConsoleReporter reporter, IEnumerable<ExclusionSummary> exclusions)
     {
         if (exclusions == null) return;
         var list = exclusions.Where(e => e != null).ToList();
@@ -71,29 +69,6 @@ public interface IConsoleReporter
         sb.Append(string.Join(", ", parts));
         sb.AppendLine("\x1b[0m");
 
-        WriteError(sb.ToString());
-    }
-}
-
-public class ConsoleReporter : IConsoleReporter
-{
-    public void Write(string message)
-    {
-        Console.Write(message);
-    }
-
-    public void WriteLine(string message)
-    {
-        Console.WriteLine(message);
-    }
-
-    public void WriteError(string message)
-    {
-        Console.Error.Write(message);
-    }
-
-    public void WriteErrorLine(string message)
-    {
-        Console.Error.WriteLine(message);
+        reporter.WriteError(sb.ToString());
     }
 }

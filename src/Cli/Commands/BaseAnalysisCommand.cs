@@ -5,13 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Kfc.Cli.Core;
 
 namespace Gitic;
 
 /// <summary>
 /// Abstract base command class that orchestrates Git history extraction and repository analysis.
 /// </summary>
-public abstract class BaseAnalysisCommand : ICliCommand
+public abstract class BaseAnalysisCommand : ICommand
 {
     protected readonly ParsedArgs Parsed;
     private readonly IGitClient? _gitClient;
@@ -57,6 +58,11 @@ public abstract class BaseAnalysisCommand : ICliCommand
 
         var analyzer = _analyzer ?? new RepositoryAnalyzer();
         return await analyzer.AnalyzeAsync(input, cancellationToken);
+    }
+
+    public Task<CliResult> ExecuteAsync(IConsoleReporter reporter)
+    {
+        return ExecuteAsync(reporter, CancellationToken.None);
     }
 
     public async Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)

@@ -5,16 +5,22 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Kfc.Cli.Core;
 
 namespace Gitic
 {
-    public class WizardCommand : ICliCommand
+    public class WizardCommand : ICommand
     {
         private readonly ParsedArgs _parsed;
 
         public WizardCommand(ParsedArgs parsed)
         {
             _parsed = parsed;
+        }
+
+        public Task<CliResult> ExecuteAsync(IConsoleReporter reporter)
+        {
+            return ExecuteAsync(reporter, CancellationToken.None);
         }
 
         public async Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)

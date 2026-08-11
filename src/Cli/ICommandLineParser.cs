@@ -1,8 +1,10 @@
+using Kfc.Cli.Core;
+
 namespace Gitic;
 
 public interface ICommandLineParser
 {
     ParsedArgs Parse();
-    ICliCommand ParseToCommand();
+    ICommand ParseToCommand();
 }
 

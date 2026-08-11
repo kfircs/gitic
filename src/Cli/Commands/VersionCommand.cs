@@ -1,10 +1,16 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Kfc.Cli.Core;
 
 namespace Gitic;
 
-public class VersionCommand : ICliCommand
+public class VersionCommand : ICommand
 {
+    public Task<CliResult> ExecuteAsync(IConsoleReporter reporter)
+    {
+        return ExecuteAsync(reporter, CancellationToken.None);
+    }
+
     public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)
     {
         string displayVersion = Cli.GetDisplayVersion();

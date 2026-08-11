@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 using Gitic;
+using Kfc.Cli.Terminal;
 
 namespace Gitic.Tests
 {
@@ -130,6 +131,26 @@ namespace Gitic.Tests
             Assert.Equal("three", lines[3]);
             Assert.Equal("four ", lines[4]);
             Assert.Equal("five ", lines[5]);
+        }
+
+        [Fact]
+        public void TestAnsiUtils_GetVisibleLength()
+        {
+            Assert.Equal(0, AnsiUtils.GetVisibleLength(null));
+            Assert.Equal(0, AnsiUtils.GetVisibleLength(""));
+            Assert.Equal(5, AnsiUtils.GetVisibleLength("Hello"));
+            Assert.Equal(5, AnsiUtils.GetVisibleLength("\x1B[31mError\x1B[0m"));
+            Assert.Equal(12, AnsiUtils.GetVisibleLength("\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m"));
+        }
+
+        [Fact]
+        public void TestAnsiUtils_StripAnsi()
+        {
+            Assert.Equal(string.Empty, AnsiUtils.StripAnsi(null));
+            Assert.Equal(string.Empty, AnsiUtils.StripAnsi(""));
+            Assert.Equal("Hello", AnsiUtils.StripAnsi("Hello"));
+            Assert.Equal("Error", AnsiUtils.StripAnsi("\x1B[31mError\x1B[0m"));
+            Assert.Equal("BoldRedGreen", AnsiUtils.StripAnsi("\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m"));
         }
     }
 }

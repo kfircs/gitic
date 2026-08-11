@@ -5,6 +5,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
+using Kfc.Cli.Core;
+using Kfc.Cli.Terminal;
 
 namespace Gitic.Tests
 {
@@ -1366,9 +1368,10 @@ __GITIC_NUMSTAT__
             public string Stderr { get; set; } = string.Empty;
 
             public void Write(string message) => Stdout += message;
-            public void WriteLine(string message) => Stdout += message + "\n";
+            public void WriteLine(string message = "") => Stdout += message + "\n";
             public void WriteError(string message) => Stderr += message;
             public void WriteErrorLine(string message) => Stderr += message + "\n";
+            public void WriteWarning(string message) => Stdout += "Warning: " + message + "\n";
         }
 
         private class TestStandardCommand : StandardRenderAnalysisCommand

@@ -4,10 +4,9 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading;
+using Kfc.Cli.Core;
 
 namespace Gitic;
-
-public record CliResult(int ExitCode, string Stdout, string Stderr);
 
 public static class Cli
 {
@@ -57,7 +56,7 @@ public static class Cli
         }
     }
 
-    private static (ICliCommand? Command, CliResult? Error) ParseCommand(string[] args, IConsoleReporter? reporter)
+    private static (ICommand? Command, CliResult? Error) ParseCommand(string[] args, IConsoleReporter? reporter)
     {
         ICommandLineParser parser = new CommandLineParser(args);
         try
@@ -71,11 +70,34 @@ public static class Cli
         }
     }
 
-    private static async Task<CliResult> ExecuteCommandAsync(ICliCommand command, IConsoleReporter? reporter, CancellationToken cancellationToken)
+    private static async Task<CliResult> ExecuteCommandAsync(ICommand command, IConsoleReporter? reporter, CancellationToken cancellationToken)
     {
         try
         {
-            return await command.ExecuteAsync(reporter, cancellationToken);
+            if (command is BaseAnalysisCommand analysisCommand)
+            {
+                return await analysisCommand.ExecuteAsync(reporter, cancellationToken);
+            }
+            else if (command is WizardCommand wizardCommand)
+            {
+                return await wizardCommand.ExecuteAsync(reporter, cancellationToken);
+            }
+            else if (command is HelpCommand helpCommand)
+            {
+                return await helpCommand.ExecuteAsync(reporter, cancellationToken);
+            }
+            else if (command is VersionCommand versionCommand)
+            {
+                return await versionCommand.ExecuteAsync(reporter, cancellationToken);
+            }
+            else if (command is ConfigCommand configCommand)
+            {
+                return await configCommand.ExecuteAsync(reporter, cancellationToken);
+            }
+            else
+            {
+                return await command.ExecuteAsync(reporter ?? new Kfc.Cli.Terminal.ConsoleReporter());
+            }
         }
         catch (OperationCanceledException)
         {

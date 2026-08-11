@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
+using Kfc.Cli.Core;
 
 namespace Gitic;
 
@@ -26,7 +27,7 @@ public class CommandLineParser : ICommandLineParser
         _commandFactory = commandFactory ?? new CliCommandFactoryImpl();
     }
 
-    public ICliCommand ParseToCommand()
+    public ICommand ParseToCommand()
     {
         var parsed = Parse();
         return _commandFactory.CreateCommand(parsed);

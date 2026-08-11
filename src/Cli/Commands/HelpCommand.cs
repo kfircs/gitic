@@ -1,10 +1,11 @@
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Kfc.Cli.Core;
 
 namespace Gitic;
 
-public class HelpCommand : ICliCommand
+public class HelpCommand : ICommand
 {
     private const string DefaultVersion = "0.1.0";
     private static readonly string HelpTemplate = 
@@ -55,6 +56,11 @@ Options:
     public HelpCommand(string? generatedHelpText = null)
     {
         _generatedHelpText = generatedHelpText;
+    }
+
+    public Task<CliResult> ExecuteAsync(IConsoleReporter reporter)
+    {
+        return ExecuteAsync(reporter, CancellationToken.None);
     }
 
     public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)

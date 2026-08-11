@@ -1,18 +1,19 @@
 using System;
+using Kfc.Cli.Core;
 
 namespace Gitic;
 
 /// <summary>
-/// Simple routing factory that instantiates the appropriate ICliCommand based on ParsedArgs.
+/// Simple routing factory that instantiates the appropriate ICommand based on ParsedArgs.
 /// </summary>
 public interface ICliCommandFactory
 {
-    ICliCommand CreateCommand(ParsedArgs parsed);
+    ICommand CreateCommand(ParsedArgs parsed);
 }
 
 public class CliCommandFactoryImpl : ICliCommandFactory
 {
-    public ICliCommand CreateCommand(ParsedArgs parsed)
+    public ICommand CreateCommand(ParsedArgs parsed)
     {
         if (parsed == null) throw new ArgumentNullException(nameof(parsed));
 

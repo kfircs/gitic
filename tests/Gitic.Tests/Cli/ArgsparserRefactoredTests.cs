@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
+using Kfc.Cli.Core;
 
 namespace Gitic.Tests
 {
@@ -56,9 +57,10 @@ namespace Gitic.Tests
             public string Stderr { get; set; } = string.Empty;
 
             public void Write(string message) => Stdout += message;
-            public void WriteLine(string message) => Stdout += message + "\n";
+            public void WriteLine(string message = "") => Stdout += message + "\n";
             public void WriteError(string message) => Stderr += message;
             public void WriteErrorLine(string message) => Stderr += message + "\n";
+            public void WriteWarning(string message) => Stdout += "Warning: " + message + "\n";
         }
 
         [Fact]

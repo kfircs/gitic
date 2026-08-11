@@ -24,4 +24,9 @@
     <PackageReference Include="System.CommandLine" Version="3.0.0-preview.6.26359.118" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../../clic/src/Kfc.Cli.Core/Kfc.Cli.Core.csproj" />
+    <ProjectReference Include="../../clic/src/Kfc.Cli.Terminal/Kfc.Cli.Terminal.csproj" />
+  </ItemGroup>
+
 </Project>

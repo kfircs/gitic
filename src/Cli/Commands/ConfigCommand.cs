@@ -1,9 +1,10 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Kfc.Cli.Core;
 
 namespace Gitic;
 
-public class ConfigCommand : ICliCommand
+public class ConfigCommand : ICommand
 {
     private readonly ParsedArgs _parsed;
 
@@ -15,6 +16,11 @@ public class ConfigCommand : ICliCommand
     public ConfigCommand(ParsedArgs parsed)
     {
         _parsed = parsed;
+    }
+
+    public Task<CliResult> ExecuteAsync(IConsoleReporter reporter)
+    {
+        return ExecuteAsync(reporter, CancellationToken.None);
     }
 
     public Task<CliResult> ExecuteAsync(IConsoleReporter? reporter, CancellationToken cancellationToken = default)

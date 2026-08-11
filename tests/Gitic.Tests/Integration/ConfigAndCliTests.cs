@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Xunit;
+using Kfc.Cli.Core;
+using Kfc.Cli.Terminal;
 
 namespace Gitic.Tests
 {
@@ -453,9 +455,10 @@ bin/
             public List<string> ErrorMessages { get; } = new();
 
             public void Write(string message) => Messages.Add(message);
-            public void WriteLine(string message) => Messages.Add(message + "\n");
+            public void WriteLine(string message = "") => Messages.Add(message + "\n");
             public void WriteError(string message) => ErrorMessages.Add(message);
             public void WriteErrorLine(string message) => ErrorMessages.Add(message + "\n");
+            public void WriteWarning(string message) => Messages.Add("Warning: " + message + "\n");
         }
 
         [Fact]
@@ -485,7 +488,7 @@ bin/
                 reporter.WriteErrorLine(" log");
 
                 Assert.Equal("hello world" + Environment.NewLine, swOut.ToString());
-                Assert.Equal("error log" + Environment.NewLine, swErr.ToString());
+                Assert.Equal("error" + Environment.NewLine + " log" + Environment.NewLine, swErr.ToString());
             }
             finally
             {

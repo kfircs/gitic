@@ -1,7 +1,8 @@
 using System;
 using Gitic;
+using Kfc.Cli.Terminal;
 
-IConsoleReporter reporter = new ConsoleReporter();
+Kfc.Cli.Core.IConsoleReporter reporter = new ConsoleReporter();
 var result = await Cli.RunCliAsync(args, reporter);
 
 Environment.Exit(result.ExitCode);
