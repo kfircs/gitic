@@ -1,3 +1,5 @@
+using Kfc.Cli.Tui;
+using Kfc.Cli.Tui;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,7 +31,7 @@ public class TuiExplorerTests
         Assert.True(root.IsDirectory);
         Assert.Equal(1, root.FileCount);
         Assert.Equal(100, root.TotalLines);
-        
+
         // Assert that the child is "src" -> "Core" -> "Analyzer.cs"
         Assert.Single(root.Children);
         var srcNode = root.Children[0];

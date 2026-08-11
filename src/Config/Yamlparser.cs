@@ -97,9 +97,9 @@ public class YamlTokenizer : IYamlTokenizer
             string rawLine = rawLines[i];
             if (rawLine.Contains('\t'))
             {
-                throw new ConfigValidationError(new List<string> 
-                { 
-                    $"{_source}:{i + 1}: tabs are not supported in YAML indentation." 
+                throw new ConfigValidationError(new List<string>
+                {
+                    $"{_source}:{i + 1}: tabs are not supported in YAML indentation."
                 });
             }
 

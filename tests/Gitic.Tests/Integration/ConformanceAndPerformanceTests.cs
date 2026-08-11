@@ -42,7 +42,7 @@ namespace Gitic.Tests
         }
 
         private async Task<(int ExitCode, string Stdout, string Stderr, long ElapsedMs)> RunGiticProcessAsync(
-            string arguments, 
+            string arguments,
             Dictionary<string, string>? envVars = null)
         {
             var psi = new ProcessStartInfo
@@ -84,13 +84,13 @@ namespace Gitic.Tests
             var helpRes = await RunGiticProcessAsync("--help");
             Assert.Equal(0, helpRes.ExitCode);
             Assert.NotEmpty(helpRes.Stdout);
-            Assert.True(helpRes.ElapsedMs <= _helpLimitMs, 
+            Assert.True(helpRes.ElapsedMs <= _helpLimitMs,
                 $"Help command startup took {helpRes.ElapsedMs}ms, exceeding budget of {_helpLimitMs}ms.");
 
             var versionRes = await RunGiticProcessAsync("--version");
             Assert.Equal(0, versionRes.ExitCode);
             Assert.NotEmpty(versionRes.Stdout);
-            Assert.True(versionRes.ElapsedMs <= _versionLimitMs, 
+            Assert.True(versionRes.ElapsedMs <= _versionLimitMs,
                 $"Version command startup took {versionRes.ElapsedMs}ms, exceeding budget of {_versionLimitMs}ms.");
         }
 
@@ -168,7 +168,7 @@ namespace Gitic.Tests
 
             var options = Gitic.JsonSerializationDefaults.Indented;
             string json = JsonSerializer.Serialize(result, options);
-            
+
             Assert.Contains("\"schema_version\": \"1.1\"", json);
             Assert.Contains("\"diagnostics\":", json);
 

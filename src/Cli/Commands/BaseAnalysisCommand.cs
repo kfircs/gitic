@@ -95,7 +95,7 @@ public abstract class BaseAnalysisCommand : ICommand
 /// </summary>
 public abstract class StandardRenderAnalysisCommand : BaseAnalysisCommand
 {
-    protected StandardRenderAnalysisCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+    protected StandardRenderAnalysisCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null)
         : base(parsed, gitClient, analyzer) { }
 
     protected override async Task<CliResult> ProcessResultAsync(AnalysisResult result, IConsoleReporter? reporter, CancellationToken cancellationToken = default)

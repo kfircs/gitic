@@ -39,7 +39,7 @@ public class HtmlRenderer : IReportRenderer
     {
         cancellationToken.ThrowIfCancellationRequested();
         string rawJson = JsonSerializer.Serialize(result, JsonSerializationDefaults.Compact);
-        
+
         // Escape script tags to safely embed the JSON payload directly inside the HTML document structure.
         string data = rawJson.Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
 

@@ -53,7 +53,7 @@ namespace Gitic.Tests
 
             // Excluded by default lockfile
             Assert.False(classifier.Check("package-lock.json"));
-            
+
             // Excluded by custom exclude rule
             Assert.False(classifier.Check("tests/unit/test.cs"));
 
@@ -198,7 +198,7 @@ namespace Gitic.Tests
                 LowFamiliarityConcentration = 0.15
             };
             validator.ValidateAttentionWeights(weights, "test"); // should not throw
-            
+
             var mock = new MockConfigValidator();
             mock.ValidateAttentionWeights(weights, "test");
             Assert.True(mock.ValidateCalled);
@@ -423,7 +423,7 @@ namespace Gitic.Tests
             Assert.Equal("__GITIC_NUMSTAT__", parser.NumstatMarker);
 
             // Test parsing with a minimal valid log containing one commit
-            string sampleOutput = 
+            string sampleOutput =
                 "__GITIC_COMMIT__\n" +
                 "abc1234\n" +
                 "2026-07-25T08:34:07Z\n" +
@@ -445,7 +445,7 @@ namespace Gitic.Tests
             Assert.Equal("alice@example.com", commit.Author.Email);
             Assert.Equal("Implement IGitParser interface", commit.Message);
             Assert.Equal(1, commit.ParentCount);
-            
+
             Assert.Single(commit.Files);
             var file = commit.Files[0];
             Assert.Equal("src/Gitparser.cs", file.Path);
@@ -637,7 +637,7 @@ __GITIC_NUMSTAT__
         public void TestGitParser_BuildGitLogArguments()
         {
             var parser = new GitParser(new GitPatchParser());
-            
+
             // Case 1: AllTime=true, IncludeMerges=true
             var options1 = new GitHistoryExtractorOptions
             {
@@ -877,7 +877,7 @@ __GITIC_NUMSTAT__
         [Fact]
         public void TestScoring_HeatScoreCalculator()
         {
-                        var breakdown = new ScoreBreakdown
+            var breakdown = new ScoreBreakdown
             {
                 Touches = 0.5,
                 Churn = 0.3,
@@ -900,7 +900,7 @@ __GITIC_NUMSTAT__
                 ContributorSpread = 0.25,
                 LowFamiliarityConcentration = 0.25
             };
-                        var breakdown = new ScoreBreakdown
+            var breakdown = new ScoreBreakdown
             {
                 Touches = 0,
                 Churn = 0.8,
@@ -1606,7 +1606,7 @@ __GITIC_NUMSTAT__
         public async Task TestGitClient_WithMockExecutor_ExtractHistory()
         {
             var mockExecutor = new MockGitExecutor();
-            
+
             var options = new GitHistoryExtractorOptions
             {
                 IncludeMerges = false,
@@ -1647,277 +1647,277 @@ __GITIC_NUMSTAT__
             Assert.Equal("This is a commit message.", record.Message);
             Assert.Single(record.Files);
             Assert.Equal("src/main.cs", record.Files[0].Path);
-            }
+        }
 
-            [Fact]
-            public async Task TestRepositoryAnalyzer_WithFakeFileStatsProvider()
+        [Fact]
+        public async Task TestRepositoryAnalyzer_WithFakeFileStatsProvider()
+        {
+            var fakeProvider = new FakeFileStatsProvider();
+            fakeProvider.DummyResults["src/main.cs"] = new FileStatResult { Size = 1234, Width = 88, Lines = 99 };
+
+            var input = new AnalyzeInput
             {
-                var fakeProvider = new FakeFileStatsProvider();
-                fakeProvider.DummyResults["src/main.cs"] = new FileStatResult { Size = 1234, Width = 88, Lines = 99 };
+                RepoRoot = "/fake/root",
+                Command = AnalysisCommand.Hotspots,
+                Settings = new AnalysisSettings { Depth = 1 },
+                FileStatsProvider = fakeProvider,
+                GitClient = new FakeGitClient()
+            };
 
-                var input = new AnalyzeInput
-                {
-                    RepoRoot = "/fake/root",
-                    Command = AnalysisCommand.Hotspots,
-                    Settings = new AnalysisSettings { Depth = 1 },
-                    FileStatsProvider = fakeProvider,
-                    GitClient = new FakeGitClient()
-                };
+            var result = await RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
 
-                var result = await RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
-
-                Assert.NotNull(result);
-                if (result.Files.Any())
-                {
-                    var mainFile = result.Files.FirstOrDefault(f => f.Path == "src/main.cs");
-                    if (mainFile != null)
-                    {
-                        Assert.Equal(1234, mainFile.Size);
-                        Assert.Equal(88, mainFile.Width);
-                        Assert.Equal(99, mainFile.Lines);
-                    }
-
-                    var otherFile = result.Files.FirstOrDefault(f => f.Path != "src/main.cs");
-                    if (otherFile != null)
-                    {
-                        Assert.Equal(100, otherFile.Size);
-                        Assert.Equal(10, otherFile.Width);
-                        Assert.Equal(5, otherFile.Lines);
-                    }
-                }
-            }
-
-            [Fact]
-            public async Task TestRepositoryAnalyzer()
+            Assert.NotNull(result);
+            if (result.Files.Any())
             {
-                var fakeProvider = new FakeFileStatsProvider();
-                fakeProvider.DummyResults["src/main.cs"] = new FileStatResult { Size = 1234, Width = 88, Lines = 99 };
-
-                var input = new AnalyzeInput
+                var mainFile = result.Files.FirstOrDefault(f => f.Path == "src/main.cs");
+                if (mainFile != null)
                 {
-                    RepoRoot = "/fake/root",
-                    Command = AnalysisCommand.Hotspots,
-                    Settings = new AnalysisSettings { Depth = 1 },
-                    FileStatsProvider = fakeProvider,
-                    GitClient = new FakeGitClient()
-                };
-
-                var result = await RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
-
-                Assert.NotNull(result);
-                Assert.Equal("/fake/root", result.Analysis.RepoRoot);
-            }
-
-            [Fact]
-            public async Task TestRepositoryAnalyzer_InterfaceUsage()
-            {
-                var fakeProvider = new FakeFileStatsProvider();
-                fakeProvider.DummyResults["src/main.cs"] = new FileStatResult { Size = 1234, Width = 88, Lines = 99 };
-
-                var input = new AnalyzeInput
-                {
-                    RepoRoot = "/fake/root",
-                    Command = AnalysisCommand.Hotspots,
-                    Settings = new AnalysisSettings { Depth = 1 },
-                    FileStatsProvider = fakeProvider,
-                    GitClient = new FakeGitClient()
-                };
-
-                IRepositoryAnalyzer analyzer = new RepositoryAnalyzer();
-                var result = await analyzer.AnalyzeAsync(input);
-
-                Assert.NotNull(result);
-                Assert.Equal("/fake/root", result.Analysis.RepoRoot);
-            }
-
-            private class MockConfigurationEngine : IConfigurationEngine
-            {
-                public bool LoadAndResolveCalled { get; set; }
-                public bool RenderStarterConfigCalled { get; set; }
-
-                public string RenderStarterConfig()
-                {
-                    RenderStarterConfigCalled = true;
-                    return "";
+                    Assert.Equal(1234, mainFile.Size);
+                    Assert.Equal(88, mainFile.Width);
+                    Assert.Equal(99, mainFile.Lines);
                 }
 
-                public Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGiticConfigOptions? options = null)
+                var otherFile = result.Files.FirstOrDefault(f => f.Path != "src/main.cs");
+                if (otherFile != null)
                 {
-                    LoadAndResolveCalled = true;
-                    return Task.FromResult(new ResolvedConfiguration
-                    {
-                        Settings = new AnalysisSettings(),
-                        Config = GiticConfig.Default
-                    });
+                    Assert.Equal(100, otherFile.Size);
+                    Assert.Equal(10, otherFile.Width);
+                    Assert.Equal(5, otherFile.Lines);
                 }
             }
+        }
 
-            [Fact]
-            public async Task TestRepositoryAnalyzer_WithMockConfigurationEngine()
+        [Fact]
+        public async Task TestRepositoryAnalyzer()
+        {
+            var fakeProvider = new FakeFileStatsProvider();
+            fakeProvider.DummyResults["src/main.cs"] = new FileStatResult { Size = 1234, Width = 88, Lines = 99 };
+
+            var input = new AnalyzeInput
             {
-                var fakeProvider = new FakeFileStatsProvider();
-                var mockConfigEngine = new MockConfigurationEngine();
+                RepoRoot = "/fake/root",
+                Command = AnalysisCommand.Hotspots,
+                Settings = new AnalysisSettings { Depth = 1 },
+                FileStatsProvider = fakeProvider,
+                GitClient = new FakeGitClient()
+            };
 
-                var input = new AnalyzeInput
+            var result = await RepositoryAnalyzer.AnalyzeRepositoryAsync(input);
+
+            Assert.NotNull(result);
+            Assert.Equal("/fake/root", result.Analysis.RepoRoot);
+        }
+
+        [Fact]
+        public async Task TestRepositoryAnalyzer_InterfaceUsage()
+        {
+            var fakeProvider = new FakeFileStatsProvider();
+            fakeProvider.DummyResults["src/main.cs"] = new FileStatResult { Size = 1234, Width = 88, Lines = 99 };
+
+            var input = new AnalyzeInput
+            {
+                RepoRoot = "/fake/root",
+                Command = AnalysisCommand.Hotspots,
+                Settings = new AnalysisSettings { Depth = 1 },
+                FileStatsProvider = fakeProvider,
+                GitClient = new FakeGitClient()
+            };
+
+            IRepositoryAnalyzer analyzer = new RepositoryAnalyzer();
+            var result = await analyzer.AnalyzeAsync(input);
+
+            Assert.NotNull(result);
+            Assert.Equal("/fake/root", result.Analysis.RepoRoot);
+        }
+
+        private class MockConfigurationEngine : IConfigurationEngine
+        {
+            public bool LoadAndResolveCalled { get; set; }
+            public bool RenderStarterConfigCalled { get; set; }
+
+            public string RenderStarterConfig()
+            {
+                RenderStarterConfigCalled = true;
+                return "";
+            }
+
+            public Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGiticConfigOptions? options = null)
+            {
+                LoadAndResolveCalled = true;
+                return Task.FromResult(new ResolvedConfiguration
                 {
-                    RepoRoot = "/fake/root",
-                    Command = AnalysisCommand.Hotspots,
-                    Settings = new AnalysisSettings { Depth = 1 },
-                    FileStatsProvider = fakeProvider,
-                    GitClient = new FakeGitClient()
+                    Settings = new AnalysisSettings(),
+                    Config = GiticConfig.Default
+                });
+            }
+        }
+
+        [Fact]
+        public async Task TestRepositoryAnalyzer_WithMockConfigurationEngine()
+        {
+            var fakeProvider = new FakeFileStatsProvider();
+            var mockConfigEngine = new MockConfigurationEngine();
+
+            var input = new AnalyzeInput
+            {
+                RepoRoot = "/fake/root",
+                Command = AnalysisCommand.Hotspots,
+                Settings = new AnalysisSettings { Depth = 1 },
+                FileStatsProvider = fakeProvider,
+                GitClient = new FakeGitClient()
+            };
+
+            var analyzer = new RepositoryAnalyzer(mockConfigEngine);
+            var result = await analyzer.AnalyzeAsync(input);
+
+            Assert.NotNull(result);
+            Assert.True(mockConfigEngine.LoadAndResolveCalled);
+        }
+
+        private class MockAnalysisPipeline : IAnalysisPipeline
+        {
+            public bool RunCalled { get; set; }
+            public List<GitCommitRecord>? ReceivedCommits { get; set; }
+            public HashSet<string>? ReceivedHeadFiles { get; set; }
+
+            public AnalysisPipelineResult Run(
+                List<GitCommitRecord> commits,
+                HashSet<string> headFiles,
+                GiticConfig config,
+                AnalysisSettings settings,
+                AnalysisCommand command,
+                CancellationToken cancellationToken = default)
+            {
+                RunCalled = true;
+                ReceivedCommits = commits;
+                ReceivedHeadFiles = headFiles;
+
+                return new AnalysisPipelineResult
+                {
+                    Files = new List<FileMetric> { new FileMetric { Path = "src/main.cs" } },
+                    Warnings = new List<string> { "mock-pipeline-warning" },
+                    IncludedFileChangeCount = 42
                 };
-
-                var analyzer = new RepositoryAnalyzer(mockConfigEngine);
-                var result = await analyzer.AnalyzeAsync(input);
-
-                Assert.NotNull(result);
-                Assert.True(mockConfigEngine.LoadAndResolveCalled);
             }
 
-            private class MockAnalysisPipeline : IAnalysisPipeline
+            public AnalysisPipelineResult Run(
+                List<GitCommitRecord> commits,
+                GiticConfig? config = null,
+                AnalysisSettings? settings = null,
+                AnalysisCommand command = AnalysisCommand.Hotspots,
+                CancellationToken cancellationToken = default)
             {
-                public bool RunCalled { get; set; }
-                public List<GitCommitRecord>? ReceivedCommits { get; set; }
-                public HashSet<string>? ReceivedHeadFiles { get; set; }
-
-                public AnalysisPipelineResult Run(
-                    List<GitCommitRecord> commits,
-                    HashSet<string> headFiles,
-                    GiticConfig config,
-                    AnalysisSettings settings,
-                    AnalysisCommand command,
-                    CancellationToken cancellationToken = default)
-                {
-                    RunCalled = true;
-                    ReceivedCommits = commits;
-                    ReceivedHeadFiles = headFiles;
-
-                    return new AnalysisPipelineResult
-                    {
-                        Files = new List<FileMetric> { new FileMetric { Path = "src/main.cs" } },
-                        Warnings = new List<string> { "mock-pipeline-warning" },
-                        IncludedFileChangeCount = 42
-                    };
-                }
-
-                public AnalysisPipelineResult Run(
-                    List<GitCommitRecord> commits,
-                    GiticConfig? config = null,
-                    AnalysisSettings? settings = null,
-                    AnalysisCommand command = AnalysisCommand.Hotspots,
-                    CancellationToken cancellationToken = default)
-                {
-                    return Run(commits, new HashSet<string>(), config ?? new GiticConfig(), settings ?? new AnalysisSettings(), command, cancellationToken);
-                }
+                return Run(commits, new HashSet<string>(), config ?? new GiticConfig(), settings ?? new AnalysisSettings(), command, cancellationToken);
             }
+        }
 
-            [Fact]
-            public async Task TestRepositoryAnalyzer_WithMockAnalysisPipeline()
+        [Fact]
+        public async Task TestRepositoryAnalyzer_WithMockAnalysisPipeline()
+        {
+            var fakeProvider = new FakeFileStatsProvider();
+            var mockPipeline = new MockAnalysisPipeline();
+
+            var input = new AnalyzeInput
             {
-                var fakeProvider = new FakeFileStatsProvider();
-                var mockPipeline = new MockAnalysisPipeline();
+                RepoRoot = "/fake/root",
+                Command = AnalysisCommand.Hotspots,
+                Settings = new AnalysisSettings { Depth = 1 },
+                FileStatsProvider = fakeProvider,
+                GitClient = new FakeGitClient()
+            };
 
-                var input = new AnalyzeInput
-                {
-                    RepoRoot = "/fake/root",
-                    Command = AnalysisCommand.Hotspots,
-                    Settings = new AnalysisSettings { Depth = 1 },
-                    FileStatsProvider = fakeProvider,
-                    GitClient = new FakeGitClient()
-                };
+            var analyzer = new RepositoryAnalyzer(pipeline: mockPipeline);
+            var result = await analyzer.AnalyzeAsync(input);
 
-                var analyzer = new RepositoryAnalyzer(pipeline: mockPipeline);
-                var result = await analyzer.AnalyzeAsync(input);
+            Assert.NotNull(result);
+            Assert.True(mockPipeline.RunCalled);
+            Assert.NotNull(mockPipeline.ReceivedCommits);
+            Assert.Single(mockPipeline.ReceivedCommits);
+            Assert.Equal("hash1", mockPipeline.ReceivedCommits[0].Hash);
+            Assert.Contains("mock-pipeline-warning", result.Warnings);
+            Assert.Equal(42, result.Analysis.IncludedFileChangeCount);
+        }
 
-                Assert.NotNull(result);
-                Assert.True(mockPipeline.RunCalled);
-                Assert.NotNull(mockPipeline.ReceivedCommits);
-                Assert.Single(mockPipeline.ReceivedCommits);
-                Assert.Equal("hash1", mockPipeline.ReceivedCommits[0].Hash);
-                Assert.Contains("mock-pipeline-warning", result.Warnings);
-                Assert.Equal(42, result.Analysis.IncludedFileChangeCount);
+        private class MockResultAnonymizer : IResultAnonymizer
+        {
+            public bool AnonymizeCalled { get; set; }
+            public AnalysisResult Anonymize(AnalysisResult result)
+            {
+                AnonymizeCalled = true;
+                return result;
             }
+        }
 
-            private class MockResultAnonymizer : IResultAnonymizer
+        [Fact]
+        public async Task TestRepositoryAnalyzer_WithResultAnonymizer()
+        {
+            var fakeProvider = new FakeFileStatsProvider();
+            var mockAnonymizer = new MockResultAnonymizer();
+
+            var input = new AnalyzeInput
             {
-                public bool AnonymizeCalled { get; set; }
-                public AnalysisResult Anonymize(AnalysisResult result)
-                {
-                    AnonymizeCalled = true;
-                    return result;
-                }
+                RepoRoot = "/fake/root",
+                Command = AnalysisCommand.Hotspots,
+                Settings = new AnalysisSettings { Depth = 1, Anonymize = true },
+                FileStatsProvider = fakeProvider,
+                GitClient = new FakeGitClient()
+            };
+
+            var analyzer = new RepositoryAnalyzer(anonymizer: mockAnonymizer);
+            var result = await analyzer.AnalyzeAsync(input);
+
+            Assert.NotNull(result);
+            Assert.True(mockAnonymizer.AnonymizeCalled);
+
+            // Now test when Anonymize is false
+            var mockAnonymizerFalse = new MockResultAnonymizer();
+            var inputFalse = new AnalyzeInput
+            {
+                RepoRoot = "/fake/root",
+                Command = AnalysisCommand.Hotspots,
+                Settings = new AnalysisSettings { Depth = 1, Anonymize = false },
+                FileStatsProvider = fakeProvider,
+                GitClient = new FakeGitClient()
+            };
+
+            var analyzerFalse = new RepositoryAnalyzer(anonymizer: mockAnonymizerFalse);
+            var resultFalse = await analyzerFalse.AnalyzeAsync(inputFalse);
+
+            Assert.NotNull(resultFalse);
+            Assert.False(mockAnonymizerFalse.AnonymizeCalled);
+        }
+
+        private class MockChangeAccumulator : IChangeAccumulator
+        {
+            public bool PrepareIdentityMergingCalled { get; set; }
+            public bool AddCommitCalled { get; set; }
+            public bool GetFilesCalled { get; set; }
+            public bool GetAreasCalled { get; set; }
+            public bool GetContributorsCalled { get; set; }
+            public bool GetAutomationCalled { get; set; }
+
+            public void PrepareIdentityMerging(List<GitCommitRecord> commits) => PrepareIdentityMergingCalled = true;
+            public List<EmailCollision> GetEmailCollisions() => new();
+            public void AddCommit(GitCommitRecord commit, List<string> filesInCommit) => AddCommitCalled = true;
+            public List<List<string>> ProcessCommits(List<GitCommitRecord> commits)
+            {
+                PrepareIdentityMergingCalled = true;
+                AddCommitCalled = true;
+                return commits.Select(_ => new List<string>()).ToList();
             }
+            public IReadOnlyDictionary<string, ItemAccumulator> GetFiles() { GetFilesCalled = true; return new Dictionary<string, ItemAccumulator>(); }
+            public IReadOnlyDictionary<string, ItemAccumulator> GetAreas() { GetAreasCalled = true; return new Dictionary<string, ItemAccumulator>(); }
+            public IReadOnlyDictionary<string, ContributorAccumulator> GetContributors() { GetContributorsCalled = true; return new Dictionary<string, ContributorAccumulator>(); }
+            public IReadOnlyDictionary<string, ContributorAccumulator> GetAutomation() { GetAutomationCalled = true; return new Dictionary<string, ContributorAccumulator>(); }
+            public List<ExclusionSummary> GetExclusions() => new();
+            public HashSet<string> GetWarnings() => new();
+            public int GetIncludedFileChangeCount() => 0;
+        }
 
-            [Fact]
-            public async Task TestRepositoryAnalyzer_WithResultAnonymizer()
-            {
-                var fakeProvider = new FakeFileStatsProvider();
-                var mockAnonymizer = new MockResultAnonymizer();
-
-                var input = new AnalyzeInput
-                {
-                    RepoRoot = "/fake/root",
-                    Command = AnalysisCommand.Hotspots,
-                    Settings = new AnalysisSettings { Depth = 1, Anonymize = true },
-                    FileStatsProvider = fakeProvider,
-                    GitClient = new FakeGitClient()
-                };
-
-                var analyzer = new RepositoryAnalyzer(anonymizer: mockAnonymizer);
-                var result = await analyzer.AnalyzeAsync(input);
-
-                Assert.NotNull(result);
-                Assert.True(mockAnonymizer.AnonymizeCalled);
-
-                // Now test when Anonymize is false
-                var mockAnonymizerFalse = new MockResultAnonymizer();
-                var inputFalse = new AnalyzeInput
-                {
-                    RepoRoot = "/fake/root",
-                    Command = AnalysisCommand.Hotspots,
-                    Settings = new AnalysisSettings { Depth = 1, Anonymize = false },
-                    FileStatsProvider = fakeProvider,
-                    GitClient = new FakeGitClient()
-                };
-
-                var analyzerFalse = new RepositoryAnalyzer(anonymizer: mockAnonymizerFalse);
-                var resultFalse = await analyzerFalse.AnalyzeAsync(inputFalse);
-
-                Assert.NotNull(resultFalse);
-                Assert.False(mockAnonymizerFalse.AnonymizeCalled);
-            }
-
-            private class MockChangeAccumulator : IChangeAccumulator
-            {
-                public bool PrepareIdentityMergingCalled { get; set; }
-                public bool AddCommitCalled { get; set; }
-                public bool GetFilesCalled { get; set; }
-                public bool GetAreasCalled { get; set; }
-                public bool GetContributorsCalled { get; set; }
-                public bool GetAutomationCalled { get; set; }
-
-                public void PrepareIdentityMerging(List<GitCommitRecord> commits) => PrepareIdentityMergingCalled = true;
-                public List<EmailCollision> GetEmailCollisions() => new();
-                public void AddCommit(GitCommitRecord commit, List<string> filesInCommit) => AddCommitCalled = true;
-                public List<List<string>> ProcessCommits(List<GitCommitRecord> commits)
-                {
-                    PrepareIdentityMergingCalled = true;
-                    AddCommitCalled = true;
-                    return commits.Select(_ => new List<string>()).ToList();
-                }
-                public IReadOnlyDictionary<string, ItemAccumulator> GetFiles() { GetFilesCalled = true; return new Dictionary<string, ItemAccumulator>(); }
-                public IReadOnlyDictionary<string, ItemAccumulator> GetAreas() { GetAreasCalled = true; return new Dictionary<string, ItemAccumulator>(); }
-                public IReadOnlyDictionary<string, ContributorAccumulator> GetContributors() { GetContributorsCalled = true; return new Dictionary<string, ContributorAccumulator>(); }
-                public IReadOnlyDictionary<string, ContributorAccumulator> GetAutomation() { GetAutomationCalled = true; return new Dictionary<string, ContributorAccumulator>(); }
-                public List<ExclusionSummary> GetExclusions() => new();
-                public HashSet<string> GetWarnings() => new();
-                public int GetIncludedFileChangeCount() => 0;
-            }
-
-            [Fact]
-            public void TestAnalysisPipeline_UsesInjectedAccumulator()
-            {
-                var commits = new List<GitCommitRecord>
+        [Fact]
+        public void TestAnalysisPipeline_UsesInjectedAccumulator()
+        {
+            var commits = new List<GitCommitRecord>
                 {
                     new GitCommitRecord
                     {
@@ -1926,259 +1926,259 @@ __GITIC_NUMSTAT__
                         Files = new List<GitFileChange>()
                     }
                 };
-                var headFiles = new HashSet<string>();
-                var config = GiticConfig.Default;
-                var settings = new AnalysisSettings();
-                var command = AnalysisCommand.Hotspots;
+            var headFiles = new HashSet<string>();
+            var config = GiticConfig.Default;
+            var settings = new AnalysisSettings();
+            var command = AnalysisCommand.Hotspots;
 
-                var mockAccumulator = new MockChangeAccumulator();
-                var pipeline = new AnalysisPipeline(new PipelineDependencies { Accumulator = mockAccumulator });
+            var mockAccumulator = new MockChangeAccumulator();
+            var pipeline = new AnalysisPipeline(new PipelineDependencies { Accumulator = mockAccumulator });
 
-                var result = pipeline.Run(
-                    commits,
-                    headFiles,
-                    config,
-                    settings,
-                    command
-                );
+            var result = pipeline.Run(
+                commits,
+                headFiles,
+                config,
+                settings,
+                command
+            );
 
-                Assert.NotNull(result);
-                Assert.True(mockAccumulator.PrepareIdentityMergingCalled);
-                Assert.True(mockAccumulator.AddCommitCalled);
-                Assert.True(mockAccumulator.GetFilesCalled);
-                Assert.True(mockAccumulator.GetAreasCalled);
-                Assert.True(mockAccumulator.GetContributorsCalled);
-                Assert.True(mockAccumulator.GetAutomationCalled);
-            }
+            Assert.NotNull(result);
+            Assert.True(mockAccumulator.PrepareIdentityMergingCalled);
+            Assert.True(mockAccumulator.AddCommitCalled);
+            Assert.True(mockAccumulator.GetFilesCalled);
+            Assert.True(mockAccumulator.GetAreasCalled);
+            Assert.True(mockAccumulator.GetContributorsCalled);
+            Assert.True(mockAccumulator.GetAutomationCalled);
+        }
 
 
-            [Fact]
-            public void TestAnalysisSettingsNormalizer_DefaultNormalization()
+        [Fact]
+        public void TestAnalysisSettingsNormalizer_DefaultNormalization()
+        {
+            var normalizer = new AnalysisSettingsNormalizer();
+            var original = new AnalysisSettings();
+            var normalized = normalizer.Normalize(original);
+
+            var defaults = DefaultAnalysisSettings.Create();
+            Assert.Equal(defaults.Since, normalized.Since);
+            Assert.Equal(defaults.Depth, normalized.Depth);
+            Assert.Equal(defaults.MergeByEmail, normalized.MergeByEmail);
+            Assert.Equal(defaults.Path, normalized.Path);
+        }
+
+        [Fact]
+        public void TestAnalysisSettingsNormalizer_PreservesValues()
+        {
+            var normalizer = new AnalysisSettingsNormalizer();
+            var original = new AnalysisSettings
             {
-                var normalizer = new AnalysisSettingsNormalizer();
-                var original = new AnalysisSettings();
-                var normalized = normalizer.Normalize(original);
+                Depth = 5,
+                Since = "2 weeks ago",
+                Json = true,
+                AllTime = true,
+                IncludeMerges = true,
+                IncludeDeleted = true,
+                MergeByEmail = true,
+                Path = "custom/path",
+                Anonymize = true
+            };
+            var normalized = normalizer.Normalize(original);
 
-                var defaults = DefaultAnalysisSettings.Create();
-                Assert.Equal(defaults.Since, normalized.Since);
-                Assert.Equal(defaults.Depth, normalized.Depth);
-                Assert.Equal(defaults.MergeByEmail, normalized.MergeByEmail);
-                Assert.Equal(defaults.Path, normalized.Path);
-            }
+            Assert.Equal(5, normalized.Depth);
+            Assert.Equal("2 weeks ago", normalized.Since);
+            Assert.True(normalized.Json);
+            Assert.True(normalized.AllTime);
+            Assert.True(normalized.IncludeMerges);
+            Assert.True(normalized.IncludeDeleted);
+            Assert.True(normalized.MergeByEmail);
+            Assert.Equal("custom/path", normalized.Path);
+            Assert.True(normalized.Anonymize);
+        }
 
-            [Fact]
-            public void TestAnalysisSettingsNormalizer_PreservesValues()
+        [Fact]
+        public void TestAnalysisSettings_Clone_ReturnsCorrectCopy()
+        {
+            var original = new AnalysisSettings
             {
-                var normalizer = new AnalysisSettingsNormalizer();
-                var original = new AnalysisSettings
+                Depth = 5,
+                Since = "2 weeks ago",
+                Json = true,
+                AllTime = true,
+                IncludeMerges = true,
+                IncludeDeleted = true,
+                MergeByEmail = true,
+                Path = "custom/path",
+                Anonymize = true
+            };
+
+            var cloned = original.Clone();
+
+            Assert.NotSame(original, cloned);
+            Assert.Equal(original.Depth, cloned.Depth);
+            Assert.Equal(original.Since, cloned.Since);
+            Assert.Equal(original.Json, cloned.Json);
+            Assert.Equal(original.AllTime, cloned.AllTime);
+            Assert.Equal(original.IncludeMerges, cloned.IncludeMerges);
+            Assert.Equal(original.IncludeDeleted, cloned.IncludeDeleted);
+            Assert.Equal(original.MergeByEmail, cloned.MergeByEmail);
+            Assert.Equal(original.Path, cloned.Path);
+            Assert.Equal(original.Anonymize, cloned.Anonymize);
+        }
+
+
+        [Fact]
+        public async Task TestDiskFileStatsProvider_ComputesStats()
+        {
+            var provider = new DiskFileStatsProvider();
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                await File.WriteAllTextAsync(tempFile, "line 1\nline 2\nlongest line here");
+                var relativePath = Path.GetFileName(tempFile);
+                var repoRoot = Path.GetDirectoryName(tempFile)!;
+
+                var stats = await provider.ComputeFileStatsAsync(repoRoot, new List<string> { relativePath });
+                Assert.NotNull(stats);
+                Assert.True(stats.ContainsKey(relativePath));
+                var fileStat = stats[relativePath];
+                Assert.True(fileStat.Size > 0);
+                Assert.Equal(3, fileStat.Lines);
+                Assert.Equal("longest line here".Length, fileStat.Width);
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
                 {
-                    Depth = 5,
-                    Since = "2 weeks ago",
-                    Json = true,
-                    AllTime = true,
-                    IncludeMerges = true,
-                    IncludeDeleted = true,
-                    MergeByEmail = true,
-                    Path = "custom/path",
-                    Anonymize = true
-                };
-                var normalized = normalizer.Normalize(original);
-
-                Assert.Equal(5, normalized.Depth);
-                Assert.Equal("2 weeks ago", normalized.Since);
-                Assert.True(normalized.Json);
-                Assert.True(normalized.AllTime);
-                Assert.True(normalized.IncludeMerges);
-                Assert.True(normalized.IncludeDeleted);
-                Assert.True(normalized.MergeByEmail);
-                Assert.Equal("custom/path", normalized.Path);
-                Assert.True(normalized.Anonymize);
-            }
-
-            [Fact]
-            public void TestAnalysisSettings_Clone_ReturnsCorrectCopy()
-            {
-                var original = new AnalysisSettings
-                {
-                    Depth = 5,
-                    Since = "2 weeks ago",
-                    Json = true,
-                    AllTime = true,
-                    IncludeMerges = true,
-                    IncludeDeleted = true,
-                    MergeByEmail = true,
-                    Path = "custom/path",
-                    Anonymize = true
-                };
-
-                var cloned = original.Clone();
-
-                Assert.NotSame(original, cloned);
-                Assert.Equal(original.Depth, cloned.Depth);
-                Assert.Equal(original.Since, cloned.Since);
-                Assert.Equal(original.Json, cloned.Json);
-                Assert.Equal(original.AllTime, cloned.AllTime);
-                Assert.Equal(original.IncludeMerges, cloned.IncludeMerges);
-                Assert.Equal(original.IncludeDeleted, cloned.IncludeDeleted);
-                Assert.Equal(original.MergeByEmail, cloned.MergeByEmail);
-                Assert.Equal(original.Path, cloned.Path);
-                Assert.Equal(original.Anonymize, cloned.Anonymize);
-            }
-
-
-            [Fact]
-            public async Task TestDiskFileStatsProvider_ComputesStats()
-            {
-                var provider = new DiskFileStatsProvider();
-                string tempFile = Path.GetTempFileName();
-                try
-                {
-                    await File.WriteAllTextAsync(tempFile, "line 1\nline 2\nlongest line here");
-                    var relativePath = Path.GetFileName(tempFile);
-                    var repoRoot = Path.GetDirectoryName(tempFile)!;
-
-                    var stats = await provider.ComputeFileStatsAsync(repoRoot, new List<string> { relativePath });
-                    Assert.NotNull(stats);
-                    Assert.True(stats.ContainsKey(relativePath));
-                    var fileStat = stats[relativePath];
-                    Assert.True(fileStat.Size > 0);
-                    Assert.Equal(3, fileStat.Lines);
-                    Assert.Equal("longest line here".Length, fileStat.Width);
+                    File.Delete(tempFile);
                 }
-                finally
+            }
+        }
+
+        [Fact]
+        public async Task TestDiskFileStatsProvider_EdgeCases()
+        {
+            var provider = new DiskFileStatsProvider();
+            string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Directory.CreateDirectory(tempDir);
+
+            try
+            {
+                // 1. Empty file
+                string emptyFile = Path.Combine(tempDir, "empty.txt");
+                await File.WriteAllBytesAsync(emptyFile, Array.Empty<byte>());
+
+                // 2. File with trailing newline
+                string trailingNewlineFile = Path.Combine(tempDir, "trailing.txt");
+                await File.WriteAllTextAsync(trailingNewlineFile, "line 1\nline 2\n");
+
+                // 3. File with CR LF and trailing newline
+                string crlfFile = Path.Combine(tempDir, "crlf.txt");
+                await File.WriteAllTextAsync(crlfFile, "line 1\r\nline 2\r\n");
+
+                // 4. Binary file
+                string binaryFile = Path.Combine(tempDir, "binary.bin");
+                await File.WriteAllBytesAsync(binaryFile, new byte[] { 1, 2, 0, 4, 5 });
+
+                // Compute stats
+                var files = new List<string> { "empty.txt", "trailing.txt", "crlf.txt", "binary.bin", "nonexistent.txt" };
+                var stats = await provider.ComputeFileStatsAsync(tempDir, files);
+
+                Assert.NotNull(stats);
+
+                // Assert empty file
+                Assert.True(stats.ContainsKey("empty.txt"));
+                Assert.Equal(0, stats["empty.txt"].Size);
+                Assert.Equal(1, stats["empty.txt"].Lines); // matching split behavior
+                Assert.Equal(0, stats["empty.txt"].Width);
+
+                // Assert trailing newline file
+                Assert.True(stats.ContainsKey("trailing.txt"));
+                Assert.Equal(3, stats["trailing.txt"].Lines); // "line 1", "line 2", ""
+                Assert.Equal(6, stats["trailing.txt"].Width);
+
+                // Assert CRLF trailing newline file
+                Assert.True(stats.ContainsKey("crlf.txt"));
+                Assert.Equal(3, stats["crlf.txt"].Lines); // "line 1", "line 2", ""
+                Assert.Equal(6, stats["crlf.txt"].Width);
+
+                // Assert binary file
+                Assert.True(stats.ContainsKey("binary.bin"));
+                Assert.Equal(5, stats["binary.bin"].Size);
+                Assert.Equal(0, stats["binary.bin"].Lines);
+                Assert.Equal(0, stats["binary.bin"].Width);
+
+                // Assert nonexistent file
+                Assert.True(stats.ContainsKey("nonexistent.txt"));
+                Assert.Equal(0, stats["nonexistent.txt"].Size);
+                Assert.Equal(0, stats["nonexistent.txt"].Lines);
+                Assert.Equal(0, stats["nonexistent.txt"].Width);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
                 {
-                    if (File.Exists(tempFile))
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        private class FakeFileStatsProvider : IFileStatsProvider
+        {
+            public Dictionary<string, FileStatResult> DummyResults { get; set; } = new();
+
+            public Task<Dictionary<string, FileStatResult>> ComputeFileStatsAsync(
+                string repoRoot,
+                List<string> files,
+                int concurrency = 20)
+            {
+                var results = new Dictionary<string, FileStatResult>();
+                foreach (var file in files)
+                {
+                    if (DummyResults.TryGetValue(file, out var stats))
                     {
-                        File.Delete(tempFile);
+                        results[file] = stats;
+                    }
+                    else
+                    {
+                        results[file] = new FileStatResult { Size = 100, Width = 10, Lines = 5 };
                     }
                 }
+                return Task.FromResult(results);
             }
 
-            [Fact]
-            public async Task TestDiskFileStatsProvider_EdgeCases()
+            public async Task<List<FileMetric>> EnrichFileMetricsAsync(
+                string repoRoot,
+                List<FileMetric> metrics,
+                int concurrency = 20)
             {
-                var provider = new DiskFileStatsProvider();
-                string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-                Directory.CreateDirectory(tempDir);
-
-                try
+                var files = metrics.Select(m => m.Path).ToList();
+                var fileStats = await ComputeFileStatsAsync(repoRoot, files, concurrency);
+                foreach (var f in metrics)
                 {
-                    // 1. Empty file
-                    string emptyFile = Path.Combine(tempDir, "empty.txt");
-                    await File.WriteAllBytesAsync(emptyFile, Array.Empty<byte>());
-
-                    // 2. File with trailing newline
-                    string trailingNewlineFile = Path.Combine(tempDir, "trailing.txt");
-                    await File.WriteAllTextAsync(trailingNewlineFile, "line 1\nline 2\n");
-
-                    // 3. File with CR LF and trailing newline
-                    string crlfFile = Path.Combine(tempDir, "crlf.txt");
-                    await File.WriteAllTextAsync(crlfFile, "line 1\r\nline 2\r\n");
-
-                    // 4. Binary file
-                    string binaryFile = Path.Combine(tempDir, "binary.bin");
-                    await File.WriteAllBytesAsync(binaryFile, new byte[] { 1, 2, 0, 4, 5 });
-
-                    // Compute stats
-                    var files = new List<string> { "empty.txt", "trailing.txt", "crlf.txt", "binary.bin", "nonexistent.txt" };
-                    var stats = await provider.ComputeFileStatsAsync(tempDir, files);
-
-                    Assert.NotNull(stats);
-
-                    // Assert empty file
-                    Assert.True(stats.ContainsKey("empty.txt"));
-                    Assert.Equal(0, stats["empty.txt"].Size);
-                    Assert.Equal(1, stats["empty.txt"].Lines); // matching split behavior
-                    Assert.Equal(0, stats["empty.txt"].Width);
-
-                    // Assert trailing newline file
-                    Assert.True(stats.ContainsKey("trailing.txt"));
-                    Assert.Equal(3, stats["trailing.txt"].Lines); // "line 1", "line 2", ""
-                    Assert.Equal(6, stats["trailing.txt"].Width);
-
-                    // Assert CRLF trailing newline file
-                    Assert.True(stats.ContainsKey("crlf.txt"));
-                    Assert.Equal(3, stats["crlf.txt"].Lines); // "line 1", "line 2", ""
-                    Assert.Equal(6, stats["crlf.txt"].Width);
-
-                    // Assert binary file
-                    Assert.True(stats.ContainsKey("binary.bin"));
-                    Assert.Equal(5, stats["binary.bin"].Size);
-                    Assert.Equal(0, stats["binary.bin"].Lines);
-                    Assert.Equal(0, stats["binary.bin"].Width);
-
-                    // Assert nonexistent file
-                    Assert.True(stats.ContainsKey("nonexistent.txt"));
-                    Assert.Equal(0, stats["nonexistent.txt"].Size);
-                    Assert.Equal(0, stats["nonexistent.txt"].Lines);
-                    Assert.Equal(0, stats["nonexistent.txt"].Width);
-                }
-                finally
-                {
-                    if (Directory.Exists(tempDir))
+                    if (fileStats.TryGetValue(f.Path, out var stats))
                     {
-                        Directory.Delete(tempDir, true);
+                        f.Size = stats.Size;
+                        f.Width = stats.Width;
+                        f.Lines = stats.Lines;
+                    }
+                    else
+                    {
+                        f.Size = 0;
+                        f.Width = 0;
+                        f.Lines = 0;
                     }
                 }
+                return metrics;
             }
+        }
 
-            private class FakeFileStatsProvider : IFileStatsProvider
+        private class FakeGitClient : IGitClient
+        {
+            public Task<string?> GetRepositoryRootAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>("/fake/root");
+            public Task<HashSet<string>> ListHeadFilesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new HashSet<string> { "src/main.cs" });
+            public Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null, CancellationToken cancellationToken = default)
             {
-                public Dictionary<string, FileStatResult> DummyResults { get; set; } = new();
-
-                public Task<Dictionary<string, FileStatResult>> ComputeFileStatsAsync(
-                    string repoRoot,
-                    List<string> files,
-                    int concurrency = 20)
-                {
-                    var results = new Dictionary<string, FileStatResult>();
-                    foreach (var file in files)
-                    {
-                        if (DummyResults.TryGetValue(file, out var stats))
-                        {
-                            results[file] = stats;
-                        }
-                        else
-                        {
-                            results[file] = new FileStatResult { Size = 100, Width = 10, Lines = 5 };
-                        }
-                    }
-                    return Task.FromResult(results);
-                }
-
-                public async Task<List<FileMetric>> EnrichFileMetricsAsync(
-                    string repoRoot,
-                    List<FileMetric> metrics,
-                    int concurrency = 20)
-                {
-                    var files = metrics.Select(m => m.Path).ToList();
-                    var fileStats = await ComputeFileStatsAsync(repoRoot, files, concurrency);
-                    foreach (var f in metrics)
-                    {
-                        if (fileStats.TryGetValue(f.Path, out var stats))
-                        {
-                            f.Size = stats.Size;
-                            f.Width = stats.Width;
-                            f.Lines = stats.Lines;
-                        }
-                        else
-                        {
-                            f.Size = 0;
-                            f.Width = 0;
-                            f.Lines = 0;
-                        }
-                    }
-                    return metrics;
-                }
-            }
-
-            private class FakeGitClient : IGitClient
-            {
-                public Task<string?> GetRepositoryRootAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>("/fake/root");
-                public Task<HashSet<string>> ListHeadFilesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new HashSet<string> { "src/main.cs" });
-                public Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null, CancellationToken cancellationToken = default)
-                {
-                    return Task.FromResult(new List<GitCommitRecord>
+                return Task.FromResult(new List<GitCommitRecord>
                     {
                         new GitCommitRecord
                         {
@@ -2193,258 +2193,258 @@ __GITIC_NUMSTAT__
                             }
                         }
                     });
-                }
             }
+        }
 
-            [Fact]
-            public void TestCustomCommitClassifierStrategies()
+        [Fact]
+        public void TestCustomCommitClassifierStrategies()
+        {
+            // Test 1: Verify ClassificationRule with custom patterns
+            var customBugfixRule = new ClassificationRule(
+                "bugfix",
+                new Regex(@"(?:defect|patch|hotfix)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+                new Regex(@"^hotfix(?:\(.+\))?:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
+            );
+
+            // Should match custom patterns
+            Assert.True(customBugfixRule.Matches("defect: fixed issue in login"));
+            Assert.True(customBugfixRule.Matches("hotfix(auth): fix credentials leak"));
+
+            // Should NOT match original/default patterns unless they happen to match custom patterns
+            Assert.False(customBugfixRule.Matches("revert accidental commit")); // default bugfix has "revert", custom does not
+            Assert.False(customBugfixRule.Matches("fix: resolve crash")); // default bugfix prefix has "fix", custom does not
+
+            // Test 2: Verify ClassificationRule with custom patterns
+            var customFeatureRule = new ClassificationRule(
+                "feature",
+                new Regex(@"(?:new-feature|impl|create)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+                new Regex(@"^new(?:\(.+\))?:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
+            );
+
+            // Should match custom patterns
+            Assert.True(customFeatureRule.Matches("create database index"));
+            Assert.True(customFeatureRule.Matches("new(db): add migrations"));
+
+            // Should NOT match original/default patterns unless they happen to match custom patterns
+            Assert.False(customFeatureRule.Matches("feat: refactor login")); // default feature prefix has "feat", custom does not
+
+            // Test 3: Verify they work via CommitClassifier when injected
+            var customRules = new List<ClassificationRule> { customBugfixRule, customFeatureRule };
+            ICommitClassifier classifier = new CommitClassifier(customRules);
+
+            Assert.Equal("bugfix", classifier.Classify("defect: fixed issue in login"));
+            Assert.Equal("feature", classifier.Classify("create database index"));
+            Assert.Equal("other", classifier.Classify("feat: refactor login"));
+
+            // Test 4: Verify default/omitted constructor parameters retain standard behavior
+            var defaultClassifier = new CommitClassifier();
+            Assert.Equal("bugfix", defaultClassifier.Classify("fix: resolve crash"));
+            Assert.Equal("feature", defaultClassifier.Classify("feat: implement new auth flow"));
+        }
+
+        [Fact]
+        public void TestResultAnonymizerInterface()
+        {
+            var original = new AnalysisResult();
+            IResultAnonymizer anonymizer = new ResultAnonymizer();
+            var result = anonymizer.Anonymize(original);
+            Assert.NotNull(result);
+
+            IResultAnonymizer noOpAnonymizer = new NoOpResultAnonymizer();
+            var unchanged = noOpAnonymizer.Anonymize(original);
+            Assert.Same(original, unchanged);
+        }
+
+        [Fact]
+        public void TestResultAnonymizerConsolidatedBehavior()
+        {
+            var original = new AnalysisResult
             {
-                // Test 1: Verify ClassificationRule with custom patterns
-                var customBugfixRule = new ClassificationRule(
-                    "bugfix",
-                    new Regex(@"(?:defect|patch|hotfix)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-                    new Regex(@"^hotfix(?:\(.+\))?:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
-                );
-
-                // Should match custom patterns
-                Assert.True(customBugfixRule.Matches("defect: fixed issue in login"));
-                Assert.True(customBugfixRule.Matches("hotfix(auth): fix credentials leak"));
-
-                // Should NOT match original/default patterns unless they happen to match custom patterns
-                Assert.False(customBugfixRule.Matches("revert accidental commit")); // default bugfix has "revert", custom does not
-                Assert.False(customBugfixRule.Matches("fix: resolve crash")); // default bugfix prefix has "fix", custom does not
-
-                // Test 2: Verify ClassificationRule with custom patterns
-                var customFeatureRule = new ClassificationRule(
-                    "feature",
-                    new Regex(@"(?:new-feature|impl|create)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-                    new Regex(@"^new(?:\(.+\))?:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
-                );
-
-                // Should match custom patterns
-                Assert.True(customFeatureRule.Matches("create database index"));
-                Assert.True(customFeatureRule.Matches("new(db): add migrations"));
-
-                // Should NOT match original/default patterns unless they happen to match custom patterns
-                Assert.False(customFeatureRule.Matches("feat: refactor login")); // default feature prefix has "feat", custom does not
-
-                // Test 3: Verify they work via CommitClassifier when injected
-                var customRules = new List<ClassificationRule> { customBugfixRule, customFeatureRule };
-                ICommitClassifier classifier = new CommitClassifier(customRules);
-
-                Assert.Equal("bugfix", classifier.Classify("defect: fixed issue in login"));
-                Assert.Equal("feature", classifier.Classify("create database index"));
-                Assert.Equal("other", classifier.Classify("feat: refactor login"));
-
-                // Test 4: Verify default/omitted constructor parameters retain standard behavior
-                var defaultClassifier = new CommitClassifier();
-                Assert.Equal("bugfix", defaultClassifier.Classify("fix: resolve crash"));
-                Assert.Equal("feature", defaultClassifier.Classify("feat: implement new auth flow"));
-            }
-
-            [Fact]
-            public void TestResultAnonymizerInterface()
-            {
-                var original = new AnalysisResult();
-                IResultAnonymizer anonymizer = new ResultAnonymizer();
-                var result = anonymizer.Anonymize(original);
-                Assert.NotNull(result);
-
-                IResultAnonymizer noOpAnonymizer = new NoOpResultAnonymizer();
-                var unchanged = noOpAnonymizer.Anonymize(original);
-                Assert.Same(original, unchanged);
-            }
-
-            [Fact]
-            public void TestResultAnonymizerConsolidatedBehavior()
-            {
-                var original = new AnalysisResult
-                {
-                    Contributors = new List<ContributorMetric>
+                Contributors = new List<ContributorMetric>
                     {
                         new ContributorMetric { Name = "Alice Smith", Email = "alice@example.com", TotalActivity = 10, Areas = new List<ContributorAreaMetric>() },
                         new ContributorMetric { Name = "Bob Jones", Email = "bob@example.com", TotalActivity = 5, Areas = new List<ContributorAreaMetric>() },
                         new ContributorMetric { Name = "Alice Smith", Email = "alice@example.com", TotalActivity = 12, Areas = new List<ContributorAreaMetric>() }
                     },
-                    Automation = new List<AutomationMetric>
+                Automation = new List<AutomationMetric>
                     {
                         new AutomationMetric { Name = "BuildBot", Email = "bot@example.com", TotalActivity = 100, Areas = new List<ContributorAreaMetric>() }
                     }
-                };
+            };
 
-                var anonymizer = new ResultAnonymizer();
-                var result = anonymizer.Anonymize(original);
+            var anonymizer = new ResultAnonymizer();
+            var result = anonymizer.Anonymize(original);
 
-                Assert.NotNull(result);
-                Assert.Equal(3, result.Contributors.Count);
-                Assert.Single(result.Automation);
+            Assert.NotNull(result);
+            Assert.Equal(3, result.Contributors.Count);
+            Assert.Single(result.Automation);
 
-                // Alice Smith (first unique human) -> Contributor 1
-                Assert.Equal("Contributor 1", result.Contributors[0].Name);
-                Assert.Equal("contributor-1@anonymous.local", result.Contributors[0].Email);
+            // Alice Smith (first unique human) -> Contributor 1
+            Assert.Equal("Contributor 1", result.Contributors[0].Name);
+            Assert.Equal("contributor-1@anonymous.local", result.Contributors[0].Email);
 
-                // Bob Jones (second unique human) -> Contributor 2
-                Assert.Equal("Contributor 2", result.Contributors[1].Name);
-                Assert.Equal("contributor-2@anonymous.local", result.Contributors[1].Email);
+            // Bob Jones (second unique human) -> Contributor 2
+            Assert.Equal("Contributor 2", result.Contributors[1].Name);
+            Assert.Equal("contributor-2@anonymous.local", result.Contributors[1].Email);
 
-                // Same Alice Smith (repeats key) -> Contributor 1
-                Assert.Equal("Contributor 1", result.Contributors[2].Name);
-                Assert.Equal("contributor-1@anonymous.local", result.Contributors[2].Email);
+            // Same Alice Smith (repeats key) -> Contributor 1
+            Assert.Equal("Contributor 1", result.Contributors[2].Name);
+            Assert.Equal("contributor-1@anonymous.local", result.Contributors[2].Email);
 
-                // BuildBot -> Automation 1
-                Assert.Equal("Automation 1", result.Automation[0].Name);
-                Assert.Equal("automation-1@anonymous.local", result.Automation[0].Email);
-            }
+            // BuildBot -> Automation 1
+            Assert.Equal("Automation 1", result.Automation[0].Name);
+            Assert.Equal("automation-1@anonymous.local", result.Automation[0].Email);
+        }
 
-            [Fact]
-            public void TestResultAnonymizerMaintainsStateAcrossCalls()
+        [Fact]
+        public void TestResultAnonymizerMaintainsStateAcrossCalls()
+        {
+            var original1 = new AnalysisResult
             {
-                var original1 = new AnalysisResult
-                {
-                    Contributors = new List<ContributorMetric>
+                Contributors = new List<ContributorMetric>
                     {
                         new ContributorMetric { Name = "Alice Smith", Email = "alice@example.com", TotalActivity = 10, Areas = new List<ContributorAreaMetric>() }
                     },
-                    Automation = new List<AutomationMetric>
+                Automation = new List<AutomationMetric>
                     {
                         new AutomationMetric { Name = "BuildBot", Email = "bot@example.com", TotalActivity = 100, Areas = new List<ContributorAreaMetric>() }
                     }
-                };
+            };
 
-                var original2 = new AnalysisResult
-                {
-                    Contributors = new List<ContributorMetric>
+            var original2 = new AnalysisResult
+            {
+                Contributors = new List<ContributorMetric>
                     {
                         new ContributorMetric { Name = "Charlie Brown", Email = "charlie@example.com", TotalActivity = 10, Areas = new List<ContributorAreaMetric>() }
                     },
-                    Automation = new List<AutomationMetric>
+                Automation = new List<AutomationMetric>
                     {
                         new AutomationMetric { Name = "DeployBot", Email = "deploy@example.com", TotalActivity = 100, Areas = new List<ContributorAreaMetric>() }
                     }
-                };
+            };
 
-                var anonymizer = new ResultAnonymizer();
+            var anonymizer = new ResultAnonymizer();
 
-                // Run anonymizer on the first result
-                var result1 = anonymizer.Anonymize(original1);
-                Assert.Equal("Contributor 1", result1.Contributors[0].Name);
-                Assert.Equal("contributor-1@anonymous.local", result1.Contributors[0].Email);
-                Assert.Equal("Automation 1", result1.Automation[0].Name);
-                Assert.Equal("automation-1@anonymous.local", result1.Automation[0].Email);
+            // Run anonymizer on the first result
+            var result1 = anonymizer.Anonymize(original1);
+            Assert.Equal("Contributor 1", result1.Contributors[0].Name);
+            Assert.Equal("contributor-1@anonymous.local", result1.Contributors[0].Email);
+            Assert.Equal("Automation 1", result1.Automation[0].Name);
+            Assert.Equal("automation-1@anonymous.local", result1.Automation[0].Email);
 
-                // Run anonymizer on the second result, using the exact SAME anonymizer instance.
-                // The anonymizer is now stateful via its cache, so it maps to Contributor 2 and Automation 2.
-                var result2 = anonymizer.Anonymize(original2);
-                Assert.Equal("Contributor 2", result2.Contributors[0].Name);
-                Assert.Equal("contributor-2@anonymous.local", result2.Contributors[0].Email);
-                Assert.Equal("Automation 2", result2.Automation[0].Name);
-                Assert.Equal("automation-2@anonymous.local", result2.Automation[0].Email);
-            }
+            // Run anonymizer on the second result, using the exact SAME anonymizer instance.
+            // The anonymizer is now stateful via its cache, so it maps to Contributor 2 and Automation 2.
+            var result2 = anonymizer.Anonymize(original2);
+            Assert.Equal("Contributor 2", result2.Contributors[0].Name);
+            Assert.Equal("contributor-2@anonymous.local", result2.Contributors[0].Email);
+            Assert.Equal("Automation 2", result2.Automation[0].Name);
+            Assert.Equal("automation-2@anonymous.local", result2.Automation[0].Email);
+        }
 
-            [Fact]
-            public void TestICommandLineParser_InterfaceAndImplementation()
+        [Fact]
+        public void TestICommandLineParser_InterfaceAndImplementation()
+        {
+            string[] args = new[] { "--json", "--since", "2026-01-01" };
+            ICommandLineParser parser = new CommandLineParser(args);
+            ParsedArgs parsed = parser.Parse();
+
+            Assert.Equal("wizard", parsed.Command);
+            Assert.True(parsed.Settings.Json);
+            Assert.Equal("2026-01-01", parsed.Settings.Since);
+        }
+
+        [Fact]
+        public void TestIYamlParserAndYamlSubsetParserImpl()
+        {
+            IYamlParser parser = new YamlSubsetParserImpl();
+            string yaml = "key: value\nnumber: 42\nbool: true";
+            var parsed = parser.Parse(yaml, "test_source") as Dictionary<string, object?>;
+            Assert.NotNull(parsed);
+            Assert.Equal("value", parsed["key"]);
+            Assert.Equal(42L, parsed["number"]);
+            Assert.Equal(true, parsed["bool"]);
+        }
+
+        private class MockYamlTokenizer : IYamlTokenizer
+        {
+            public List<YamlLine> Tokenize(string content)
             {
-                string[] args = new[] { "--json", "--since", "2026-01-01" };
-                ICommandLineParser parser = new CommandLineParser(args);
-                ParsedArgs parsed = parser.Parse();
-
-                Assert.Equal("wizard", parsed.Command);
-                Assert.True(parsed.Settings.Json);
-                Assert.Equal("2026-01-01", parsed.Settings.Since);
-            }
-
-            [Fact]
-            public void TestIYamlParserAndYamlSubsetParserImpl()
-            {
-                IYamlParser parser = new YamlSubsetParserImpl();
-                string yaml = "key: value\nnumber: 42\nbool: true";
-                var parsed = parser.Parse(yaml, "test_source") as Dictionary<string, object?>;
-                Assert.NotNull(parsed);
-                Assert.Equal("value", parsed["key"]);
-                Assert.Equal(42L, parsed["number"]);
-                Assert.Equal(true, parsed["bool"]);
-            }
-
-            private class MockYamlTokenizer : IYamlTokenizer
-            {
-                public List<YamlLine> Tokenize(string content)
-                {
-                    return new List<YamlLine>
+                return new List<YamlLine>
                     {
                         new YamlLine { Indent = 0, Text = "mockKey: mockValue", LineNumber = 1 }
                     };
-                }
             }
+        }
 
-            [Fact]
-            public void TestYamlSubsetParser_WithMockTokenizer()
+        [Fact]
+        public void TestYamlSubsetParser_WithMockTokenizer()
+        {
+            var mockTokenizer = new MockYamlTokenizer();
+            var parser = new YamlSubsetParser("ignored content", "test_source", mockTokenizer);
+            var parsed = parser.Parse() as Dictionary<string, object?>;
+            Assert.NotNull(parsed);
+            Assert.Equal("mockValue", parsed["mockKey"]);
+        }
+
+        private class NoOpResultAnonymizer : IResultAnonymizer
+        {
+            public AnalysisResult Anonymize(AnalysisResult result)
             {
-                var mockTokenizer = new MockYamlTokenizer();
-                var parser = new YamlSubsetParser("ignored content", "test_source", mockTokenizer);
-                var parsed = parser.Parse() as Dictionary<string, object?>;
-                Assert.NotNull(parsed);
-                Assert.Equal("mockValue", parsed["mockKey"]);
+                return result;
             }
+        }
 
-            private class NoOpResultAnonymizer : IResultAnonymizer
+        [Fact]
+        public void TestIFamiliarityScoringEngine_InterfaceAndImplementation()
+        {
+            var config = new GiticConfig();
+            IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(config);
+            var items = new List<ItemAccumulator>();
+            var files = engine.ScoreFiles(items, 2);
+            var areas = engine.ScoreAreas(items);
+
+            Assert.NotNull(files);
+            Assert.Empty(files);
+            Assert.NotNull(areas);
+            Assert.Empty(areas);
+        }
+
+        private class MockKnowledgeSiloCalculator : IKnowledgeSiloCalculator
+        {
+            public bool Called { get; private set; }
+            public List<ContributorShare>? PassedContributors { get; private set; }
+            public HashSet<string>? PassedActiveContributorKeys { get; private set; }
+
+            public KnowledgeSiloMetric CalculateKnowledgeSilo(
+                List<ContributorShare> contributors,
+                HashSet<string> activeContributorKeys)
             {
-                public AnalysisResult Anonymize(AnalysisResult result)
+                Called = true;
+                PassedContributors = contributors;
+                PassedActiveContributorKeys = activeContributorKeys;
+                return new KnowledgeSiloMetric
                 {
-                    return result;
-                }
+                    TruckFactor = 99,
+                    TopOwnerShare = 0.99,
+                    IsSilo = true,
+                    Abandoned = true
+                };
             }
+        }
 
-            [Fact]
-            public void TestIFamiliarityScoringEngine_InterfaceAndImplementation()
-            {
-                var config = new GiticConfig();
-                IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(config);
-                var items = new List<ItemAccumulator>();
-                var files = engine.ScoreFiles(items, 2);
-                var areas = engine.ScoreAreas(items);
+        [Fact]
+        public void TestFamiliarityScoringEngine_UsesInjectedKnowledgeSiloCalculator()
+        {
+            var config = new GiticConfig();
+            var mockCalculator = new MockKnowledgeSiloCalculator();
+            var activeKeys = new HashSet<string> { "active" };
+            IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(
+                config,
+                activeKeys,
+                depth: 2,
+                siloCalculator: mockCalculator);
 
-                Assert.NotNull(files);
-                Assert.Empty(files);
-                Assert.NotNull(areas);
-                Assert.Empty(areas);
-            }
-
-            private class MockKnowledgeSiloCalculator : IKnowledgeSiloCalculator
-            {
-                public bool Called { get; private set; }
-                public List<ContributorShare>? PassedContributors { get; private set; }
-                public HashSet<string>? PassedActiveContributorKeys { get; private set; }
-
-                public KnowledgeSiloMetric CalculateKnowledgeSilo(
-                    List<ContributorShare> contributors,
-                    HashSet<string> activeContributorKeys)
-                {
-                    Called = true;
-                    PassedContributors = contributors;
-                    PassedActiveContributorKeys = activeContributorKeys;
-                    return new KnowledgeSiloMetric
-                    {
-                        TruckFactor = 99,
-                        TopOwnerShare = 0.99,
-                        IsSilo = true,
-                        Abandoned = true
-                    };
-                }
-            }
-
-            [Fact]
-            public void TestFamiliarityScoringEngine_UsesInjectedKnowledgeSiloCalculator()
-            {
-                var config = new GiticConfig();
-                var mockCalculator = new MockKnowledgeSiloCalculator();
-                var activeKeys = new HashSet<string> { "active" };
-                IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(
-                    config,
-                    activeKeys,
-                    depth: 2,
-                    siloCalculator: mockCalculator);
-
-                var items = new List<ItemAccumulator>
+            var items = new List<ItemAccumulator>
                 {
                     new ItemAccumulator
                     {
@@ -2461,57 +2461,57 @@ __GITIC_NUMSTAT__
                     }
                 };
 
-                var files = engine.ScoreFiles(items, 2);
+            var files = engine.ScoreFiles(items, 2);
 
-                Assert.True(mockCalculator.Called);
-                Assert.NotNull(mockCalculator.PassedContributors);
-                Assert.Single(mockCalculator.PassedContributors);
-                Assert.Equal("User1", mockCalculator.PassedContributors[0].Name);
-                Assert.Same(activeKeys, mockCalculator.PassedActiveContributorKeys);
+            Assert.True(mockCalculator.Called);
+            Assert.NotNull(mockCalculator.PassedContributors);
+            Assert.Single(mockCalculator.PassedContributors);
+            Assert.Equal("User1", mockCalculator.PassedContributors[0].Name);
+            Assert.Same(activeKeys, mockCalculator.PassedActiveContributorKeys);
 
-                Assert.Single(files);
-                Assert.NotNull(files[0].KnowledgeSilo);
-                Assert.Equal(99, files[0].KnowledgeSilo!.TruckFactor);
-                Assert.Equal(0.99, files[0].KnowledgeSilo!.TopOwnerShare);
-                Assert.True(files[0].KnowledgeSilo!.IsSilo);
-                Assert.True(files[0].KnowledgeSilo!.Abandoned);
+            Assert.Single(files);
+            Assert.NotNull(files[0].KnowledgeSilo);
+            Assert.Equal(99, files[0].KnowledgeSilo!.TruckFactor);
+            Assert.Equal(0.99, files[0].KnowledgeSilo!.TopOwnerShare);
+            Assert.True(files[0].KnowledgeSilo!.IsSilo);
+            Assert.True(files[0].KnowledgeSilo!.Abandoned);
+        }
+
+        private class MockScoringUtilityService : IScoringUtilityService
+        {
+            public bool CalculateRecencyScoreCalled { get; set; }
+            public bool CalculateDebtVolatilityCalled { get; set; }
+            public bool CalculateCoordinationOverlapCalled { get; set; }
+
+            public double CalculateRecencyScore(long timestamp, DateTimeOffset? referenceDate = null)
+            {
+                CalculateRecencyScoreCalled = true;
+                return 0.5;
             }
 
-            private class MockScoringUtilityService : IScoringUtilityService
+            public double CalculateDebtVolatility(ItemAccumulator item, double maxChurn, double maxNetLines)
             {
-                public bool CalculateRecencyScoreCalled { get; set; }
-                public bool CalculateDebtVolatilityCalled { get; set; }
-                public bool CalculateCoordinationOverlapCalled { get; set; }
-
-                public double CalculateRecencyScore(long timestamp, DateTimeOffset? referenceDate = null)
-                {
-                    CalculateRecencyScoreCalled = true;
-                    return 0.5;
-                }
-
-                public double CalculateDebtVolatility(ItemAccumulator item, double maxChurn, double maxNetLines)
-                {
-                    CalculateDebtVolatilityCalled = true;
-                    return 42.0;
-                }
-
-                public double CalculateCoordinationOverlap(List<ContributorShare> contributors, int itemTouches)
-                {
-                    CalculateCoordinationOverlapCalled = true;
-                    return 77.0;
-                }
+                CalculateDebtVolatilityCalled = true;
+                return 42.0;
             }
 
-            [Fact]
-            public void TestFamiliarityScoringEngine_UsesInjectedScoringUtilityService()
+            public double CalculateCoordinationOverlap(List<ContributorShare> contributors, int itemTouches)
             {
-                var config = new GiticConfig();
-                var mockUtility = new MockScoringUtilityService();
-                IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(
-                    config,
-                    scoringUtilityService: mockUtility);
+                CalculateCoordinationOverlapCalled = true;
+                return 77.0;
+            }
+        }
 
-                var items = new List<ItemAccumulator>
+        [Fact]
+        public void TestFamiliarityScoringEngine_UsesInjectedScoringUtilityService()
+        {
+            var config = new GiticConfig();
+            var mockUtility = new MockScoringUtilityService();
+            IFamiliarityScoringEngine engine = new FamiliarityScoringEngine(
+                config,
+                scoringUtilityService: mockUtility);
+
+            var items = new List<ItemAccumulator>
                 {
                     new ItemAccumulator
                     {
@@ -2528,190 +2528,190 @@ __GITIC_NUMSTAT__
                     }
                 };
 
-                var files = engine.ScoreFiles(items, 2);
+            var files = engine.ScoreFiles(items, 2);
 
-                Assert.True(mockUtility.CalculateRecencyScoreCalled);
-                Assert.True(mockUtility.CalculateDebtVolatilityCalled);
-                Assert.True(mockUtility.CalculateCoordinationOverlapCalled);
+            Assert.True(mockUtility.CalculateRecencyScoreCalled);
+            Assert.True(mockUtility.CalculateDebtVolatilityCalled);
+            Assert.True(mockUtility.CalculateCoordinationOverlapCalled);
 
-                var fileMetric = Assert.Single(files);
-                Assert.Equal(42.0, fileMetric.DebtVolatility);
-                Assert.Equal(77.0, fileMetric.CoordinationOverlap);
-            }
-
-
-            public class MockFileSystem : IFileSystem
-            {
-                public Dictionary<string, byte[]> Files { get; } = new();
-
-                public bool FileExists(string path)
-                {
-                    return Files.ContainsKey(path);
-                }
-
-                public long GetFileSize(string path)
-                {
-                    if (Files.TryGetValue(path, out var data))
-                    {
-                        return data.Length;
-                    }
-                    throw new FileNotFoundException();
-                }
-
-                public Stream OpenRead(string path)
-                {
-                    if (Files.TryGetValue(path, out var data))
-                    {
-                        return new MemoryStream(data);
-                    }
-                    throw new FileNotFoundException();
-                }
-            }
-
-            [Fact]
-            public async Task TestDiskFileStatsProvider_WithMockFileSystem()
-            {
-                var mockFs = new MockFileSystem();
-                string repoRoot = "/mock/root";
-                string relativePath = "testfile.txt";
-                string fullPath = Path.Combine(repoRoot, relativePath);
-
-                string content = "line 1\nline 2\nlongest line here";
-                mockFs.Files[fullPath] = Encoding.UTF8.GetBytes(content);
-
-                var provider = new DiskFileStatsProvider(mockFs);
-                var stats = await provider.ComputeFileStatsAsync(repoRoot, new List<string> { relativePath });
-
-                Assert.NotNull(stats);
-                Assert.True(stats.ContainsKey(relativePath));
-                var fileStat = stats[relativePath];
-                Assert.Equal(content.Length, fileStat.Size);
-                Assert.Equal(3, fileStat.Lines);
-                Assert.Equal("longest line here".Length, fileStat.Width);
-            }
-
-            [Fact]
-            public async Task TestDiskFileStatsProvider_WithMockFileSystem_BinaryAndNonexistent()
-            {
-                var mockFs = new MockFileSystem();
-                string repoRoot = "/mock/root";
-                string binaryRelPath = "binary.bin";
-                string nonexistentRelPath = "missing.txt";
-
-                string fullBinaryPath = Path.Combine(repoRoot, binaryRelPath);
-                mockFs.Files[fullBinaryPath] = new byte[] { 1, 2, 0, 4, 5 };
-
-                var provider = new DiskFileStatsProvider(mockFs);
-                var stats = await provider.ComputeFileStatsAsync(repoRoot, new List<string> { binaryRelPath, nonexistentRelPath });
-
-                Assert.NotNull(stats);
-
-                Assert.True(stats.ContainsKey(binaryRelPath));
-                Assert.Equal(5, stats[binaryRelPath].Size);
-                Assert.Equal(0, stats[binaryRelPath].Lines);
-                Assert.Equal(0, stats[binaryRelPath].Width);
-
-                Assert.True(stats.ContainsKey(nonexistentRelPath));
-                Assert.Equal(0, stats[nonexistentRelPath].Size);
-                Assert.Equal(0, stats[nonexistentRelPath].Lines);
-                Assert.Equal(0, stats[nonexistentRelPath].Width);
-            }
-
-            private class MockFamiliarityScoringEngine : IFamiliarityScoringEngine
-            {
-                public bool ScoreFilesCalled { get; set; }
-                public bool ScoreAreasCalled { get; set; }
-
-                public List<FileMetric> ScoreFiles(List<ItemAccumulator> items, int depth)
-                {
-                    ScoreFilesCalled = true;
-                    return new List<FileMetric> { new FileMetric { Path = "mockfile.cs", HeatScore = 99 } };
-                }
-
-                public List<AreaMetric> ScoreAreas(List<ItemAccumulator> items)
-                {
-                    ScoreAreasCalled = true;
-                    return new List<AreaMetric> { new AreaMetric { Area = "mockarea", HeatScore = 88 } };
-                }
-            }
-
-            [Fact]
-            public void TestAnalysisPipeline_UsesInjectedScoringEngine()
-            {
-                var mockScoring = new MockFamiliarityScoringEngine();
-                var pipeline = new AnalysisPipeline(new PipelineDependencies { ScoringEngine = mockScoring });
-                
-                var commits = new List<GitCommitRecord>
-                {
-                    new GitCommitRecord
-                    {
-                        Hash = "123",
-                        Author = new GitIdentity { Name = "test", Email = "test@example.com" },
-                        Files = new List<GitFileChange> { new GitFileChange { Path = "mockfile.cs", Added = 10, Deleted = 5 } }
-                    }
-                };
-                var headFiles = new HashSet<string> { "mockfile.cs" };
-                var config = new GiticConfig();
-                var settings = new AnalysisSettings();
-
-                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
-
-                Assert.True(mockScoring.ScoreFilesCalled);
-                Assert.True(mockScoring.ScoreAreasCalled);
-                Assert.Single(result.Files);
-                Assert.Equal("mockfile.cs", result.Files[0].Path);
-                Assert.Single(result.Areas);
-                Assert.Equal("mockarea", result.Areas[0].Area);
-            }
-
-            [Fact]
-            public void TestAnalysisPipeline_UsesInjectedWarningCollector()
-            {
-                var mockWarningCollector = new MockWarningCollector();
-                var pipeline = new AnalysisPipeline(new PipelineDependencies { WarningCollector = mockWarningCollector });
-                
-                var commits = new List<GitCommitRecord>
-                {
-                    new GitCommitRecord
-                    {
-                        Hash = "123",
-                        Author = new GitIdentity { Name = "test", Email = "test@example.com" },
-                        Files = new List<GitFileChange> { new GitFileChange { Path = "mockfile.cs", Added = 10, Deleted = 5 } }
-                    }
-                };
-                var headFiles = new HashSet<string> { "mockfile.cs" };
-                var config = new GiticConfig();
-                var settings = new AnalysisSettings();
-
-                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
-
-                Assert.True(mockWarningCollector.CollectCalled);
-                Assert.Contains("mock_warning", result.Warnings);
-            }
-
-            [Fact]
-            public void TestAnalysisPipeline_UsesInjectedIdentityRegistry()
-            {
-                var mockRegistry = new MockIdentityRegistry();
-                var pipeline = new AnalysisPipeline(new PipelineDependencies { IdentityRegistry = mockRegistry });
-                
-                var commits = new List<GitCommitRecord>
-                {
-                    new GitCommitRecord
-                    {
-                        Hash = "123",
-                        Author = new GitIdentity { Name = "test", Email = "test@example.com" },
-                        Files = new List<GitFileChange> { new GitFileChange { Path = "mockfile.cs", Added = 10, Deleted = 5 } }
-                    }
-                };
-                var headFiles = new HashSet<string> { "mockfile.cs" };
-                var config = new GiticConfig();
-                var settings = new AnalysisSettings();
-
-                var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
-
-                Assert.True(mockRegistry.RegisterRealIdentityCalled);
-            }
-
+            var fileMetric = Assert.Single(files);
+            Assert.Equal(42.0, fileMetric.DebtVolatility);
+            Assert.Equal(77.0, fileMetric.CoordinationOverlap);
         }
+
+
+        public class MockFileSystem : IFileSystem
+        {
+            public Dictionary<string, byte[]> Files { get; } = new();
+
+            public bool FileExists(string path)
+            {
+                return Files.ContainsKey(path);
+            }
+
+            public long GetFileSize(string path)
+            {
+                if (Files.TryGetValue(path, out var data))
+                {
+                    return data.Length;
+                }
+                throw new FileNotFoundException();
+            }
+
+            public Stream OpenRead(string path)
+            {
+                if (Files.TryGetValue(path, out var data))
+                {
+                    return new MemoryStream(data);
+                }
+                throw new FileNotFoundException();
+            }
+        }
+
+        [Fact]
+        public async Task TestDiskFileStatsProvider_WithMockFileSystem()
+        {
+            var mockFs = new MockFileSystem();
+            string repoRoot = "/mock/root";
+            string relativePath = "testfile.txt";
+            string fullPath = Path.Combine(repoRoot, relativePath);
+
+            string content = "line 1\nline 2\nlongest line here";
+            mockFs.Files[fullPath] = Encoding.UTF8.GetBytes(content);
+
+            var provider = new DiskFileStatsProvider(mockFs);
+            var stats = await provider.ComputeFileStatsAsync(repoRoot, new List<string> { relativePath });
+
+            Assert.NotNull(stats);
+            Assert.True(stats.ContainsKey(relativePath));
+            var fileStat = stats[relativePath];
+            Assert.Equal(content.Length, fileStat.Size);
+            Assert.Equal(3, fileStat.Lines);
+            Assert.Equal("longest line here".Length, fileStat.Width);
+        }
+
+        [Fact]
+        public async Task TestDiskFileStatsProvider_WithMockFileSystem_BinaryAndNonexistent()
+        {
+            var mockFs = new MockFileSystem();
+            string repoRoot = "/mock/root";
+            string binaryRelPath = "binary.bin";
+            string nonexistentRelPath = "missing.txt";
+
+            string fullBinaryPath = Path.Combine(repoRoot, binaryRelPath);
+            mockFs.Files[fullBinaryPath] = new byte[] { 1, 2, 0, 4, 5 };
+
+            var provider = new DiskFileStatsProvider(mockFs);
+            var stats = await provider.ComputeFileStatsAsync(repoRoot, new List<string> { binaryRelPath, nonexistentRelPath });
+
+            Assert.NotNull(stats);
+
+            Assert.True(stats.ContainsKey(binaryRelPath));
+            Assert.Equal(5, stats[binaryRelPath].Size);
+            Assert.Equal(0, stats[binaryRelPath].Lines);
+            Assert.Equal(0, stats[binaryRelPath].Width);
+
+            Assert.True(stats.ContainsKey(nonexistentRelPath));
+            Assert.Equal(0, stats[nonexistentRelPath].Size);
+            Assert.Equal(0, stats[nonexistentRelPath].Lines);
+            Assert.Equal(0, stats[nonexistentRelPath].Width);
+        }
+
+        private class MockFamiliarityScoringEngine : IFamiliarityScoringEngine
+        {
+            public bool ScoreFilesCalled { get; set; }
+            public bool ScoreAreasCalled { get; set; }
+
+            public List<FileMetric> ScoreFiles(List<ItemAccumulator> items, int depth)
+            {
+                ScoreFilesCalled = true;
+                return new List<FileMetric> { new FileMetric { Path = "mockfile.cs", HeatScore = 99 } };
+            }
+
+            public List<AreaMetric> ScoreAreas(List<ItemAccumulator> items)
+            {
+                ScoreAreasCalled = true;
+                return new List<AreaMetric> { new AreaMetric { Area = "mockarea", HeatScore = 88 } };
+            }
+        }
+
+        [Fact]
+        public void TestAnalysisPipeline_UsesInjectedScoringEngine()
+        {
+            var mockScoring = new MockFamiliarityScoringEngine();
+            var pipeline = new AnalysisPipeline(new PipelineDependencies { ScoringEngine = mockScoring });
+
+            var commits = new List<GitCommitRecord>
+                {
+                    new GitCommitRecord
+                    {
+                        Hash = "123",
+                        Author = new GitIdentity { Name = "test", Email = "test@example.com" },
+                        Files = new List<GitFileChange> { new GitFileChange { Path = "mockfile.cs", Added = 10, Deleted = 5 } }
+                    }
+                };
+            var headFiles = new HashSet<string> { "mockfile.cs" };
+            var config = new GiticConfig();
+            var settings = new AnalysisSettings();
+
+            var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
+
+            Assert.True(mockScoring.ScoreFilesCalled);
+            Assert.True(mockScoring.ScoreAreasCalled);
+            Assert.Single(result.Files);
+            Assert.Equal("mockfile.cs", result.Files[0].Path);
+            Assert.Single(result.Areas);
+            Assert.Equal("mockarea", result.Areas[0].Area);
+        }
+
+        [Fact]
+        public void TestAnalysisPipeline_UsesInjectedWarningCollector()
+        {
+            var mockWarningCollector = new MockWarningCollector();
+            var pipeline = new AnalysisPipeline(new PipelineDependencies { WarningCollector = mockWarningCollector });
+
+            var commits = new List<GitCommitRecord>
+                {
+                    new GitCommitRecord
+                    {
+                        Hash = "123",
+                        Author = new GitIdentity { Name = "test", Email = "test@example.com" },
+                        Files = new List<GitFileChange> { new GitFileChange { Path = "mockfile.cs", Added = 10, Deleted = 5 } }
+                    }
+                };
+            var headFiles = new HashSet<string> { "mockfile.cs" };
+            var config = new GiticConfig();
+            var settings = new AnalysisSettings();
+
+            var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
+
+            Assert.True(mockWarningCollector.CollectCalled);
+            Assert.Contains("mock_warning", result.Warnings);
+        }
+
+        [Fact]
+        public void TestAnalysisPipeline_UsesInjectedIdentityRegistry()
+        {
+            var mockRegistry = new MockIdentityRegistry();
+            var pipeline = new AnalysisPipeline(new PipelineDependencies { IdentityRegistry = mockRegistry });
+
+            var commits = new List<GitCommitRecord>
+                {
+                    new GitCommitRecord
+                    {
+                        Hash = "123",
+                        Author = new GitIdentity { Name = "test", Email = "test@example.com" },
+                        Files = new List<GitFileChange> { new GitFileChange { Path = "mockfile.cs", Added = 10, Deleted = 5 } }
+                    }
+                };
+            var headFiles = new HashSet<string> { "mockfile.cs" };
+            var config = new GiticConfig();
+            var settings = new AnalysisSettings();
+
+            var result = pipeline.Run(commits, headFiles, config, settings, AnalysisCommand.Hotspots);
+
+            Assert.True(mockRegistry.RegisterRealIdentityCalled);
+        }
+
     }
+}

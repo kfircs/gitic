@@ -12,21 +12,21 @@ public class CliOptions
     public Option<string> ConfigOption { get; } = new("--config") { Description = "Path to non-default configuration file", Recursive = true };
     public Option<string> UserConfigOption { get; } = new("--user-config") { Description = "Path to non-default global user configuration file", Recursive = true };
     public Option<bool> JsonOption { get; } = new("--json") { Description = "Output results in raw JSON format", Recursive = true };
-    
-    public Option<string> FormatOption { get; } = new("--format") 
-    { 
-        Description = "Output format: human, plain, json", 
+
+    public Option<string> FormatOption { get; } = new("--format")
+    {
+        Description = "Output format: human, plain, json",
         DefaultValueFactory = _ => "human",
-        Recursive = true 
+        Recursive = true
     };
-    
-    public Option<string> ColorOption { get; } = new("--color") 
-    { 
-        Description = "Color mode: auto, always, never", 
+
+    public Option<string> ColorOption { get; } = new("--color")
+    {
+        Description = "Color mode: auto, always, never",
         DefaultValueFactory = _ => "auto",
-        Recursive = true 
+        Recursive = true
     };
-    
+
     public Option<bool> AllTimeOption { get; } = new("--all-time") { Description = "Analyze all history (ignoring time window settings)", Recursive = true };
     public Option<bool> IncludeMergesOption { get; } = new("--include-merges") { Description = "Include merge commits in the analysis", Recursive = true };
     public Option<bool> IncludeDeletedOption { get; } = new("--include-deleted") { Description = "Include deleted files in stats", Recursive = true };
@@ -35,12 +35,12 @@ public class CliOptions
     public Option<string> SinceOption { get; } = new("--since") { Description = "Filter commits since date (YYYY-MM-DD)", Recursive = true };
     public Option<string> UntilOption { get; } = new("--until") { Description = "Filter commits until date (YYYY-MM-DD)", Recursive = true };
     public Option<string> PathOption { get; } = new("--path") { Description = "Filter analysis to files matching glob pattern", Recursive = true };
-    
-    public Option<int> DepthOption { get; } = new("--depth") 
-    { 
-        Description = "Directory depth for areas analysis (1-10)", 
+
+    public Option<int> DepthOption { get; } = new("--depth")
+    {
+        Description = "Directory depth for areas analysis (1-10)",
         DefaultValueFactory = _ => 2,
-        Recursive = true 
+        Recursive = true
     };
 
     public Option<string> HtmlOption { get; } = new("--html") { Description = "Output visual HTML report to path", Recursive = true, HelpName = "path" };

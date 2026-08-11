@@ -19,10 +19,10 @@ metrics:
   neg_int: -123
 ";
             var parsed = (Dictionary<string, object?>)YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source")!;
-            
+
             Assert.NotNull(parsed);
             Assert.True(parsed.ContainsKey("identity"));
-            
+
             var identity = (Dictionary<string, object?>)parsed["identity"]!;
             Assert.True((bool)identity["merge_on_email"]!);
 
@@ -44,7 +44,7 @@ excludes:
 ";
             var parsed = (Dictionary<string, object?>)YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source")!;
             Assert.NotNull(parsed);
-            
+
             var excludes = (List<object?>)parsed["excludes"]!;
             Assert.Equal(2, excludes.Count);
 
@@ -124,15 +124,15 @@ key:
                 new YamlLine { Indent = 0, Text = "key: val", LineNumber = 1 }
             };
             var stream = new YamlTokenStream(lines, "test_source");
-            
+
             Assert.True(stream.HasMore);
             Assert.False(stream.IsAtEnd());
             Assert.Equal(1, stream.LineNumber());
-            
+
             var line = stream.Peek();
             Assert.NotNull(line);
             Assert.Equal("key: val", line.Text);
-            
+
             stream.Consume();
             Assert.False(stream.HasMore);
             Assert.True(stream.IsAtEnd());

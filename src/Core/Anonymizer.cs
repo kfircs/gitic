@@ -69,7 +69,7 @@ public class ResultAnonymizer : IResultAnonymizer
         ArgumentNullException.ThrowIfNull(result);
 
         var serialized = JsonSerializer.Serialize(result);
-        var cloned = JsonSerializer.Deserialize<AnalysisResult>(serialized) 
+        var cloned = JsonSerializer.Deserialize<AnalysisResult>(serialized)
                      ?? throw new InvalidOperationException("Failed to clone AnalysisResult via JSON serialization.");
 
         // Anonymize human contributors

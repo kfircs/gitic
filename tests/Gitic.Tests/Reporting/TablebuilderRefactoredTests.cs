@@ -28,14 +28,14 @@ namespace Gitic.Tests
         {
             var builder = new ConsoleTableBuilder();
             builder.AddColumn("Status", 10, "left");
-            
+
             // "\x1B[31mError\x1B[0m" has 5 visible characters ("Error").
             // With width = 10, it should be padded with 5 spaces at the end.
             builder.AddRow(new List<string> { "\x1B[31mError\x1B[0m" });
 
             var result = builder.Render();
             var lines = result.Split('\n');
-            
+
             Assert.Equal(2, lines.Length);
             // Header is "Status" padded left to width 10 -> "Status    "
             Assert.Equal("Status    ", lines[0]);
@@ -107,7 +107,7 @@ namespace Gitic.Tests
             // Verify implicit generic covariance of IEnumerable<string?>:
             // 1. List<string> (invariant list of non-nullable)
             builder.AddRow(new List<string> { "one" });
-            
+
             // 2. string[] (array of non-nullable)
             builder.AddRow(new[] { "two" });
 

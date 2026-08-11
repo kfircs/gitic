@@ -57,7 +57,7 @@ namespace Gitic
         public ISvgChartBuilder AddGradient(string id, string x1, string y1, string x2, string y2, string startColor, string endColor, string? startOpacity = null, string? endOpacity = null)
         {
             _sb.AppendLine($"    <linearGradient id=\"{id}\" x1=\"{x1}\" y1=\"{y1}\" x2=\"{x2}\" y2=\"{y2}\">");
-            
+
             string startStop = $"      <stop offset=\"0%\" stop-color=\"{startColor}\"";
             if (startOpacity != null) startStop += $" stop-opacity=\"{startOpacity}\"";
             startStop += " />";
@@ -199,7 +199,7 @@ namespace Gitic
                     color = "#10b981";
                 }
 
-                string tooltip = $"{file.Path}\nAttention: {file.AttentionScore:F1}\nLines: {file.Lines.GetValueOrDefault(0)}\nChurn: {file.Churn}\nRework Rate: {file.ReworkRate.GetValueOrDefault(0)*100:F1}%";
+                string tooltip = $"{file.Path}\nAttention: {file.AttentionScore:F1}\nLines: {file.Lines.GetValueOrDefault(0)}\nChurn: {file.Churn}\nRework Rate: {file.ReworkRate.GetValueOrDefault(0) * 100:F1}%";
 
                 sb.AppendLine($"  <circle cx=\"{cx:F1}\" cy=\"{cy:F1}\" r=\"{r:F1}\" fill=\"{color}\" fill-opacity=\"0.75\" stroke=\"#1e293b\" stroke-width=\"1\">");
                 sb.AppendLine($"    <title>{EscapeXml(tooltip)}</title>");
@@ -214,7 +214,7 @@ namespace Gitic
                 double cy = padTop + plotHeight * (1.0 - file.AttentionScore / 100.0);
 
                 string fileLabel = Path.GetFileName(file.Path);
-                
+
                 string textAnchor = cx > width / 2.0 ? "end" : "start";
                 double textOffset = cx > width / 2.0 ? -12 : 12;
                 double textYOffset = labelCount % 2 == 0 ? -12 : 12;
@@ -270,7 +270,7 @@ namespace Gitic
             int colLabelY = 55;
             int labelWidth = 160;
             int barWidth = 270;
-            
+
             int leftBarX = 20 + labelWidth;
             int rightBarX = 20 + labelWidth + barWidth + 40;
 
@@ -392,14 +392,14 @@ namespace Gitic
                 double currentY = 70;
                 double currentWidth = width - 40;
                 double currentHeight = height - 90;
-                
+
                 foreach (var area in areas)
                 {
                     double ratio = area.FileCount / totalFiles;
                     double areaArea = ratio * (currentWidth * currentHeight);
-                    
+
                     bool isVerticalSplit = currentWidth >= currentHeight;
-                    
+
                     double rectW, rectH;
                     if (isVerticalSplit)
                     {
@@ -415,14 +415,14 @@ namespace Gitic
                     // Avoid floating point glitches
                     if (rectW < 1) rectW = 1;
                     if (rectH < 1) rectH = 1;
-                    
+
                     // Ownership bus factor logic
                     double topOwnership = 0.0;
                     if (area.Contributors != null && area.Contributors.Count > 0)
                     {
                         topOwnership = area.Contributors.Max(c => c.ActivityShare);
                     }
-                    
+
                     string color;
                     if (topOwnership > 0.8) color = "#ef4444"; // Red: High bus factor
                     else if (topOwnership > 0.5) color = "#f59e0b"; // Orange: Med bus factor
@@ -430,7 +430,7 @@ namespace Gitic
 
                     sb.AppendLine($"  <rect x=\"{currentX:F1}\" y=\"{currentY:F1}\" width=\"{rectW:F1}\" height=\"{rectH:F1}\" fill=\"{color}\" fill-opacity=\"0.6\" stroke=\"#0f172a\" stroke-width=\"2\">");
                     string topOwnerName = area.Contributors?.OrderByDescending(c => c.ActivityShare).FirstOrDefault()?.Name ?? "Unknown";
-                    string tooltip = $"{area.Area}\nFiles: {area.FileCount}\nTop Owner: {topOwnerName} ({topOwnership*100:F0}%)";
+                    string tooltip = $"{area.Area}\nFiles: {area.FileCount}\nTop Owner: {topOwnerName} ({topOwnership * 100:F0}%)";
                     sb.AppendLine($"    <title>{EscapeXml(tooltip)}</title>");
                     sb.AppendLine("  </rect>");
 
@@ -454,7 +454,7 @@ namespace Gitic
                     totalFiles -= area.FileCount;
                 }
             }
-            
+
             sb.AppendLine("</svg>");
             return sb.ToString();
         }
@@ -465,7 +465,7 @@ namespace Gitic
             int width = 800;
             int height = 500;
             sb.AppendLine($"<svg viewBox=\"0 0 {width} {height}\" width=\"100%\" height=\"auto\" xmlns=\"http://www.w3.org/2000/svg\" style=\"background-color:#0f172a; border-radius:8px; border:1px solid #1e293b; font-family:system-ui, -apple-system, sans-serif;\">");
-            
+
             sb.AppendLine("  <rect width=\"100%\" height=\"100%\" fill=\"#0f172a\" rx=\"8\" />");
             sb.AppendLine($"  <text x=\"20\" y=\"30\" fill=\"#f1f5f9\" font-size=\"14\" font-weight=\"bold\">🔗 Temporal / Change Coupling Node Graph</text>");
             sb.AppendLine($"  <text x=\"20\" y=\"50\" fill=\"#94a3b8\" font-size=\"11\">Files that repeatedly change together (Nodes = Files, Line Thickness = Coupling Degree)</text>");
@@ -478,7 +478,7 @@ namespace Gitic
             {
                 var couplings = result.TemporalCoupling.Take(30).ToList();
                 var nodes = new HashSet<string>();
-                foreach(var c in couplings)
+                foreach (var c in couplings)
                 {
                     nodes.Add(c.FileA);
                     nodes.Add(c.FileB);
@@ -486,13 +486,13 @@ namespace Gitic
 
                 var nodeList = nodes.ToList();
                 var positions = new Dictionary<string, (double x, double y)>();
-                
+
                 double centerX = width / 2.0;
                 double centerY = (height + 60) / 2.0;
                 double radiusX = width * 0.4;
                 double radiusY = height * 0.35;
-                
-                for(int i = 0; i < nodeList.Count; i++)
+
+                for (int i = 0; i < nodeList.Count; i++)
                 {
                     double angle = (i * 2 * Math.PI) / nodeList.Count;
                     double x = centerX + radiusX * Math.Cos(angle);
@@ -501,27 +501,27 @@ namespace Gitic
                 }
 
                 // Draw edges
-                foreach(var c in couplings)
+                foreach (var c in couplings)
                 {
-                    if(positions.TryGetValue(c.FileA, out var pA) && positions.TryGetValue(c.FileB, out var pB))
+                    if (positions.TryGetValue(c.FileA, out var pA) && positions.TryGetValue(c.FileB, out var pB))
                     {
                         double strokeWidth = 1.0 + (c.CouplingDegree * 5.0);
                         double opacity = 0.3 + (c.CouplingDegree * 0.5);
                         sb.AppendLine($"  <line x1=\"{pA.x:F1}\" y1=\"{pA.y:F1}\" x2=\"{pB.x:F1}\" y2=\"{pB.y:F1}\" stroke=\"#ef4444\" stroke-width=\"{strokeWidth:F1}\" opacity=\"{opacity:F2}\">");
-                        string tooltip = $"{c.FileA} ↔ {c.FileB}\nCoupling Degree: {c.CouplingDegree*100:F1}%\nShared Commits: {c.SharedCommits}";
+                        string tooltip = $"{c.FileA} ↔ {c.FileB}\nCoupling Degree: {c.CouplingDegree * 100:F1}%\nShared Commits: {c.SharedCommits}";
                         sb.AppendLine($"    <title>{EscapeXml(tooltip)}</title>");
                         sb.AppendLine("  </line>");
                     }
                 }
 
                 // Draw nodes
-                foreach(var n in nodeList)
+                foreach (var n in nodeList)
                 {
                     var p = positions[n];
                     sb.AppendLine($"  <circle cx=\"{p.x:F1}\" cy=\"{p.y:F1}\" r=\"6\" fill=\"#3b82f6\" stroke=\"#1e293b\" stroke-width=\"2\">");
                     sb.AppendLine($"    <title>{EscapeXml(n)}</title>");
                     sb.AppendLine("  </circle>");
-                    
+
                     string label = Path.GetFileName(n);
                     double labelOffset = 10;
                     string textAnchor = p.x > centerX ? "start" : "end";
@@ -529,7 +529,7 @@ namespace Gitic
                     sb.AppendLine($"  <text x=\"{tx:F1}\" y=\"{p.y + 4:F1}\" fill=\"#f8fafc\" font-size=\"9\" text-anchor=\"{textAnchor}\">{EscapeXml(label)}</text>");
                 }
             }
-            
+
             sb.AppendLine("</svg>");
             return sb.ToString();
         }

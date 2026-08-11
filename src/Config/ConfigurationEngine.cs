@@ -64,10 +64,10 @@ public class ConfigurationEngine : IConfigurationEngine
     public async Task<ResolvedConfiguration> LoadAndResolveAsync(AnalyzeInput input, LoadGiticConfigOptions? options = null)
     {
         options ??= new LoadGiticConfigOptions { RepoRoot = input.RepoRoot };
-        
+
         var loadedConfig = await LoadGiticConfigInternalAsync(options);
-        var mergedConfig = input.Config != null 
-            ? _configMerger.MergeConfig(loadedConfig.Config, _configMerger.ConvertToOverrides(input.Config)) 
+        var mergedConfig = input.Config != null
+            ? _configMerger.MergeConfig(loadedConfig.Config, _configMerger.ConvertToOverrides(input.Config))
             : loadedConfig.Config;
 
         var settings = _normalizer.Normalize(input.Settings ?? new AnalysisSettings());
@@ -82,7 +82,7 @@ public class ConfigurationEngine : IConfigurationEngine
     private async Task<LoadedGiticConfig> LoadGiticConfigInternalAsync(LoadGiticConfigOptions options)
     {
         string userHome = options.UserHome ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        
+
         string userConfigPath = GetUserConfigPath(options, userHome);
         string? repoConfigPath = GetRepoConfigPath(options);
 

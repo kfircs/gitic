@@ -10,7 +10,7 @@ namespace Gitic;
 public interface IReportRenderer
 {
     // clean code refactor
-    
+
     /// <summary>
     /// Asynchronously renders the analysis result into a string payload.
     /// </summary>

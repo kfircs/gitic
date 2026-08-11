@@ -16,7 +16,7 @@ namespace Gitic.Tests
             Assert.Equal("bugfix", classifier.Classify("fix: resolve crash in thread loop"));
             Assert.Equal("bugfix", classifier.Classify("prevent memory leak in file loader"));
             Assert.Equal("bugfix", classifier.Classify("revert accidental commit"));
-            
+
             Assert.Equal("feature", classifier.Classify("feat: implement new auth flow"));
             Assert.Equal("feature", classifier.Classify("introduce areas metric processor"));
             Assert.Equal("feature", classifier.Classify("add unit tests for config parser"));
@@ -36,10 +36,10 @@ metrics:
   temporal_coupling_max_commit_file_count: 50
 ";
             var parsed = (Dictionary<string, object?>)YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source")!;
-            
+
             Assert.NotNull(parsed);
             Assert.True(parsed.ContainsKey("identity"));
-            
+
             var identity = (Dictionary<string, object?>)parsed["identity"]!;
             Assert.True((bool)identity["merge_on_email"]!);
 
@@ -59,7 +59,7 @@ excludes:
 ";
             var parsed = (Dictionary<string, object?>)YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source")!;
             Assert.NotNull(parsed);
-            
+
             var excludes = (List<object?>)parsed["excludes"]!;
             Assert.Equal(2, excludes.Count);
 
@@ -385,7 +385,7 @@ excludes:
             Directory.CreateDirectory(tempDir);
             try
             {
-                string gitignoreContent = 
+                string gitignoreContent =
 @"# Compiled source
 *.class
 *.dll
@@ -501,7 +501,7 @@ bin/
         public async Task TestCli_VersionSupport()
         {
             var reporter = new MockConsoleReporter();
-            
+
             var runResult1 = await Cli.RunCliAsync(new[] { "--version" }, reporter);
             Assert.Equal(0, runResult1.ExitCode);
             Assert.Contains("gitic version", runResult1.Stdout);
@@ -530,12 +530,12 @@ bin/
             try
             {
                 var engine = new ConfigurationEngine();
-                
+
                 // Case 1: Neither exists - should fall back to default
                 var optionsEmpty = new LoadGiticConfigOptions { RepoRoot = tempDir };
                 var resolvedEmpty = await engine.LoadAndResolveAsync(new AnalyzeInput { RepoRoot = tempDir }, optionsEmpty);
                 Assert.NotNull(resolvedEmpty.Config);
-                
+
                 // Case 2: Only legacy .gitizer.yml exists - should load it
                 string legacyPath = Path.Combine(tempDir, ".gitizer.yml");
                 File.WriteAllText(legacyPath, "identity:\n  merge_on_email: true\n");
@@ -623,7 +623,7 @@ bin/
             var settingsAlways = new AnalysisSettings { Format = "human", Color = "always" };
             var rendererAlways = new CliTableRenderer(AnalysisCommand.Hotspots, settingsAlways);
             string outputAlways = await rendererAlways.RenderAsync(result);
-            
+
             // Check for Unicode warning (⚠️) and heat (🔥) symbols and ANSI colors
             Assert.Contains("⚠️", outputAlways);
             Assert.Contains("🔥", outputAlways);
@@ -777,7 +777,7 @@ bin/
             var contributorSettings = new AnalysisSettings { Limit = 1 };
             var contributorRenderer = new CliTableRenderer(AnalysisCommand.Contributors, contributorSettings);
             string contributorOutput = await contributorRenderer.RenderAsync(result);
-            
+
             // Bob has activity 50, Alice has 10, Bot1 has 5 -> Bob should be rendered, Alice/Bot1 ignored due to Limit = 1
             Assert.Contains("Bob", contributorOutput);
             Assert.DoesNotContain("Alice", contributorOutput);
@@ -964,7 +964,7 @@ bin/
                 // Clean up any files that might have been leftover (but our test shouldn't create new ones)
                 foreach (var file in files)
                 {
-                    try { File.Delete(file); } catch {}
+                    try { File.Delete(file); } catch { }
                 }
             }
             finally

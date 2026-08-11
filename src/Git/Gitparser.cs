@@ -23,7 +23,7 @@ internal class GitParser : IGitParser
     public List<string> BuildGitLogArguments(GitHistoryExtractorOptions options)
     {
         var opt = options ?? new();
-        List<string> args = [ "log", "--numstat", "-p", $"--format=format:{CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{NumstatMarker}" ];
+        List<string> args = ["log", "--numstat", "-p", $"--format=format:{CommitMarker}%n%H%n%aI%n%an%n%ae%n%P%n%B%n{NumstatMarker}"];
 
         if (opt.IncludeMerges)
         {
@@ -82,7 +82,7 @@ internal class GitParser : IGitParser
         }
 
         string message = string.Join("\n", commitMetadata.MessageLines).Trim();
-        
+
         string numstatText = record.Substring(markerIndex + NumstatMarker.Length);
         var files = _patchParser.ParseNumstatAndPatches(numstatText);
 

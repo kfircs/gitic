@@ -143,8 +143,8 @@ public class MarkdownRenderer : IReportRenderer
                 .OrderByDescending(c => c.ActivityShare)
                 .FirstOrDefault();
 
-            string ownerStr = topOwner != null 
-                ? $"**{topOwner.Name}** ({topOwner.ActivityShare * 100:F0}%)" 
+            string ownerStr = topOwner != null
+                ? $"**{topOwner.Name}** ({topOwner.ActivityShare * 100:F0}%)"
                 : "Shared";
 
             sb.AppendLine($"| `{area.Area}` | {area.FileCount} | {area.Touches} | {area.Churn} | {ownerStr} |");

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -24,9 +24,16 @@
     <PackageReference Include="System.CommandLine" Version="3.0.0-preview.6.26359.118" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="Exists('../../clic/src/Kfc.Cli.Core/Kfc.Cli.Core.csproj')">
     <ProjectReference Include="../../clic/src/Kfc.Cli.Core/Kfc.Cli.Core.csproj" />
     <ProjectReference Include="../../clic/src/Kfc.Cli.Terminal/Kfc.Cli.Terminal.csproj" />
+    <ProjectReference Include="../../clic/src/Kfc.Cli.Tui/Kfc.Cli.Tui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!Exists('../../clic/src/Kfc.Cli.Core/Kfc.Cli.Core.csproj')">
+    <PackageReference Include="Kfc.Cli.Core" Version="0.1.0" />
+    <PackageReference Include="Kfc.Cli.Terminal" Version="0.1.0" />
+    <PackageReference Include="Kfc.Cli.Tui" Version="0.1.0" />
   </ItemGroup>
 
 </Project>

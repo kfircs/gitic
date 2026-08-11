@@ -66,7 +66,7 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
         return array.Select(entry =>
         {
             var entryRecord = (Dictionary<string, object?>)entry!;
-            
+
             entryRecord.TryGetValue("canonical", out var canonicalVal);
             GitIdentity canonical = NormalizeIdentity((Dictionary<string, object?>)canonicalVal!);
 
@@ -87,10 +87,10 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
         record.TryGetValue("name", out var nameVal);
         record.TryGetValue("email", out var emailVal);
 
-        return new GitIdentity 
-        { 
-            Name = NormalizeNonEmptyString(nameVal)!, 
-            Email = NormalizeNonEmptyString(emailVal)! 
+        return new GitIdentity
+        {
+            Name = NormalizeNonEmptyString(nameVal)!,
+            Email = NormalizeNonEmptyString(emailVal)!
         };
     }
 
@@ -122,10 +122,10 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
             record.TryGetValue("pattern", out var patternVal);
             record.TryGetValue("category", out var categoryVal);
 
-            return new ExcludeRule 
-            { 
-                Pattern = NormalizeNonEmptyString(patternVal)!, 
-                Category = NormalizeNonEmptyString(categoryVal)! 
+            return new ExcludeRule
+            {
+                Pattern = NormalizeNonEmptyString(patternVal)!,
+                Category = NormalizeNonEmptyString(categoryVal)!
             };
         }).ToList();
     }
@@ -141,10 +141,10 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
             var pathsArr = (List<object?>)pathsVal!;
             var paths = pathsArr.Select(pathVal => NormalizeNonEmptyString(pathVal)!).ToList();
 
-            return new NamedArea 
-            { 
-                Name = NormalizeNonEmptyString(nameVal)!, 
-                Paths = paths 
+            return new NamedArea
+            {
+                Name = NormalizeNonEmptyString(nameVal)!,
+                Paths = paths
             };
         }).ToList();
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Gitic;
+
 public interface IContributorIdentity
 {
     string Name { get; set; }

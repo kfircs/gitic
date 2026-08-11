@@ -17,7 +17,7 @@ public class TuiNode
     public int TotalLines { get; set; }
     public int MinLines { get; set; }
     public int MaxLines { get; set; }
-    
+
     // Aggregated Width Stats (Line Width in Characters)
     public int MinWidth { get; set; }
     public int MaxWidth { get; set; }
@@ -38,7 +38,7 @@ public class TuiNode
     public static bool IsExcluded(string relativePath)
     {
         if (string.IsNullOrEmpty(relativePath)) return true;
-        
+
         string normalized = relativePath.Replace('\\', '/');
         var segments = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
         foreach (var seg in segments)

@@ -167,7 +167,7 @@ public class CliTableRenderer : IReportRenderer
     private string GetBanner(AnalysisResult result)
     {
         bool useColor = _termFormatter.IsColorEnabled;
-        
+
         // Setup ANSI escape codes for basic formatting if color is enabled.
         // \x1b[1;36m: Bold Cyan, \x1b[0m: Reset, \x1b[1m: Bold, \x1b[2m: Dim
         string cCyan = useColor ? "\x1b[1;36m" : "";
@@ -181,7 +181,7 @@ public class CliTableRenderer : IReportRenderer
         sb.AppendLine($"{cCyan} / _\\ | | __| |/ __|{cReset}  {cDim}Repository: {result.Analysis.RepoRoot}{cReset}");
         sb.AppendLine($"{cCyan}/ /   | | |_| | (__ {cReset}  {cDim}Commits: {result.Analysis.CommitCount} | Files: {result.Analysis.IncludedFileChangeCount}{cReset}");
         sb.AppendLine($"{cCyan}\\/    |_|\\__|_|\\___|{cReset}");
-        
+
         var parts = new List<string>();
         if (result.Settings.AllTime)
         {

@@ -1,3 +1,4 @@
+using Kfc.Cli.Tui;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -101,7 +102,7 @@ public class TuiExplorer
 
         // List & Detail Panel Setup
         var children = _current.Node.Children;
-        
+
         // Manage scrolling and boundary logic using TuiScrollManager
         var (clampedIndex, newScrollOffset) = TuiScrollManager.AdjustScroll(_current.SelectedIndex, _current.ScrollOffset, children.Count, contentHeight);
         _current.SelectedIndex = clampedIndex;
@@ -146,13 +147,12 @@ public class TuiExplorer
                 ? (i == 0 ? "\x1b[38;2;108;112;147m(Select an item to view stats)\x1b[0m" : "")
                 : (i < rightLines.Count ? rightLines[i] : "");
 
-            Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {PadRightAnsi(leftCell, leftWidth)} \x1b[38;2;203;166;247m│\x1b[0m {PadRightAnsi(rightCell, rightWidth)} \x1b[38;2;203;166;247m│\x1b[0m");
+            Console.WriteLine(TuiPanel.DrawRow(leftCell, leftWidth, rightCell, rightWidth));
         }
 
         // Footer
-        string botBorder = "└" + new string('─', leftWidth + 2) + "┴" + new string('─', rightWidth + 2) + "┘";
-        Console.WriteLine($"\x1b[38;2;203;166;247m{botBorder}\x1b[0m");
-        
+        Console.WriteLine(TuiPanel.DrawBorderBottom(leftWidth, rightWidth, true));
+
         string shortcuts = "\x1b[1;38;2;249;226;175m Shortcuts:\x1b[0m j/k/↑/↓:Move │ l/󰌑:Enter │ h/Esc/Backspace:Back │ Tab/1-5:Perspectives │ q:Quit";
         Console.Write(PadRightAnsi(shortcuts, leftWidth + rightWidth + 7));
     }

@@ -26,7 +26,7 @@ public class ExecFileGitExecutor : IGitExecutor
     public async IAsyncEnumerable<string> RunAsync(string[] args, string cwd, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         string fullCwd = Path.GetFullPath(cwd);
-        List<string> allArgs = ["-C", fullCwd, ..args];
+        List<string> allArgs = ["-C", fullCwd, .. args];
 
         ProcessStartInfo psi = new()
         {

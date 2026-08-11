@@ -39,7 +39,7 @@ public class GeReportRenderer : IReportRenderer
         // 1. Action Feed (Top 5 things to fix today)
         sb.AppendLine("## 1. Action Feed (Top 5 things to fix today)");
         sb.AppendLine();
-        
+
         List<string> actionItems = [];
 
         // Find top rework files
@@ -48,10 +48,10 @@ public class GeReportRenderer : IReportRenderer
             .OrderByDescending(f => f.ReworkRate)
             .Take(3)
             .ToList();
-        
+
         foreach (var f in highReworkFiles)
         {
-            actionItems.Add($"* ⚠️ **Refactor Warning:** `{f.Path}` has a high rework rate ({(f.ReworkRate.GetValueOrDefault()*100):F1}%) and is edited by {f.ContributorCount} different authors.");
+            actionItems.Add($"* ⚠️ **Refactor Warning:** `{f.Path}` has a high rework rate ({(f.ReworkRate.GetValueOrDefault() * 100):F1}%) and is edited by {f.ContributorCount} different authors.");
         }
 
         // Find bus factor files/areas
@@ -65,7 +65,7 @@ public class GeReportRenderer : IReportRenderer
 
         foreach (var a in topSiloAreas)
         {
-            actionItems.Add($"* 👤 **Key Person Risk:** Folder `{a.Area.Area}` is {(a.TopOwnerShare*100):F0}% owned by one developer.");
+            actionItems.Add($"* 👤 **Key Person Risk:** Folder `{a.Area.Area}` is {(a.TopOwnerShare * 100):F0}% owned by one developer.");
         }
 
         if (actionItems.Count == 0)
@@ -107,7 +107,7 @@ public class GeReportRenderer : IReportRenderer
         string temporalSvg = SvgGeneratorHelper.GenerateGeTemporalCouplingSvg(result);
         sb.AppendLine(temporalSvg);
         sb.AppendLine();
-        
+
         sb.AppendLine("### Detailed Hotspot Metrics");
         sb.AppendLine("| File Path | Lines | Size (KB) | Churn | Rework Rate | Attention Score |");
         sb.AppendLine("| :--- | :---: | :---: | :---: | :---: | :---: |");

@@ -8,7 +8,7 @@ namespace Gitic;
 public class HelpCommand : ICommand
 {
     private const string DefaultVersion = "0.1.0";
-    private static readonly string HelpTemplate = 
+    private static readonly string HelpTemplate =
 @"Gitic Strategic Codebase Analysis (v{0})
 A tool to analyze Git repositories and identify code hotspots, contributor ownership, areas, and temporal coupling.
 

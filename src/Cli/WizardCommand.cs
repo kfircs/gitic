@@ -65,7 +65,7 @@ namespace Gitic
             {
                 Console.Clear();
                 int winWidth = 80;
-                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winWidth = Console.WindowWidth; } catch {}
+                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winWidth = Console.WindowWidth; } catch { }
                 int boxWidth = Math.Max(50, Math.Min(80, winWidth));
                 string topBorder = "\x1b[38;2;203;166;247m┌" + new string('─', boxWidth - 2) + "┐\x1b[0m";
                 string botBorder = "\x1b[38;2;203;166;247m└" + new string('─', boxWidth - 2) + "┘\x1b[0m";
@@ -213,7 +213,7 @@ namespace Gitic
                 // Clear console and print header for each selection step
                 Console.Clear();
                 int winWidth = 80;
-                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winWidth = Console.WindowWidth; } catch {}
+                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winWidth = Console.WindowWidth; } catch { }
                 int boxWidth = Math.Max(50, Math.Min(80, winWidth));
                 Console.WriteLine($"\x1b[38;2;203;166;247m┌{new string('─', boxWidth - 2)}┐\x1b[0m");
                 Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {PadRightAnsi("\x1b[1m📊 Gitic Report Wizard\x1b[0m", boxWidth - 4)} \x1b[38;2;203;166;247m│\x1b[0m");
@@ -358,7 +358,7 @@ namespace Gitic
             string targetPath = Path.Combine(targetDir, filename);
 
             var content = formatType == 0 ? GenerateCustomMarkdown(result, selectedSections) : GenerateCustomHtml(result, selectedSections);
-            
+
             await File.WriteAllTextAsync(targetPath, content, cancellationToken);
 
             Console.WriteLine($"\n✅ Report generated successfully at: {targetPath}");
@@ -384,7 +384,7 @@ namespace Gitic
             sb.AppendLine("# Gitic Custom Report");
             sb.AppendLine($"*Generated at {DateTime.Now}*");
             sb.AppendLine();
-            
+
             if (result.CuratedReports == null) return sb.ToString();
 
             if (sections.Contains("Work Classification"))
@@ -455,7 +455,7 @@ namespace Gitic
             sb.AppendLine("<html><head><style>body { font-family: sans-serif; padding: 20px; } h2 { color: #333; border-bottom: 1px solid #ccc; } svg { max-width: 100%; height: auto; }</style></head><body>");
             sb.AppendLine("<h1>Gitic Custom Report</h1>");
             sb.AppendLine($"<p><em>Generated at {DateTime.Now}</em></p>");
-            
+
             if (result.CuratedReports != null)
             {
                 if (sections.Contains("Work Classification"))
@@ -520,7 +520,7 @@ namespace Gitic
             return sb.ToString();
         }
 
-        
+
         private static string PadRightAnsi(string text, int totalWidth)
         {
             int visibleLength = 0;
@@ -568,7 +568,7 @@ namespace Gitic
                 firstDraw = false;
 
                 int winW = 80;
-                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winW = Console.WindowWidth; } catch {}
+                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winW = Console.WindowWidth; } catch { }
                 int bWidth = Math.Max(50, Math.Min(80, winW));
                 Console.WriteLine($"\x1b[38;2;249;226;175m┌{new string('─', bWidth - 2)}┐\x1b[0m");
                 Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"\x1b[1m󰜎 {prompt}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
@@ -639,7 +639,7 @@ namespace Gitic
                 firstDraw = false;
 
                 int winW = 80;
-                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winW = Console.WindowWidth; } catch {}
+                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winW = Console.WindowWidth; } catch { }
                 int bWidth = Math.Max(50, Math.Min(80, winW));
                 Console.WriteLine($"\x1b[38;2;249;226;175m┌{new string('─', bWidth - 2)}┐\x1b[0m");
                 Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"\x1b[1m󰜎 {prompt}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");

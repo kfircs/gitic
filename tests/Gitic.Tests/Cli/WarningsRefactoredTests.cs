@@ -17,7 +17,7 @@ namespace Gitic.Tests
             };
 
             var diags = collector.CollectDiagnostics(context, existing);
-            
+
             var target = diags.Find(d => d.Code == "GITIC007");
             Assert.NotNull(target);
             Assert.Equal("Warning", target!.Severity);
@@ -48,13 +48,13 @@ namespace Gitic.Tests
         {
             var collector = new WarningCollector();
             var context = new WarningContext();
-            
+
             var existingWarnings = new List<string>();
             existingWarnings.Add(null!);
             existingWarnings.Add("");
 
             var diags = collector.CollectDiagnostics(context, existingWarnings);
-            
+
             var targetNull = diags.Find(d => d.Code == "GITIC999" && d.Message == string.Empty);
             Assert.NotNull(targetNull);
         }
@@ -64,7 +64,7 @@ namespace Gitic.Tests
         {
             var collector = new WarningCollector();
             var context = new WarningContext();
-            
+
             var existing = new List<string>
             {
                 "matched multiple configured areas; using "
@@ -82,7 +82,7 @@ namespace Gitic.Tests
         {
             var collector = new WarningCollector();
             var context = new WarningContext();
-            
+
             var existing = new List<string>
             {
                 "matched multiple configured areas;using"

@@ -11,7 +11,7 @@ public class CuratedReportsEngineTests
     {
         // Arrange
         var engine = new CuratedReportsEngine();
-        
+
         // Scenario 1: Commit span < 90 days (under 3 months) -> threshold should be 14 days
         var now = DateTimeOffset.UtcNow;
         var commitsShort = new List<GitCommitRecord>

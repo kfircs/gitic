@@ -23,7 +23,7 @@ public class CommandLineParser : ICommandLineParser
 
     public CommandLineParser(string[] args, ICliCommandFactory commandFactory)
     {
-        _args = args is not null ? [..args] : [];
+        _args = args is not null ? [.. args] : [];
         _commandFactory = commandFactory ?? new CliCommandFactoryImpl();
     }
 
@@ -77,7 +77,7 @@ public class CommandLineParser : ICommandLineParser
                 helpText = stderrWriter.ToString();
             }
 
-            helpText = 
+            helpText =
 @"Gitic Strategic Codebase Analysis
 A high-speed interactive TUI tool to analyze Git repositories.
 
@@ -110,7 +110,7 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
         // Handle invalid usage or unrecognized elements
         if (parseResult.Errors.Any())
         {
-            var errors = string.Join("\n", parseResult.Errors.Select(e => 
+            var errors = string.Join("\n", parseResult.Errors.Select(e =>
             {
                 var msg = e.Message;
                 if (msg.Contains("--depth") || (e.SymbolResult is OptionResult optionResult && optionResult.Option == cliOptions.DepthOption))
@@ -131,7 +131,7 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
 
         // Populate settings from options
         settings.Json = parseResult.GetValue(cliOptions.JsonOption);
-        
+
         var formatVal = parseResult.GetValue(cliOptions.FormatOption);
         if (formatVal != null)
         {
@@ -165,7 +165,7 @@ Running 'gitic' launches the Interactive TUI Dashboard by default.
         settings.IncludeDeleted = parseResult.GetValue(cliOptions.IncludeDeletedOption);
         settings.MergeByEmail = parseResult.GetValue(cliOptions.MergeByEmailOption);
         settings.Anonymize = parseResult.GetValue(cliOptions.AnonymizeOption);
-        
+
         settings.Since = parseResult.GetValue(cliOptions.SinceOption);
         settings.Path = parseResult.GetValue(cliOptions.PathOption);
         settings.Depth = parseResult.GetValue(cliOptions.DepthOption);

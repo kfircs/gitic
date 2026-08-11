@@ -126,8 +126,8 @@ namespace Gitic.Tests
         {
             var result = new AnalysisResult
             {
-                Analysis = new AnalysisMetadata 
-                { 
+                Analysis = new AnalysisMetadata
+                {
                     IncludedFileChangeCount = 5,
                     RepoRoot = "/test/repo",
                     CommitCount = 10,

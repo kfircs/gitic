@@ -110,7 +110,7 @@ public class ChangeAccumulator : IChangeAccumulator
         string areaName = _areaMapper.AreaForPath(path, _settings.Depth, _config.Areas, _warnings);
         var fileAccumulator = GetOrCreateItem(_files, path);
         var areaAccumulator = GetOrCreateItem(_areas, areaName);
-        
+
         AddChangeToItem(fileAccumulator, path, change, commit, commitCategory);
         AddChangeToItem(areaAccumulator, path, change, commit, commitCategory);
 
@@ -294,7 +294,7 @@ public class ChangeAccumulator : IChangeAccumulator
             items[key] = accumulator;
         }
         accumulator.TotalActivity = ScoringUtils.RoundActivity(accumulator.TotalActivity + activity);
-        
+
         accumulator.Areas.TryGetValue(areaName, out double currentAreaActivity);
         accumulator.Areas[areaName] = ScoringUtils.RoundActivity(currentAreaActivity + activity);
     }

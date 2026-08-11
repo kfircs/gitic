@@ -15,7 +15,7 @@ public interface IConfigMerger
     GiticConfigOverrides ConvertToOverrides(GiticConfig config);
     GiticConfig CloneConfig(GiticConfig config);
     GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfigOverrides? overrideConfig = null);
-    
+
     // Deep Interface Overloads
     GiticConfig MergeConfig(GiticConfig baseConfig, GiticConfig? overrideConfig);
     GiticConfig MergeMultiple(GiticConfig baseConfig, params GiticConfigOverrides?[] overrides);
@@ -49,7 +49,7 @@ public class ConfigMerger : IConfigMerger
                 Canonical = a.Canonical != null ? new GitIdentity { Name = a.Canonical.Name, Email = a.Canonical.Email } : new GitIdentity(),
                 Identities = a.Identities?.Select(id => new GitIdentity { Name = id.Name, Email = id.Email }).ToList() ?? new List<GitIdentity>()
             }).ToList() ?? new List<AliasRule>(),
-            
+
             Bots = config.Bots?.Select(b => new BotRule
             {
                 Name = b.Name,

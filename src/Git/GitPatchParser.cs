@@ -50,7 +50,7 @@ internal class GitPatchParser : IGitPatchParser
                     {
                         int added = ParseDiffLineCount(addedStr);
                         int deleted = ParseDiffLineCount(deletedStr);
-                        
+
                         var change = new GitFileChange { Path = path, Added = added, Deleted = deleted, Symbols = new List<string>() };
                         fileChanges.Add(change);
                         fileChangesMap[path] = change;

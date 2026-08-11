@@ -54,7 +54,7 @@ public class CuratedReportsEngine : ICuratedReportsEngine
             long minTimestamp = commits.Min(c => c.Timestamp);
             long maxTimestamp = commits.Max(c => c.Timestamp);
             double spanDays = (maxTimestamp - minTimestamp) / 86400000.0;
-            
+
             if (spanDays < 90) // under 3 months
             {
                 thresholdDays = 14; // 14 days

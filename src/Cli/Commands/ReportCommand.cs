@@ -11,7 +11,7 @@ namespace Gitic;
 
 public class ReportCommand : BaseAnalysisCommand
 {
-    public ReportCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null) 
+    public ReportCommand(ParsedArgs parsed, IGitClient? gitClient = null, IRepositoryAnalyzer? analyzer = null)
         : base(parsed, gitClient, analyzer) { }
     protected override AnalysisCommand CommandType => AnalysisCommand.Report;
 
@@ -32,10 +32,10 @@ public class ReportCommand : BaseAnalysisCommand
             {
                 var htmlRenderer = new HtmlRenderer();
                 string targetPath = ResolveTargetPath(Parsed.HtmlPath, "report.html");
-                
+
                 string dir = Path.GetDirectoryName(targetPath) ?? ".";
                 string tempPath = Path.Combine(dir, $".report.html.{Path.GetRandomFileName()}.tmp");
-                
+
                 tempFiles.Add((tempPath, targetPath));
                 using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
                 {
@@ -48,10 +48,10 @@ public class ReportCommand : BaseAnalysisCommand
                 var mdRenderer = new MarkdownRenderer();
                 string mdContent = await mdRenderer.RenderAsync(result, cancellationToken);
                 string targetPath = ResolveTargetPath(Parsed.MdPath, "report.md");
-                
+
                 string dir = Path.GetDirectoryName(targetPath) ?? ".";
                 string tempPath = Path.Combine(dir, $".report.md.{Path.GetRandomFileName()}.tmp");
-                
+
                 await File.WriteAllTextAsync(tempPath, mdContent, cancellationToken);
                 tempFiles.Add((tempPath, targetPath));
                 outputSb.Append($"Wrote Markdown report to {targetPath}\n");
@@ -62,7 +62,7 @@ public class ReportCommand : BaseAnalysisCommand
                 var svgComplexityRenderer = new SvgComplexityRenderer();
                 string svgContent = await svgSummaryRenderer.RenderAsync(result, cancellationToken);
                 string complexitySvgContent = await svgComplexityRenderer.RenderAsync(result, cancellationToken);
-                
+
                 string targetPath = ResolveTargetPath(Parsed.SvgPath, "report.svg");
                 string targetComplexityPath = Parsed.SvgPath;
                 if (Directory.Exists(Parsed.SvgPath))
@@ -75,7 +75,7 @@ public class ReportCommand : BaseAnalysisCommand
                     string name = Path.GetFileNameWithoutExtension(Parsed.SvgPath);
                     targetComplexityPath = Path.Combine(dir, $"{name}-complexity.svg");
                 }
-                
+
                 string dirSvg = Path.GetDirectoryName(targetPath) ?? ".";
                 string tempPath = Path.Combine(dirSvg, $".report.svg.{Path.GetRandomFileName()}.tmp");
 

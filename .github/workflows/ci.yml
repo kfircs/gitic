@@ -23,6 +23,9 @@ jobs:
         with:
           dotnet-version: '10.0.x'
           include-prerelease: true # .NET 10 preview/RC builds
+          source-url: https://nuget.pkg.github.com/kfircs/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore Dependencies
         run: dotnet restore Gitic.slnx
