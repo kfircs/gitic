@@ -104,8 +104,36 @@ public class MetricsEngine : IMetricsEngine
         var cfg = config ?? new TemporalCouplingConfig();
         var fileCommitCount = new Dictionary<string, int>();
         var sharedCommitCounts = new Dictionary<string, int>();
-        int oversizedCommitCount = 0;
-        int maxObservedFiles = 0;
+
+        PopulateCommitAndSharedCounts(
+            allIncludedCommits,
+            cfg,
+            fileCommitCount,
+            sharedCommitCounts,
+            out int oversizedCommitCount,
+            out int maxObservedFiles);
+
+        var couplings = BuildTemporalCouplings(sharedCommitCounts, fileCommitCount, cfg);
+
+        return new TemporalCouplingResult
+        {
+            Couplings = couplings,
+            OversizedCommitCount = oversizedCommitCount,
+            MaxObservedFiles = maxObservedFiles,
+            Limit = cfg.MaxCommitFileCount
+        };
+    }
+
+    private void PopulateCommitAndSharedCounts(
+        List<CommitFileSet> allIncludedCommits,
+        TemporalCouplingConfig cfg,
+        Dictionary<string, int> fileCommitCount,
+        Dictionary<string, int> sharedCommitCounts,
+        out int oversizedCommitCount,
+        out int maxObservedFiles)
+    {
+        oversizedCommitCount = 0;
+        maxObservedFiles = 0;
 
         foreach (var commit in allIncludedCommits)
         {
@@ -133,19 +161,28 @@ public class MetricsEngine : IMetricsEngine
             {
                 for (int j = i + 1; j < filePaths.Count; j++)
                 {
-                    string file1 = filePaths[i];
-                    string file2 = filePaths[j];
-                    string fileA = string.CompareOrdinal(file1, file2) < 0 ? file1 : file2;
-                    string fileB = string.CompareOrdinal(file1, file2) < 0 ? file2 : file1;
-                    string pairKey = $"{fileA}|{fileB}";
+                    string pairKey = GetFilePairKey(filePaths[i], filePaths[j]);
 
                     sharedCommitCounts.TryGetValue(pairKey, out int shared);
                     sharedCommitCounts[pairKey] = shared + 1;
                 }
             }
         }
+    }
 
-        var temporalCouplings = new List<TemporalCoupling>();
+    private string GetFilePairKey(string file1, string file2)
+    {
+        string fileA = string.CompareOrdinal(file1, file2) < 0 ? file1 : file2;
+        string fileB = string.CompareOrdinal(file1, file2) < 0 ? file2 : file1;
+        return $"{fileA}|{fileB}";
+    }
+
+    private List<TemporalCoupling> BuildTemporalCouplings(
+        Dictionary<string, int> sharedCommitCounts,
+        Dictionary<string, int> fileCommitCount,
+        TemporalCouplingConfig cfg)
+    {
+        var couplings = new List<TemporalCoupling>();
         foreach (var kvp in sharedCommitCounts)
         {
             string pairKey = kvp.Key;
@@ -165,7 +202,7 @@ public class MetricsEngine : IMetricsEngine
             double couplingDegree = ScoringUtils.RoundRatio((double)sharedCommits / (totalA + totalB - sharedCommits));
             if (couplingDegree >= cfg.MinCouplingDegree)
             {
-                temporalCouplings.Add(new TemporalCoupling
+                couplings.Add(new TemporalCoupling
                 {
                     FileA = fileA,
                     FileB = fileB,
@@ -175,19 +212,11 @@ public class MetricsEngine : IMetricsEngine
             }
         }
 
-        var couplings = temporalCouplings
+        return couplings
             .OrderByDescending(tc => tc.CouplingDegree)
             .ThenByDescending(tc => tc.SharedCommits)
             .Take(cfg.MaxResults)
             .ToList();
-
-        return new TemporalCouplingResult
-        {
-            Couplings = couplings,
-            OversizedCommitCount = oversizedCommitCount,
-            MaxObservedFiles = maxObservedFiles,
-            Limit = cfg.MaxCommitFileCount
-        };
     }
 
     public LeadTimesInfo CalculateLeadTimes(List<GitCommitRecord> commits, LeadTimeConfig? config = null)
@@ -348,16 +377,14 @@ public class MetricsEngine : IMetricsEngine
         var sortedCommits = commits.OrderByDescending(c => c.Timestamp).ToList();
         int topQuarterCount = Math.Max(1, (int)Math.Floor(commits.Count * TopQuarterFraction));
 
-        for (int i = 0; i < sortedCommits.Count; i++)
+        var activeCommits = sortedCommits.Where((commit, index) => index < topQuarterCount || commit.Timestamp >= ninetyDaysAgo);
+
+        foreach (var commit in activeCommits)
         {
-            var commit = sortedCommits[i];
-            if (i < topQuarterCount || commit.Timestamp >= ninetyDaysAgo)
+            activeKeys.Add(IdentityUtils.IdentityKey(commit.Author));
+            foreach (var co in commit.CoAuthors)
             {
-                activeKeys.Add(IdentityUtils.IdentityKey(commit.Author));
-                foreach (var co in commit.CoAuthors)
-                {
-                    activeKeys.Add(IdentityUtils.IdentityKey(co));
-                }
+                activeKeys.Add(IdentityUtils.IdentityKey(co));
             }
         }
         return activeKeys;
