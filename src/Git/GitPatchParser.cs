@@ -23,8 +23,23 @@ internal class GitPatchParser : IGitPatchParser
             .Where(line => line.Length > 0)
             .ToList();
 
-        var (fileChanges, fileChangesMap) = ParseNumstatMetadata(lines);
-        ExtractSymbolsFromHunks(lines, fileChangesMap);
+        var diffStartIdx = lines.FindIndex(l => l.StartsWith("diff --git "));
+        List<string> numstatLines;
+        List<string> patchLines;
+
+        if (diffStartIdx >= 0)
+        {
+            numstatLines = lines.Take(diffStartIdx).ToList();
+            patchLines = lines.Skip(diffStartIdx).ToList();
+        }
+        else
+        {
+            numstatLines = lines;
+            patchLines = new List<string>();
+        }
+
+        var (fileChanges, fileChangesMap) = ParseNumstatMetadata(numstatLines);
+        ExtractSymbolsFromHunks(patchLines, fileChangesMap);
         return fileChanges;
     }
 
@@ -121,15 +136,7 @@ internal class GitPatchParser : IGitPatchParser
 
         cleaned = GitRegexConstants.SemicolonSuffixRegex.Replace(cleaned, "");
 
-        while (true)
-        {
-            string prev = cleaned;
-            cleaned = GitRegexConstants.BracketsSuffixRegex.Replace(cleaned, "");
-            if (cleaned == prev)
-            {
-                break;
-            }
-        }
+        cleaned = GitRegexConstants.BracketsSuffixRegex.Replace(cleaned, "");
 
         if (cleaned.Length > MaxSymbolLength)
         {
@@ -146,11 +153,7 @@ internal class GitPatchParser : IGitPatchParser
     public string NormalizeNumstatPath(string path)
     {
         string normalized = PathUtils.NormalizeGitPath(path);
-        var match = GitRegexConstants.BraceRenameRegex.Match(normalized);
-        if (match.Success)
-        {
-            return GitRegexConstants.BraceRenameRegex.Replace(normalized, match.Groups[1].Value);
-        }
+        normalized = GitRegexConstants.BraceRenameRegex.Replace(normalized, "$1");
         if (normalized.Contains(" => ") && !normalized.Contains("{") && !normalized.Contains("}"))
         {
             var parts = normalized.Split(new[] { " => " }, StringSplitOptions.None);

@@ -29,9 +29,9 @@ public static class GitRegexConstants
     public static readonly Regex SemicolonSuffixRegex = new(@";\s*$", RegexOptions.Compiled);
 
     /// <summary>
-    /// Matches brackets, parentheses, or brace characters at the end of a line.
+    /// Matches recursive brackets, parentheses, or brace characters at the end of a line.
     /// </summary>
-    public static readonly Regex BracketsSuffixRegex = new(@"\s*[\{\(\[]\s*$", RegexOptions.Compiled);
+    public static readonly Regex BracketsSuffixRegex = new(@"(?:\s*[\{\(\[]\s*)+$", RegexOptions.Compiled);
 
     /// <summary>
     /// Matches 'Co-authored-by: Name <email@example.com>' git trailer lines.

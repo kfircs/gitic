@@ -14,6 +14,7 @@ public class GitHistoryExtractorOptions
     public bool IncludeMerges { get; init; }
     public bool AllTime { get; init; }
     public string? Since { get; init; }
+    public string? Path { get; set; }
 }
 
 public interface IGitExecutor
@@ -55,62 +56,25 @@ public class ExecFileGitExecutor : IGitExecutor
             catch { /* Ignore */ }
         });
 
-        bool failed = false;
-        string? stderrOutput = null;
-        bool shouldBreak = false;
-
         try
         {
             process.Start();
         }
         catch (Exception ex) when (IsGitNoCommitsException(ex))
         {
-            shouldBreak = true;
-        }
-
-        if (shouldBreak)
-        {
             yield break;
         }
 
         while (true)
         {
-            string? line = null;
+            string? line;
             try
             {
                 line = await process.StandardOutput.ReadLineAsync(cancellationToken);
-                if (line == null)
-                {
-                    await process.WaitForExitAsync(cancellationToken);
-
-                    if (process.ExitCode != 0)
-                    {
-                        stderrOutput = await process.StandardError.ReadToEndAsync(cancellationToken);
-                        if (stderrOutput.Contains("does not have any commits yet") ||
-                            stderrOutput.Contains("Not a valid object name HEAD"))
-                        {
-                            // No-op, just break
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
-                    }
-                }
             }
             catch (Exception ex) when (IsGitNoCommitsException(ex))
             {
-                shouldBreak = true;
-            }
-
-            if (shouldBreak)
-            {
-                break;
-            }
-
-            if (failed)
-            {
-                throw new Exception($"Git command failed with exit code {process.ExitCode}: {stderrOutput}");
+                yield break;
             }
 
             if (line == null)
@@ -119,6 +83,18 @@ public class ExecFileGitExecutor : IGitExecutor
             }
 
             yield return line;
+        }
+
+        await process.WaitForExitAsync(cancellationToken);
+
+        if (process.ExitCode != 0)
+        {
+            string stderrOutput = await process.StandardError.ReadToEndAsync(cancellationToken);
+            if (!stderrOutput.Contains("does not have any commits yet") &&
+                !stderrOutput.Contains("Not a valid object name HEAD"))
+            {
+                throw new Exception($"Git command failed with exit code {process.ExitCode}: {stderrOutput}");
+            }
         }
 
         bool IsGitNoCommitsException(Exception ex)
