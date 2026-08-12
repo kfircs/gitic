@@ -29,8 +29,8 @@ internal class GitPatchParser : IGitPatchParser
 
         if (diffStartIdx >= 0)
         {
-            numstatLines = lines.Take(diffStartIdx).ToList();
-            patchLines = lines.Skip(diffStartIdx).ToList();
+            numstatLines = lines.GetRange(0, diffStartIdx);
+            patchLines = lines.GetRange(diffStartIdx, lines.Count - diffStartIdx);
         }
         else
         {
@@ -57,8 +57,7 @@ internal class GitPatchParser : IGitPatchParser
                 {
                     string addedStr = parts[0];
                     string deletedStr = parts[1];
-                    var pathParts = parts.Skip(2).ToList();
-                    string rawPath = string.Join("\t", pathParts);
+                    string rawPath = string.Join("\t", parts, 2, parts.Length - 2);
                     string path = NormalizeNumstatPath(rawPath);
 
                     if (path.Length > 0)
@@ -153,7 +152,11 @@ internal class GitPatchParser : IGitPatchParser
     public string NormalizeNumstatPath(string path)
     {
         string normalized = PathUtils.NormalizeGitPath(path);
-        normalized = GitRegexConstants.BraceRenameRegex.Replace(normalized, "$1");
+        var match = GitRegexConstants.BraceRenameRegex.Match(normalized);
+        if (match.Success)
+        {
+            normalized = GitRegexConstants.BraceRenameRegex.Replace(normalized, match.Groups[1].Value);
+        }
         if (normalized.Contains(" => ") && !normalized.Contains("{") && !normalized.Contains("}"))
         {
             var parts = normalized.Split(new[] { " => " }, StringSplitOptions.None);

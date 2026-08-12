@@ -99,11 +99,35 @@ public class MetricsEngine : IMetricsEngine
         return result;
     }
 
+    public readonly struct FilePair : IEquatable<FilePair>
+    {
+        public string FileA { get; }
+        public string FileB { get; }
+
+        public FilePair(string file1, string file2)
+        {
+            if (string.CompareOrdinal(file1, file2) < 0)
+            {
+                FileA = file1;
+                FileB = file2;
+            }
+            else
+            {
+                FileA = file2;
+                FileB = file1;
+            }
+        }
+
+        public bool Equals(FilePair other) => FileA == other.FileA && FileB == other.FileB;
+        public override bool Equals(object? obj) => obj is FilePair other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(FileA, FileB);
+    }
+
     public TemporalCouplingResult CalculateTemporalCoupling(List<CommitFileSet> allIncludedCommits, TemporalCouplingConfig? config = null)
     {
         var cfg = config ?? new TemporalCouplingConfig();
         var fileCommitCount = new Dictionary<string, int>();
-        var sharedCommitCounts = new Dictionary<string, int>();
+        var sharedCommitCounts = new Dictionary<FilePair, int>();
 
         PopulateCommitAndSharedCounts(
             allIncludedCommits,
@@ -128,28 +152,19 @@ public class MetricsEngine : IMetricsEngine
         List<CommitFileSet> allIncludedCommits,
         TemporalCouplingConfig cfg,
         Dictionary<string, int> fileCommitCount,
-        Dictionary<string, int> sharedCommitCounts,
+        Dictionary<FilePair, int> sharedCommitCounts,
         out int oversizedCommitCount,
         out int maxObservedFiles)
     {
-        oversizedCommitCount = 0;
-        maxObservedFiles = 0;
+        oversizedCommitCount = allIncludedCommits.Count(c => c.Files?.Count > cfg.MaxCommitFileCount);
+        maxObservedFiles = allIncludedCommits.Max(c => c.Files?.Count ?? 0);
 
-        foreach (var commit in allIncludedCommits)
+        var validCommits = allIncludedCommits
+            .Where(c => c.Files != null && c.Files.Count > 0 && c.Files.Count <= cfg.MaxCommitFileCount);
+
+        foreach (var commit in validCommits)
         {
-            var filePaths = commit.Files;
-            if (filePaths == null || filePaths.Count == 0) continue;
-
-            if (filePaths.Count > maxObservedFiles)
-            {
-                maxObservedFiles = filePaths.Count;
-            }
-
-            if (filePaths.Count > cfg.MaxCommitFileCount)
-            {
-                oversizedCommitCount++;
-                continue;
-            }
+            var filePaths = commit.Files!;
 
             foreach (var file in filePaths)
             {
@@ -157,42 +172,30 @@ public class MetricsEngine : IMetricsEngine
                 fileCommitCount[file] = count + 1;
             }
 
-            for (int i = 0; i < filePaths.Count; i++)
+            var pairs = filePaths.SelectMany((f1, i) => filePaths.Skip(i + 1).Select(f2 => new FilePair(f1, f2)));
+            foreach (var pair in pairs)
             {
-                for (int j = i + 1; j < filePaths.Count; j++)
-                {
-                    string pairKey = GetFilePairKey(filePaths[i], filePaths[j]);
-
-                    sharedCommitCounts.TryGetValue(pairKey, out int shared);
-                    sharedCommitCounts[pairKey] = shared + 1;
-                }
+                sharedCommitCounts.TryGetValue(pair, out int shared);
+                sharedCommitCounts[pair] = shared + 1;
             }
         }
     }
 
-    private string GetFilePairKey(string file1, string file2)
-    {
-        string fileA = string.CompareOrdinal(file1, file2) < 0 ? file1 : file2;
-        string fileB = string.CompareOrdinal(file1, file2) < 0 ? file2 : file1;
-        return $"{fileA}|{fileB}";
-    }
-
     private List<TemporalCoupling> BuildTemporalCouplings(
-        Dictionary<string, int> sharedCommitCounts,
+        Dictionary<FilePair, int> sharedCommitCounts,
         Dictionary<string, int> fileCommitCount,
         TemporalCouplingConfig cfg)
     {
         var couplings = new List<TemporalCoupling>();
         foreach (var kvp in sharedCommitCounts)
         {
-            string pairKey = kvp.Key;
+            var pair = kvp.Key;
             int sharedCommits = kvp.Value;
 
             if (sharedCommits < cfg.MinSharedCommits) continue;
 
-            var parts = pairKey.Split('|');
-            string fileA = parts[0];
-            string fileB = parts[1];
+            string fileA = pair.FileA;
+            string fileB = pair.FileB;
 
             fileCommitCount.TryGetValue(fileA, out int totalA);
             fileCommitCount.TryGetValue(fileB, out int totalB);
