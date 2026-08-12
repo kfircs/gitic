@@ -94,68 +94,6 @@ public interface IGitCommitGraph
     List<GitCommitRecord> GetBranchCommitsForMerge(string sourceCommitHash, string targetCommitHash, int mainAncestorsMaxDepth = 150, int branchCommitsMaxDepth = 100);
 }
 
-public interface IGitGraph
-{
-    HashSet<string> GetAncestors(
-        string startCommitHash,
-        Dictionary<string, GitCommitRecord> commitMap,
-        int maxCount);
-
-    List<GitCommitRecord> GetBranchCommits(
-        string startCommitHash,
-        HashSet<string> mainAncestors,
-        Dictionary<string, GitCommitRecord> commitMap,
-        int maxCount);
-
-    // Deeper interface methods using IReadOnlyDictionary for improved flexibility and read-only safety
-    HashSet<string> GetAncestors(
-        string startCommitHash,
-        IReadOnlyDictionary<string, GitCommitRecord> commitMap,
-        int maxCount)
-    {
-        return GitGraphAlgorithms.GetAncestors(startCommitHash, commitMap, maxCount);
-    }
-
-    List<GitCommitRecord> GetBranchCommits(
-        string startCommitHash,
-        HashSet<string> mainAncestors,
-        IReadOnlyDictionary<string, GitCommitRecord> commitMap,
-        int maxCount)
-    {
-        return GitGraphAlgorithms.GetBranchCommits(startCommitHash, mainAncestors, commitMap, maxCount);
-    }
-
-    List<GitCommitRecord> GetBranchCommitsForMerge(
-        string sourceCommitHash,
-        string targetCommitHash,
-        IReadOnlyDictionary<string, GitCommitRecord> commitMap,
-        int mainAncestorsMaxDepth = 150,
-        int branchCommitsMaxDepth = 100)
-    {
-        return GitGraphAlgorithms.GetBranchCommitsForMerge(sourceCommitHash, targetCommitHash, commitMap, mainAncestorsMaxDepth, branchCommitsMaxDepth);
-    }
-}
-
-public class GitGraphCalculator : IGitGraph
-{
-    public HashSet<string> GetAncestors(
-        string startCommitHash,
-        Dictionary<string, GitCommitRecord> commitMap,
-        int maxCount)
-    {
-        return GitGraphAlgorithms.GetAncestors(startCommitHash, commitMap, maxCount);
-    }
-
-    public List<GitCommitRecord> GetBranchCommits(
-        string startCommitHash,
-        HashSet<string> mainAncestors,
-        Dictionary<string, GitCommitRecord> commitMap,
-        int maxCount)
-    {
-        return GitGraphAlgorithms.GetBranchCommits(startCommitHash, mainAncestors, commitMap, maxCount);
-    }
-}
-
 /// <summary>
 /// A deep domain model encapsulating the Git commit graph and supporting high-leverage structural queries.
 /// By packaging the underlying commit map, callers do not have to manage traversal structures or details.

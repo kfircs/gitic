@@ -8,22 +8,14 @@ public class MergeLeadTimeCalculator : IMergeLeadTimeCalculator
 {
     private const double MsPerHour = 3600000.0;
 
-    private readonly IGitGraph _gitGraph;
     private readonly LeadTimeConfig _config;
 
-    public MergeLeadTimeCalculator(IGitGraph? gitGraph = null)
+    public MergeLeadTimeCalculator(LeadTimeConfig? config = null)
     {
-        _gitGraph = gitGraph ?? new GitGraphCalculator();
-        _config = new LeadTimeConfig();
-    }
-
-    public MergeLeadTimeCalculator(IGitGraph? gitGraph, LeadTimeConfig? config)
-    {
-        _gitGraph = gitGraph ?? new GitGraphCalculator();
         _config = config ?? new LeadTimeConfig();
     }
 
-    public MergeLeadTimeRecord? CalculateMergeLeadTime(GitCommitRecord m, Dictionary<string, GitCommitRecord> commitMap)
+    public MergeLeadTimeRecord? CalculateMergeLeadTime(GitCommitRecord m, IGitCommitGraph commitGraph)
     {
         if (m.Parents == null || m.Parents.Count <= 1)
         {
@@ -33,8 +25,8 @@ public class MergeLeadTimeCalculator : IMergeLeadTimeCalculator
         string p1 = m.Parents[0];
         string p2 = m.Parents[1];
 
-        var mainAncestors = _gitGraph.GetAncestors(p1, commitMap, _config.MainAncestorsMaxDepth);
-        var branchCommits = _gitGraph.GetBranchCommits(p2, mainAncestors, commitMap, _config.BranchCommitsMaxDepth);
+        var mainAncestors = commitGraph.GetAncestors(p1, _config.MainAncestorsMaxDepth);
+        var branchCommits = commitGraph.GetBranchCommits(p2, mainAncestors, _config.BranchCommitsMaxDepth);
 
         if (branchCommits.Count > 0)
         {
