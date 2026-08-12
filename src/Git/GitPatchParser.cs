@@ -23,8 +23,23 @@ internal class GitPatchParser : IGitPatchParser
             .Where(line => line.Length > 0)
             .ToList();
 
-        var (fileChanges, fileChangesMap) = ParseNumstatMetadata(lines);
-        ExtractSymbolsFromHunks(lines, fileChangesMap);
+        var diffStartIdx = lines.FindIndex(l => l.StartsWith("diff --git "));
+        List<string> numstatLines;
+        List<string> patchLines;
+
+        if (diffStartIdx >= 0)
+        {
+            numstatLines = lines.GetRange(0, diffStartIdx);
+            patchLines = lines.GetRange(diffStartIdx, lines.Count - diffStartIdx);
+        }
+        else
+        {
+            numstatLines = lines;
+            patchLines = new List<string>();
+        }
+
+        var (fileChanges, fileChangesMap) = ParseNumstatMetadata(numstatLines);
+        ExtractSymbolsFromHunks(patchLines, fileChangesMap);
         return fileChanges;
     }
 
@@ -42,8 +57,7 @@ internal class GitPatchParser : IGitPatchParser
                 {
                     string addedStr = parts[0];
                     string deletedStr = parts[1];
-                    var pathParts = parts.Skip(2).ToList();
-                    string rawPath = string.Join("\t", pathParts);
+                    string rawPath = string.Join("\t", parts, 2, parts.Length - 2);
                     string path = NormalizeNumstatPath(rawPath);
 
                     if (path.Length > 0)
@@ -121,15 +135,7 @@ internal class GitPatchParser : IGitPatchParser
 
         cleaned = GitRegexConstants.SemicolonSuffixRegex.Replace(cleaned, "");
 
-        while (true)
-        {
-            string prev = cleaned;
-            cleaned = GitRegexConstants.BracketsSuffixRegex.Replace(cleaned, "");
-            if (cleaned == prev)
-            {
-                break;
-            }
-        }
+        cleaned = GitRegexConstants.BracketsSuffixRegex.Replace(cleaned, "");
 
         if (cleaned.Length > MaxSymbolLength)
         {
@@ -149,7 +155,7 @@ internal class GitPatchParser : IGitPatchParser
         var match = GitRegexConstants.BraceRenameRegex.Match(normalized);
         if (match.Success)
         {
-            return GitRegexConstants.BraceRenameRegex.Replace(normalized, match.Groups[1].Value);
+            normalized = GitRegexConstants.BraceRenameRegex.Replace(normalized, match.Groups[1].Value);
         }
         if (normalized.Contains(" => ") && !normalized.Contains("{") && !normalized.Contains("}"))
         {

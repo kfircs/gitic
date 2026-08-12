@@ -262,9 +262,10 @@ excludes:
         public async Task TestCli_RunCliAsync_HandlesExceptionGracefully()
         {
             string[] args = { "--depth", "11" };
-            var result = await Cli.RunCliAsync(args);
+            var reporter = new MockConsoleReporter();
+            var result = await Cli.RunCliAsync(args, reporter);
             Assert.Equal(2, result.ExitCode);
-            Assert.Contains("--depth must be an integer between 1 and 10.", result.Stderr);
+            Assert.Contains("--depth must be an integer between 1 and 10.", string.Join("", reporter.ErrorMessages));
         }
 
         [Fact]
@@ -280,12 +281,14 @@ excludes:
             var hParsed = hParser.Parse();
             Assert.Equal("help", hParsed.Command);
 
-            var runResult = await Cli.RunCliAsync(helpArgs);
+            var reporter = new MockConsoleReporter();
+            var runResult = await Cli.RunCliAsync(helpArgs, reporter);
             Assert.Equal(0, runResult.ExitCode);
-            Assert.Contains("Gitic Strategic Codebase Analysis", runResult.Stdout);
-            Assert.Contains("Options:", runResult.Stdout);
-            Assert.Contains("--since", runResult.Stdout);
-            Assert.Contains("--depth", runResult.Stdout);
+            var output = string.Join("", reporter.Messages);
+            Assert.Contains("Gitic Strategic Codebase Analysis", output);
+            Assert.Contains("Options:", output);
+            Assert.Contains("--since", output);
+            Assert.Contains("--depth", output);
         }
 
         [Fact]
@@ -504,7 +507,7 @@ bin/
 
             var runResult1 = await Cli.RunCliAsync(new[] { "--version" }, reporter);
             Assert.Equal(0, runResult1.ExitCode);
-            Assert.Contains("gitic version", runResult1.Stdout);
+            Assert.Contains("gitic version", string.Join("", reporter.Messages));
 
             var runResult2 = await Cli.RunCliAsync(new[] { "-v" }, reporter);
             Assert.Equal(0, runResult2.ExitCode);
@@ -519,7 +522,7 @@ bin/
             var reporter = new MockConsoleReporter();
             var runResult = await Cli.RunCliAsync(new string[0], reporter);
             Assert.Equal(2, runResult.ExitCode);
-            Assert.Contains("Interactive TUI cannot be run", runResult.Stderr);
+            Assert.Contains("Interactive TUI cannot be run", string.Join("", reporter.ErrorMessages));
         }
 
         [Fact]
@@ -565,14 +568,15 @@ bin/
             var reporter = new MockConsoleReporter();
             var runResult = await Cli.RunCliAsync(new[] { "--help" }, reporter);
             Assert.Equal(0, runResult.ExitCode);
-            Assert.Contains("--svg <path>", runResult.Stdout);
-            Assert.Contains("--format <format>", runResult.Stdout);
-            Assert.Contains("--color <color>", runResult.Stdout);
-            Assert.Contains("--config <config>", runResult.Stdout);
-            Assert.Contains("--user-config <user-config>", runResult.Stdout);
-            Assert.Contains("--limit <limit>", runResult.Stdout);
-            Assert.Contains("--sort <sort>", runResult.Stdout);
-            Assert.Contains("--columns <columns>", runResult.Stdout);
+            var stdout = string.Join("", reporter.Messages);
+            Assert.Contains("--svg <path>", stdout);
+            Assert.Contains("--format <format>", stdout);
+            Assert.Contains("--color <color>", stdout);
+            Assert.Contains("--config <config>", stdout);
+            Assert.Contains("--user-config <user-config>", stdout);
+            Assert.Contains("--limit <limit>", stdout);
+            Assert.Contains("--sort <sort>", stdout);
+            Assert.Contains("--columns <columns>", stdout);
         }
 
         [Fact]
@@ -582,9 +586,10 @@ bin/
             Directory.CreateDirectory(tempDir);
             try
             {
-                var runResult = await Cli.RunCliAsync(new[] { tempDir, "--json" });
+                var reporter = new MockConsoleReporter();
+                var runResult = await Cli.RunCliAsync(new[] { tempDir, "--json" }, reporter);
                 Assert.Equal(1, runResult.ExitCode);
-                Assert.Contains("is not inside a Git repository", runResult.Stderr);
+                Assert.Contains("is not inside a Git repository", string.Join("", reporter.ErrorMessages));
             }
             finally
             {
@@ -598,13 +603,15 @@ bin/
         [Fact]
         public async Task TestCli_InvalidUsageExitCodes()
         {
-            var runResult1 = await Cli.RunCliAsync(new[] { "--color", "invalid-color-value" });
+            var reporter1 = new MockConsoleReporter();
+            var runResult1 = await Cli.RunCliAsync(new[] { "--color", "invalid-color-value" }, reporter1);
             Assert.Equal(2, runResult1.ExitCode);
-            Assert.Contains("--color must be", runResult1.Stderr);
+            Assert.Contains("--color must be", string.Join("", reporter1.ErrorMessages));
 
-            var runResult2 = await Cli.RunCliAsync(new[] { "--format", "invalid-format-value" });
+            var reporter2 = new MockConsoleReporter();
+            var runResult2 = await Cli.RunCliAsync(new[] { "--format", "invalid-format-value" }, reporter2);
             Assert.Equal(2, runResult2.ExitCode);
-            Assert.Contains("--format must be", runResult2.Stderr);
+            Assert.Contains("--format must be", string.Join("", reporter2.ErrorMessages));
         }
 
         [Fact]

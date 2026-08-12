@@ -282,29 +282,29 @@ public class FamiliarityScoringEngine : IFamiliarityScoringEngine
 
         public static ScoringContext Create(List<ItemAccumulator> items, IScoringUtilityService scoringUtilityService)
         {
-            double maxTouches = items.Count > 0 ? items.Max(item => item.Touches) : 1.0;
-            if (maxTouches < 1.0) maxTouches = 1.0;
+            if (items == null || items.Count == 0)
+            {
+                return new()
+                {
+                    MaxTouches = 1.0,
+                    MaxChurn = 1.0,
+                    MaxRecency = 0.001,
+                    MaxNetLines = 1.0,
+                    ReferenceDate = DateTimeOffset.UtcNow
+                };
+            }
 
-            double maxChurn = items.Count > 0 ? items.Max(item => item.Churn) : 1.0;
-            if (maxChurn < 1.0) maxChurn = 1.0;
-
-            long maxLastTouched = items.Count > 0 ? items.Max(item => item.LastTouched) : 0;
+            long maxLastTouched = items.Max(item => item.LastTouched);
             DateTimeOffset referenceDate = maxLastTouched > 0
                 ? DateTimeOffset.FromUnixTimeMilliseconds(maxLastTouched)
                 : DateTimeOffset.UtcNow;
 
-            double maxRecency = items.Count > 0 ? items.Max(item => scoringUtilityService.CalculateRecencyScore(item.LastTouched, referenceDate)) : 0.001;
-            if (maxRecency < 0.001) maxRecency = 0.001;
-
-            double maxNetLines = items.Count > 0 ? items.Max(item => Math.Max(0.0, item.Added - item.Deleted)) : 1.0;
-            if (maxNetLines < 1.0) maxNetLines = 1.0;
-
             return new()
             {
-                MaxTouches = maxTouches,
-                MaxChurn = maxChurn,
-                MaxRecency = maxRecency,
-                MaxNetLines = maxNetLines,
+                MaxTouches = Math.Max(1.0, items.Max(item => item.Touches)),
+                MaxChurn = Math.Max(1.0, items.Max(item => item.Churn)),
+                MaxRecency = Math.Max(0.001, items.Max(item => scoringUtilityService.CalculateRecencyScore(item.LastTouched, referenceDate))),
+                MaxNetLines = Math.Max(1.0, items.Max(item => Math.Max(0, item.Added - item.Deleted))),
                 ReferenceDate = referenceDate
             };
         }

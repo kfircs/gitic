@@ -39,6 +39,12 @@ internal class GitParser : IGitParser
             args.Add($"--since={opt.Since ?? GitUtils.DefaultSinceDate()}");
         }
 
+        if (!string.IsNullOrEmpty(opt.Path))
+        {
+            args.Add("--");
+            args.Add(opt.Path);
+        }
+
         return args;
     }
 

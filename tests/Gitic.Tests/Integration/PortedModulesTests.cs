@@ -313,6 +313,34 @@ namespace Gitic.Tests
         }
 
         [Fact]
+        public void TestGitCommitGraph()
+        {
+            var commit1 = new GitCommitRecord { Hash = "C1", Parents = new List<string>() };
+            var commit2 = new GitCommitRecord { Hash = "C2", Parents = new List<string> { "C1" } };
+            var commit3 = new GitCommitRecord { Hash = "C3", Parents = new List<string> { "C1" } };
+            var commit4 = new GitCommitRecord { Hash = "C4", Parents = new List<string> { "C2", "C3" } };
+
+            IGitCommitGraph graph = new GitCommitGraph(new[] { commit1, commit2, commit3, commit4 });
+            
+            Assert.True(graph.ContainsCommit("C1"));
+            Assert.False(graph.ContainsCommit("C5"));
+
+            var ancestors = graph.GetAncestors("C4", 10);
+            Assert.Contains("C4", ancestors);
+            Assert.Contains("C2", ancestors);
+            Assert.Contains("C3", ancestors);
+            Assert.Contains("C1", ancestors);
+
+            var branchCommits = graph.GetBranchCommits("C3", new HashSet<string> { "C2", "C1" }, 10);
+            Assert.Single(branchCommits);
+            Assert.Equal("C3", branchCommits[0].Hash);
+            
+            var mergeCommits = graph.GetBranchCommitsForMerge("C2", "C3");
+            Assert.Single(mergeCommits);
+            Assert.Equal("C3", mergeCommits[0].Hash);
+        }
+
+        [Fact]
         public void TestFileStatsIsBinary()
         {
             byte[] textData = Encoding.UTF8.GetBytes("Hello, world! This is a test.");

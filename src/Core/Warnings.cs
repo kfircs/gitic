@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Kfc.Cli.Core;
 
 namespace Gitic;
 
@@ -219,16 +218,6 @@ public interface IWarningCollector
     List<string> Collect(WarningContext context, List<string>? existingWarnings);
     List<Diagnostic> CollectDiagnostics(WarningContext context);
     List<Diagnostic> CollectDiagnostics(WarningContext context, List<string>? existingWarnings);
-
-    /// <summary>
-    /// Collects diagnostics and immediately reports them via the provided console reporter, handling quiet filtering, sorting, and formatting.
-    /// </summary>
-    void CollectAndReport(WarningContext context, IConsoleReporter reporter, List<string>? existingWarnings = null, bool quiet = false)
-    {
-        if (reporter == null) return;
-        var diagnostics = CollectDiagnostics(context, existingWarnings);
-        reporter.WriteDiagnostics(diagnostics, quiet);
-    }
 }
 
 public class WarningCollector : IWarningCollector
@@ -272,13 +261,6 @@ public class WarningCollector : IWarningCollector
             .ThenBy(d => d.Code)
             .ThenBy(d => d.Message)
             .ToList();
-    }
-
-    public void CollectAndReport(WarningContext context, IConsoleReporter reporter, List<string>? existingWarnings = null, bool quiet = false)
-    {
-        if (reporter == null) return;
-        var diagnostics = CollectDiagnostics(context, existingWarnings);
-        reporter.WriteDiagnostics(diagnostics, quiet);
     }
 
     private Diagnostic ParseOrWrapWarning(string warning)

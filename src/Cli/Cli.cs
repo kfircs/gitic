@@ -20,12 +20,12 @@ public static class Cli
 
     public static CliResult CliSuccess(string stdout, string stderr = "")
     {
-        return new CliResult(0, stdout, stderr);
+        return new CliResult(0);
     }
 
     public static CliResult CliFailure(string stderr, int exitCode = 1)
     {
-        return new CliResult(exitCode, "", stderr);
+        return new CliResult(exitCode);
     }
 
     public static async Task<CliResult> RunCliAsync(string[] args, IConsoleReporter? reporter = null, CancellationToken cancellationToken = default)
