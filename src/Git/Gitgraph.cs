@@ -6,57 +6,30 @@ namespace Gitic;
 
 public static class GitGraphAlgorithms
 {
-    [ThreadStatic]
-    private static Queue<string>? _queueCache;
-
-    [ThreadStatic]
-    private static HashSet<string>? _visitedCache;
-
-    private static Queue<string> GetPooledQueue()
-    {
-        _queueCache ??= new Queue<string>();
-        _queueCache.Clear();
-        return _queueCache;
-    }
-
-    private static HashSet<string> GetPooledVisited()
-    {
-        _visitedCache ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        _visitedCache.Clear();
-        return _visitedCache;
-    }
-
     public static HashSet<string> GetAncestors(
         string startCommitHash,
         IReadOnlyDictionary<string, GitCommitRecord> commitMap,
         int maxCount)
     {
         HashSet<string> ancestors = [];
-        var queue = GetPooledQueue();
+        var queue = new Queue<string>();
         queue.Enqueue(startCommitHash);
         int count = 0;
 
-        try
+        while (queue.Count > 0 && count < maxCount)
         {
-            while (queue.Count > 0 && count < maxCount)
+            string curr = queue.Dequeue();
+            if (ancestors.Add(curr))
             {
-                string curr = queue.Dequeue();
-                if (ancestors.Add(curr))
+                if (commitMap.TryGetValue(curr, out var rec) && rec.Parents != null)
                 {
-                    if (commitMap.TryGetValue(curr, out var rec) && rec.Parents != null)
+                    foreach (var parent in rec.Parents)
                     {
-                        foreach (var parent in rec.Parents)
-                        {
-                            queue.Enqueue(parent);
-                        }
+                        queue.Enqueue(parent);
                     }
-                    count++;
                 }
+                count++;
             }
-        }
-        finally
-        {
-            queue.Clear();
         }
         return ancestors;
     }
@@ -68,41 +41,33 @@ public static class GitGraphAlgorithms
         int maxCount)
     {
         List<GitCommitRecord> branchCommits = [];
-        var queue = GetPooledQueue();
+        var queue = new Queue<string>();
         queue.Enqueue(startCommitHash);
-        var visited = GetPooledVisited();
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         int count = 0;
 
-        try
+        while (queue.Count > 0 && count < maxCount)
         {
-            while (queue.Count > 0 && count < maxCount)
+            string curr = queue.Dequeue();
+            if (mainAncestors.Contains(curr))
             {
-                string curr = queue.Dequeue();
-                if (mainAncestors.Contains(curr))
+                continue;
+            }
+            if (visited.Add(curr))
+            {
+                if (commitMap.TryGetValue(curr, out var rec))
                 {
-                    continue;
-                }
-                if (visited.Add(curr))
-                {
-                    if (commitMap.TryGetValue(curr, out var rec))
+                    branchCommits.Add(rec);
+                    if (rec.Parents != null)
                     {
-                        branchCommits.Add(rec);
-                        if (rec.Parents != null)
+                        foreach (var parent in rec.Parents)
                         {
-                            foreach (var parent in rec.Parents)
-                            {
-                                queue.Enqueue(parent);
-                            }
+                            queue.Enqueue(parent);
                         }
                     }
-                    count++;
                 }
+                count++;
             }
-        }
-        finally
-        {
-            queue.Clear();
-            visited.Clear();
         }
         return branchCommits;
     }
@@ -127,68 +92,6 @@ public interface IGitCommitGraph
     HashSet<string> GetAncestors(string startCommitHash, int maxCount);
     List<GitCommitRecord> GetBranchCommits(string startCommitHash, HashSet<string> mainAncestors, int maxCount);
     List<GitCommitRecord> GetBranchCommitsForMerge(string sourceCommitHash, string targetCommitHash, int mainAncestorsMaxDepth = 150, int branchCommitsMaxDepth = 100);
-}
-
-public interface IGitGraph
-{
-    HashSet<string> GetAncestors(
-        string startCommitHash,
-        Dictionary<string, GitCommitRecord> commitMap,
-        int maxCount);
-
-    List<GitCommitRecord> GetBranchCommits(
-        string startCommitHash,
-        HashSet<string> mainAncestors,
-        Dictionary<string, GitCommitRecord> commitMap,
-        int maxCount);
-
-    // Deeper interface methods using IReadOnlyDictionary for improved flexibility and read-only safety
-    HashSet<string> GetAncestors(
-        string startCommitHash,
-        IReadOnlyDictionary<string, GitCommitRecord> commitMap,
-        int maxCount)
-    {
-        return GitGraphAlgorithms.GetAncestors(startCommitHash, commitMap, maxCount);
-    }
-
-    List<GitCommitRecord> GetBranchCommits(
-        string startCommitHash,
-        HashSet<string> mainAncestors,
-        IReadOnlyDictionary<string, GitCommitRecord> commitMap,
-        int maxCount)
-    {
-        return GitGraphAlgorithms.GetBranchCommits(startCommitHash, mainAncestors, commitMap, maxCount);
-    }
-
-    List<GitCommitRecord> GetBranchCommitsForMerge(
-        string sourceCommitHash,
-        string targetCommitHash,
-        IReadOnlyDictionary<string, GitCommitRecord> commitMap,
-        int mainAncestorsMaxDepth = 150,
-        int branchCommitsMaxDepth = 100)
-    {
-        return GitGraphAlgorithms.GetBranchCommitsForMerge(sourceCommitHash, targetCommitHash, commitMap, mainAncestorsMaxDepth, branchCommitsMaxDepth);
-    }
-}
-
-public class GitGraphCalculator : IGitGraph
-{
-    public HashSet<string> GetAncestors(
-        string startCommitHash,
-        Dictionary<string, GitCommitRecord> commitMap,
-        int maxCount)
-    {
-        return GitGraphAlgorithms.GetAncestors(startCommitHash, commitMap, maxCount);
-    }
-
-    public List<GitCommitRecord> GetBranchCommits(
-        string startCommitHash,
-        HashSet<string> mainAncestors,
-        Dictionary<string, GitCommitRecord> commitMap,
-        int maxCount)
-    {
-        return GitGraphAlgorithms.GetBranchCommits(startCommitHash, mainAncestors, commitMap, maxCount);
-    }
 }
 
 /// <summary>

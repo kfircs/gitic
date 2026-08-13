@@ -225,12 +225,12 @@ public class MetricsEngine : IMetricsEngine
     public LeadTimesInfo CalculateLeadTimes(List<GitCommitRecord> commits, LeadTimeConfig? config = null)
     {
         var cfg = config ?? new LeadTimeConfig();
-        var commitMap = commits.ToDictionary(c => c.Hash, c => c);
+        var commitGraph = new GitCommitGraph(commits);
         var merges = new List<MergeLeadTimeRecord>();
 
         foreach (var m in commits)
         {
-            var record = _calculator.CalculateMergeLeadTime(m, commitMap);
+            var record = _calculator.CalculateMergeLeadTime(m, commitGraph);
             if (record != null)
             {
                 merges.Add(record);

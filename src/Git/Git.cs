@@ -117,10 +117,11 @@ public static class GitUtils
     }
 }
 
-public interface IGitClient : ICommitStream
+public interface IGitClient
 {
     Task<string?> GetRepositoryRootAsync(CancellationToken cancellationToken = default);
     Task<HashSet<string>> ListHeadFilesAsync(CancellationToken cancellationToken = default);
+    Task<List<GitCommitRecord>> ExtractHistoryAsync(GitHistoryExtractorOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deeper interface addition that retrieves and constructs a complete, self-contained GitCommitGraph.
@@ -147,16 +148,21 @@ public class GitClient : IGitClient
         _parser = parser ?? new GitParser(new GitPatchParser());
     }
 
+    private async Task<string> ExecuteAndAggregateStdoutAsync(string[] args, CancellationToken cancellationToken)
+    {
+        StringBuilder sb = new();
+        await foreach (var line in _executor.RunAsync(args, _repoRoot, cancellationToken))
+        {
+            sb.AppendLine(line);
+        }
+        return sb.ToString();
+    }
+
     public async Task<string?> GetRepositoryRootAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            StringBuilder sb = new();
-            await foreach (var line in _executor.RunAsync(["rev-parse", "--show-toplevel"], _repoRoot, cancellationToken))
-            {
-                sb.AppendLine(line);
-            }
-            string stdout = sb.ToString();
+            string stdout = await ExecuteAndAggregateStdoutAsync(["rev-parse", "--show-toplevel"], cancellationToken);
             string trimmed = stdout.Trim();
             return trimmed.Length > 0 ? trimmed : null;
         }
@@ -185,12 +191,7 @@ public class GitClient : IGitClient
         var opt = options ?? new();
         var args = _parser.BuildGitLogArguments(opt);
 
-        StringBuilder sb = new();
-        await foreach (var line in _executor.RunAsync(args.ToArray(), _repoRoot, cancellationToken))
-        {
-            sb.AppendLine(line);
-        }
-        string stdout = sb.ToString();
+        string stdout = await ExecuteAndAggregateStdoutAsync(args.ToArray(), cancellationToken);
         return _parser.ParseGitLog(stdout);
     }
 }

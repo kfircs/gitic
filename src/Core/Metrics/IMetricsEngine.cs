@@ -12,7 +12,7 @@ public class LeadTimeConfig
 
 public interface IMergeLeadTimeCalculator
 {
-    MergeLeadTimeRecord? CalculateMergeLeadTime(GitCommitRecord mergeCommit, Dictionary<string, GitCommitRecord> commitMap);
+    MergeLeadTimeRecord? CalculateMergeLeadTime(GitCommitRecord mergeCommit, IGitCommitGraph commitGraph);
 }
 
 public class TemporalCouplingResult

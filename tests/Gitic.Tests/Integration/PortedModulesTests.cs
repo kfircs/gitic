@@ -292,22 +292,14 @@ namespace Gitic.Tests
             var commit3 = new GitCommitRecord { Hash = "C3", Parents = new List<string> { "C1" } };
             var commit4 = new GitCommitRecord { Hash = "C4", Parents = new List<string> { "C2", "C3" } };
 
-            var commitMap = new Dictionary<string, GitCommitRecord>
-            {
-                { "C1", commit1 },
-                { "C2", commit2 },
-                { "C3", commit3 },
-                { "C4", commit4 }
-            };
-
-            IGitGraph gitGraph = new GitGraphCalculator();
-            var ancestors = gitGraph.GetAncestors("C4", commitMap, 10);
+            IGitCommitGraph gitGraph = new GitCommitGraph(new[] { commit1, commit2, commit3, commit4 });
+            var ancestors = gitGraph.GetAncestors("C4", 10);
             Assert.Contains("C4", ancestors);
             Assert.Contains("C2", ancestors);
             Assert.Contains("C3", ancestors);
             Assert.Contains("C1", ancestors);
 
-            var branchCommits = gitGraph.GetBranchCommits("C3", new HashSet<string> { "C2", "C1" }, commitMap, 10);
+            var branchCommits = gitGraph.GetBranchCommits("C3", new HashSet<string> { "C2", "C1" }, 10);
             Assert.Single(branchCommits);
             Assert.Equal("C3", branchCommits[0].Hash);
         }

@@ -171,5 +171,5 @@ internal class GitParser : IGitParser
     private static List<string> ParseParents(string parentsLine) =>
         string.IsNullOrWhiteSpace(parentsLine)
             ? []
-            : parentsLine.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries).ToList();
+            : parentsLine.Trim().Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries).ToList();
 }
