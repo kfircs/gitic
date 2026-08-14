@@ -74,7 +74,7 @@ public class TuiNode
         return false;
     }
 
-    public static TuiNode BuildTree(IEnumerable<FileMetric> files)
+    public static TuiNode BuildTree(IEnumerable<FileMetric> files, IPathClassifier? pathClassifier = null)
     {
         var root = new TuiNode
         {
@@ -85,7 +85,14 @@ public class TuiNode
 
         foreach (var file in files)
         {
-            if (IsExcluded(file.Path))
+            if (pathClassifier != null)
+            {
+                if (!pathClassifier.Check(file.Path))
+                {
+                    continue;
+                }
+            }
+            else if (IsExcluded(file.Path))
             {
                 continue;
             }

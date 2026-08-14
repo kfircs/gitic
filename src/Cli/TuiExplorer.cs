@@ -20,15 +20,21 @@ public class TuiExplorer
 {
     private readonly Stack<TuiExplorerState> _history = new();
     private TuiExplorerState _current = new();
-    private int _perspective = 1; // 1: Lines & Structure, 2: Work Classification, 3: Code Rot, 4: Review Collaboration, 5: AI Code Strain
-    private readonly Dictionary<int, ITuiPerspective> _perspectives = new()
+    internal int _perspective = 0; // 0-based index into _perspectives
+    internal readonly IList<ITuiPerspective> _perspectives;
+
+    public TuiExplorer(IList<ITuiPerspective>? perspectives = null)
     {
-        { 1, new LinesStructurePerspective() },
-        { 2, new WorkClassificationPerspective() },
-        { 3, new CodeRotPerspective() },
-        { 4, new ReviewCollaborationPerspective() },
-        { 5, new AiCodeStrainPerspective() }
-    };
+        _perspectives = perspectives ?? new List<ITuiPerspective>
+        {
+            new LinesStructurePerspective(),
+            new WorkClassificationPerspective(),
+            new CodeRotPerspective(),
+            new ReviewCollaborationPerspective(),
+            new AiCodeStrainPerspective()
+        };
+    }
+
     private AnalysisResult _result = new();
     private bool _running = true;
 
@@ -87,7 +93,7 @@ public class TuiExplorer
 
         // Header Border and Line Layouts (exactly safeWidth long!)
         string title = " 🖥️  Gitic Interactive TUI Explorer ";
-        string perspectiveTitle = $"Perspective: [{_perspective}] {GetPerspectiveName()}";
+        string perspectiveTitle = $"Perspective: [{_perspective + 1}] {GetPerspectiveName()}";
         string breadcrumbs = GetBreadcrumbs(viewport.SafeWidth - 4);
 
         string topBorder = "┌" + new string('─', leftWidth + 2) + "┬" + new string('─', rightWidth + 2) + "┐";
@@ -109,7 +115,7 @@ public class TuiExplorer
         _current.ScrollOffset = newScrollOffset;
 
         TuiNode? selectedNode = children.Count > 0 ? children[_current.SelectedIndex] : null;
-        var activePerspective = _perspectives.TryGetValue(_perspective, out var p) ? p : _perspectives[1];
+        var activePerspective = (_perspective >= 0 && _perspective < _perspectives.Count) ? _perspectives[_perspective] : _perspectives[0];
         var rightLines = selectedNode == null ? new List<string>() : activePerspective.GetRightSidebarLines(selectedNode, rightWidth, _result);
 
         for (int i = 0; i < contentHeight; i++)
@@ -153,7 +159,7 @@ public class TuiExplorer
         // Footer
         Console.WriteLine(TuiPanel.DrawBorderBottom(leftWidth, rightWidth, true));
 
-        string shortcuts = "\x1b[1;38;2;249;226;175m Shortcuts:\x1b[0m j/k/↑/↓:Move │ l/󰌑:Enter │ h/Esc/Backspace:Back │ Tab/1-5:Perspectives │ q:Quit";
+        string shortcuts = $"\x1b[1;38;2;249;226;175m Shortcuts:\x1b[0m j/k/↑/↓:Move │ l/󰌑:Enter │ h/Esc/Backspace:Back │ Tab/1-{_perspectives.Count}:Perspectives │ q:Quit";
         Console.Write(ConsoleUtils.PadRightAnsi(shortcuts, leftWidth + rightWidth + 7));
     }
 
@@ -174,7 +180,7 @@ public class TuiExplorer
         return joined;
     }
 
-    private string GetPerspectiveName() => _perspectives.TryGetValue(_perspective, out var p) ? p.DisplayName : "Unknown";
+    private string GetPerspectiveName() => (_perspective >= 0 && _perspective < _perspectives.Count) ? _perspectives[_perspective].DisplayName : "Unknown";
 
     private async Task HandleInputAsync()
     {
@@ -253,27 +259,18 @@ public class TuiExplorer
                 break;
 
             case ConsoleKey.Tab:
-                _perspective = (_perspective % 5) + 1;
-                break;
-
-            case ConsoleKey.D1:
-                _perspective = 1;
-                break;
-            case ConsoleKey.D2:
-                _perspective = 2;
-                break;
-            case ConsoleKey.D3:
-                _perspective = 3;
-                break;
-            case ConsoleKey.D4:
-                _perspective = 4;
-                break;
-            case ConsoleKey.D5:
-                _perspective = 5;
+                _perspective = (_perspective + 1) % _perspectives.Count;
                 break;
 
             case ConsoleKey.Q:
                 _running = false;
+                break;
+            
+            default:
+                if (keyInfo.Key >= ConsoleKey.D1 && keyInfo.Key < ConsoleKey.D1 + _perspectives.Count)
+                {
+                    _perspective = keyInfo.Key - ConsoleKey.D1;
+                }
                 break;
         }
     }
