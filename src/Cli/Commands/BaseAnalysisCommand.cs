@@ -12,7 +12,7 @@ namespace Gitic;
 /// <summary>
 /// Abstract base command class that orchestrates Git history extraction and repository analysis.
 /// </summary>
-public abstract class BaseAnalysisCommand : ICommand
+public abstract class BaseAnalysisCommand : IGiticCommand
 {
     protected readonly ParsedArgs Parsed;
     private readonly IGitClient? _gitClient;
