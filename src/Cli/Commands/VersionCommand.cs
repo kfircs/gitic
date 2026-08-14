@@ -4,7 +4,7 @@ using Kfc.Cli.Core;
 
 namespace Gitic;
 
-public class VersionCommand : ICommand
+public class VersionCommand : IGiticCommand
 {
     public Task<CliResult> ExecuteAsync(IConsoleReporter reporter)
     {

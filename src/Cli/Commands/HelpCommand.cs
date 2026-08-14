@@ -5,7 +5,7 @@ using Kfc.Cli.Core;
 
 namespace Gitic;
 
-public class HelpCommand : ICommand
+public class HelpCommand : IGiticCommand
 {
     private const string DefaultVersion = "0.1.0";
     private static readonly string HelpTemplate =

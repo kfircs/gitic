@@ -74,25 +74,9 @@ public static class Cli
     {
         try
         {
-            if (command is BaseAnalysisCommand analysisCommand)
+            if (command is IGiticCommand giticCommand)
             {
-                return await analysisCommand.ExecuteAsync(reporter, cancellationToken);
-            }
-            else if (command is WizardCommand wizardCommand)
-            {
-                return await wizardCommand.ExecuteAsync(reporter, cancellationToken);
-            }
-            else if (command is HelpCommand helpCommand)
-            {
-                return await helpCommand.ExecuteAsync(reporter, cancellationToken);
-            }
-            else if (command is VersionCommand versionCommand)
-            {
-                return await versionCommand.ExecuteAsync(reporter, cancellationToken);
-            }
-            else if (command is ConfigCommand configCommand)
-            {
-                return await configCommand.ExecuteAsync(reporter, cancellationToken);
+                return await giticCommand.ExecuteAsync(reporter, cancellationToken);
             }
             else
             {

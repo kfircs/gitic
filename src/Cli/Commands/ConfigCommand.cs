@@ -4,7 +4,7 @@ using Kfc.Cli.Core;
 
 namespace Gitic;
 
-public class ConfigCommand : ICommand
+public class ConfigCommand : IGiticCommand
 {
     private readonly ParsedArgs _parsed;
 

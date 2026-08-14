@@ -95,9 +95,9 @@ public class TuiExplorer
         string midBorder2 = "├" + new string('─', leftWidth + 2) + "┼" + new string('─', rightWidth + 2) + "┤";
 
         Console.WriteLine($"\x1b[38;2;203;166;247m{topBorder}\x1b[0m");
-        Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m \x1b[1;38;2;137;180;250m{PadRightAnsi(title, leftWidth)}\x1b[0m \x1b[38;2;203;166;247m│\x1b[0m \x1b[38;2;166;227;161m{PadRightAnsi(perspectiveTitle, rightWidth)}\x1b[0m \x1b[38;2;203;166;247m│\x1b[0m");
+        Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m \x1b[1;38;2;137;180;250m{ConsoleUtils.PadRightAnsi(title, leftWidth)}\x1b[0m \x1b[38;2;203;166;247m│\x1b[0m \x1b[38;2;166;227;161m{ConsoleUtils.PadRightAnsi(perspectiveTitle, rightWidth)}\x1b[0m \x1b[38;2;203;166;247m│\x1b[0m");
         Console.WriteLine($"\x1b[38;2;108;112;147m{midBorder1}\x1b[0m");
-        Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m \x1b[38;2;180;190;254m{PadRightAnsi("Breadcrumbs: " + breadcrumbs, leftWidth + rightWidth + 3)}\x1b[0m \x1b[38;2;203;166;247m│\x1b[0m");
+        Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m \x1b[38;2;180;190;254m{ConsoleUtils.PadRightAnsi("Breadcrumbs: " + breadcrumbs, leftWidth + rightWidth + 3)}\x1b[0m \x1b[38;2;203;166;247m│\x1b[0m");
         Console.WriteLine($"\x1b[38;2;108;112;147m{midBorder2}\x1b[0m");
 
         // List & Detail Panel Setup
@@ -154,7 +154,7 @@ public class TuiExplorer
         Console.WriteLine(TuiPanel.DrawBorderBottom(leftWidth, rightWidth, true));
 
         string shortcuts = "\x1b[1;38;2;249;226;175m Shortcuts:\x1b[0m j/k/↑/↓:Move │ l/󰌑:Enter │ h/Esc/Backspace:Back │ Tab/1-5:Perspectives │ q:Quit";
-        Console.Write(PadRightAnsi(shortcuts, leftWidth + rightWidth + 7));
+        Console.Write(ConsoleUtils.PadRightAnsi(shortcuts, leftWidth + rightWidth + 7));
     }
 
     private string GetBreadcrumbs(int maxWidth)
@@ -276,34 +276,6 @@ public class TuiExplorer
                 _running = false;
                 break;
         }
-    }
-
-    private static string PadRightAnsi(string text, int totalWidth, string? bgAnsi = null)
-    {
-        int visibleLength = 0;
-        bool inEscape = false;
-        for (int i = 0; i < text.Length; i++)
-        {
-            char c = text[i];
-            if (c == '\x1b') inEscape = true;
-            else if (inEscape && c == 'm') inEscape = false;
-            else if (!inEscape) visibleLength++;
-        }
-        int paddingCount = totalWidth - visibleLength;
-        if (paddingCount > 0)
-        {
-            if (bgAnsi != null)
-            {
-                // If text ends with reset, strip it first so padding receives the background color
-                if (text.EndsWith("\x1b[0m"))
-                {
-                    return text.Substring(0, text.Length - 4) + new string(' ', paddingCount) + "\x1b[0m";
-                }
-                return bgAnsi + text + new string(' ', paddingCount) + "\x1b[0m";
-            }
-            return text + new string(' ', paddingCount);
-        }
-        return text;
     }
 
     private static string FormatBytes(long bytes)

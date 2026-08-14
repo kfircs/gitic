@@ -9,7 +9,7 @@ using Kfc.Cli.Core;
 
 namespace Gitic
 {
-    public class WizardCommand : ICommand
+    public class WizardCommand : IGiticCommand
     {
         private readonly ParsedArgs _parsed;
 
@@ -71,9 +71,9 @@ namespace Gitic
                 string botBorder = "\x1b[38;2;203;166;247m└" + new string('─', boxWidth - 2) + "┘\x1b[0m";
                 string midBorder = "\x1b[38;2;203;166;247m├" + new string('─', boxWidth - 2) + "┤\x1b[0m";
                 Console.WriteLine(topBorder);
-                Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {PadRightAnsi("\x1b[1m󰚩 Gitic Strategic Codebase Analysis Dashboard\x1b[0m", boxWidth - 4)} \x1b[38;2;203;166;247m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {ConsoleUtils.PadRightAnsi("\x1b[1m󰚩 Gitic Strategic Codebase Analysis Dashboard\x1b[0m", boxWidth - 4)} \x1b[38;2;203;166;247m│\x1b[0m");
                 Console.WriteLine(midBorder);
-                Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {PadRightAnsi($"\x1b[38;2;166;227;161mTarget:\x1b[0m {Path.GetFullPath(_parsed.RepoPath)}", boxWidth - 4)} \x1b[38;2;203;166;247m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {ConsoleUtils.PadRightAnsi($"\x1b[38;2;166;227;161mTarget:\x1b[0m {Path.GetFullPath(_parsed.RepoPath)}", boxWidth - 4)} \x1b[38;2;203;166;247m│\x1b[0m");
                 Console.WriteLine(botBorder);
                 Console.WriteLine();
 
@@ -216,7 +216,7 @@ namespace Gitic
                 try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winWidth = Console.WindowWidth; } catch { }
                 int boxWidth = Math.Max(50, Math.Min(80, winWidth));
                 Console.WriteLine($"\x1b[38;2;203;166;247m┌{new string('─', boxWidth - 2)}┐\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {PadRightAnsi("\x1b[1m📊 Gitic Report Wizard\x1b[0m", boxWidth - 4)} \x1b[38;2;203;166;247m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;203;166;247m│\x1b[0m {ConsoleUtils.PadRightAnsi("\x1b[1m📊 Gitic Report Wizard\x1b[0m", boxWidth - 4)} \x1b[38;2;203;166;247m│\x1b[0m");
                 Console.WriteLine($"\x1b[38;2;203;166;247m└{new string('─', boxWidth - 2)}┘\x1b[0m");
                 Console.WriteLine();
 
@@ -521,23 +521,6 @@ namespace Gitic
         }
 
 
-        private static string PadRightAnsi(string text, int totalWidth)
-        {
-            int visibleLength = 0;
-            bool inEscape = false;
-            foreach (char c in text)
-            {
-                if (c == '') inEscape = true;
-                else if (inEscape && c == 'm') inEscape = false;
-                else if (!inEscape) visibleLength++;
-            }
-            int paddingCount = totalWidth - visibleLength;
-            if (paddingCount > 0)
-            {
-                return text + new string(' ', paddingCount);
-            }
-            return text;
-        }
 
         private int PromptSingleSelection(string prompt, string[] options)
         {
@@ -571,21 +554,21 @@ namespace Gitic
                 try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winW = Console.WindowWidth; } catch { }
                 int bWidth = Math.Max(50, Math.Min(80, winW));
                 Console.WriteLine($"\x1b[38;2;249;226;175m┌{new string('─', bWidth - 2)}┐\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"\x1b[1m󰜎 {prompt}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"\x1b[1m󰜎 {prompt}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                 Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
                 for (int i = 0; i < options.Length; i++)
                 {
                     if (i == currentSelection)
                     {
-                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"\x1b[38;2;137;180;250m󰅂\x1b[0m \x1b[1;38;2;137;180;250m{options[i]}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"\x1b[38;2;137;180;250m󰅂\x1b[0m \x1b[1;38;2;137;180;250m{options[i]}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                     }
                     else
                     {
-                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"  {options[i]}", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"  {options[i]}", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                     }
                 }
                 Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi("\x1b[38;2;108;112;147m󰌑 Up/Down: Navigate │ Enter: Select\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi("\x1b[38;2;108;112;147m󰌑 Up/Down: Navigate │ Enter: Select\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                 Console.WriteLine($"\x1b[38;2;249;226;175m└{new string('─', bWidth - 2)}┘\x1b[0m");
 
                 key = Console.ReadKey(true).Key;
@@ -642,22 +625,22 @@ namespace Gitic
                 try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winW = Console.WindowWidth; } catch { }
                 int bWidth = Math.Max(50, Math.Min(80, winW));
                 Console.WriteLine($"\x1b[38;2;249;226;175m┌{new string('─', bWidth - 2)}┐\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"\x1b[1m󰜎 {prompt}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"\x1b[1m󰜎 {prompt}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                 Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
                 for (int i = 0; i < options.Length; i++)
                 {
                     string checkbox = selected.Contains(i) ? "󰄲" : "󰄱";
                     if (i == currentSelection)
                     {
-                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"\x1b[38;2;137;180;250m󰅂\x1b[0m {checkbox} \x1b[1;38;2;137;180;250m{options[i]}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"\x1b[38;2;137;180;250m󰅂\x1b[0m {checkbox} \x1b[1;38;2;137;180;250m{options[i]}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                     }
                     else
                     {
-                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi($"  {checkbox} {options[i]}", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"  {checkbox} {options[i]}", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                     }
                 }
                 Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {PadRightAnsi("\x1b[38;2;108;112;147m󰌑 Up/Down: Navigate │ Space: Toggle │ Enter: Select\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
+                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi("\x1b[38;2;108;112;147m󰌑 Up/Down: Navigate │ Space: Toggle │ Enter: Select\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
                 Console.WriteLine($"\x1b[38;2;249;226;175m└{new string('─', bWidth - 2)}┘\x1b[0m");
 
                 key = Console.ReadKey(true).Key;
