@@ -77,7 +77,7 @@ namespace Gitic
                 Console.WriteLine(botBorder);
                 Console.WriteLine();
 
-                var mainChoice = PromptSingleSelection(
+                var mainChoice = TuiPrompter.PromptSingleSelection(
                     "Select an analysis view or action:",
                     new[] {
                         "🖥️  Interactive TUI Codebase Explorer (Structure & Reports)",
@@ -222,7 +222,7 @@ namespace Gitic
 
                 if (step == 0)
                 {
-                    reportType = PromptSingleSelection(
+                    reportType = TuiPrompter.PromptSingleSelection(
                         "What type of report would you like to generate?",
                         new[] {
                             "Developer Onboarding & Collaboration Profile",
@@ -289,7 +289,7 @@ namespace Gitic
                         "Review Collaboration",
                         "AI Code Strain"
                     };
-                    var selections = PromptMultiSelection("Select the sections to include (Space to select, Enter to confirm):", availableSections);
+                    var selections = TuiPrompter.PromptMultiSelection("Select the sections to include (Space to select, Enter to confirm):", availableSections);
                     if (selections.Contains(-1))
                     {
                         step = 0; // go back to choosing report type
@@ -311,7 +311,7 @@ namespace Gitic
                 }
                 else if (step == 2)
                 {
-                    formatType = PromptSingleSelection(
+                    formatType = TuiPrompter.PromptSingleSelection(
                         "Which format do you prefer?",
                         new[] { "Markdown (.md) with embedded SVGs", "HTML (.html) with embedded SVGs" }
                     );
@@ -357,7 +357,7 @@ namespace Gitic
             Directory.CreateDirectory(targetDir);
             string targetPath = Path.Combine(targetDir, filename);
 
-            var content = formatType == 0 ? GenerateCustomMarkdown(result, selectedSections) : GenerateCustomHtml(result, selectedSections);
+            var content = formatType == 0 ? CustomReportGenerator.GenerateCustomMarkdown(result, selectedSections) : CustomReportGenerator.GenerateCustomHtml(result, selectedSections);
 
             await File.WriteAllTextAsync(targetPath, content, cancellationToken);
 
@@ -378,295 +378,5 @@ namespace Gitic
             return await analyzer.AnalyzeAsync(input, cancellationToken);
         }
 
-        private string GenerateCustomMarkdown(AnalysisResult result, List<string> sections)
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("# Gitic Custom Report");
-            sb.AppendLine($"*Generated at {DateTime.Now}*");
-            sb.AppendLine();
-
-            if (result.CuratedReports == null) return sb.ToString();
-
-            if (sections.Contains("Work Classification"))
-            {
-                sb.AppendLine("## 1. Work Classification");
-                sb.AppendLine($"* **Features:** {result.CuratedReports.WorkClassification.Features}");
-                sb.AppendLine($"* **Bugs:** {result.CuratedReports.WorkClassification.Bugs}");
-                sb.AppendLine($"* **Technical Debt:** {result.CuratedReports.WorkClassification.TechnicalDebt}");
-                sb.AppendLine($"* **Chores:** {result.CuratedReports.WorkClassification.Chores}");
-                sb.AppendLine($"* **Unclassified:** {result.CuratedReports.WorkClassification.Unclassified}");
-                sb.AppendLine();
-            }
-
-            if (sections.Contains("Developer Onboarding"))
-            {
-                sb.AppendLine("## 2. Developer Onboarding (TTFC)");
-                foreach (var dev in result.CuratedReports.Onboarding.Take(10))
-                {
-                    sb.AppendLine($"* **{dev.Developer}**: First commit on {dev.FirstCommitDate} ({dev.DaysActive} days active)");
-                }
-                sb.AppendLine();
-            }
-
-            if (sections.Contains("Code Rot"))
-            {
-                sb.AppendLine("## 3. Code Rot");
-                sb.AppendLine($"* **Zombie Files (>1yr):** {result.CuratedReports.CodeRot.ZombieFileCount}");
-                sb.AppendLine($"* **Zombie Lines (>1yr):** {result.CuratedReports.CodeRot.ZombieLines}");
-                sb.AppendLine();
-            }
-
-            if (sections.Contains("Review Collaboration"))
-            {
-                sb.AppendLine("## 4. Review Collaboration & Silos");
-                sb.AppendLine($"* **Reviewer Silos (Single-reviewer):** {result.CuratedReports.ReviewCollaboration.ReviewerSilos}");
-                sb.AppendLine();
-                sb.AppendLine("### Top Review Pairs");
-                foreach (var pair in result.CuratedReports.ReviewCollaboration.Pairs.Take(5))
-                {
-                    sb.AppendLine($"* {pair.Author} reviewed by {pair.Reviewer} ({pair.PrCount} PRs)");
-                }
-                sb.AppendLine();
-            }
-
-            if (sections.Contains("AI Code Strain"))
-            {
-                sb.AppendLine("## 5. AI Code Strain");
-                sb.AppendLine($"* **High-Volume Commits (>20 files):** {result.CuratedReports.AiCodeStrain.HighVolumeCommits}");
-                if (result.CuratedReports.AiCodeStrain.ReviewVelocityWarning)
-                {
-                    sb.AppendLine("> ⚠️ **WARNING**: High proportion of large commits detected. Review capacity may be strained.");
-                }
-                sb.AppendLine();
-            }
-
-            sb.AppendLine("---");
-            sb.AppendLine("### Repository Visualization");
-            sb.AppendLine("#### Codebase Ownership Treemap");
-            sb.AppendLine(SvgGeneratorHelper.GenerateGeTreemapSvg(result));
-            sb.AppendLine();
-
-            return sb.ToString();
-        }
-
-        private string GenerateCustomHtml(AnalysisResult result, List<string> sections)
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("<html><head><style>body { font-family: sans-serif; padding: 20px; } h2 { color: #333; border-bottom: 1px solid #ccc; } svg { max-width: 100%; height: auto; }</style></head><body>");
-            sb.AppendLine("<h1>Gitic Custom Report</h1>");
-            sb.AppendLine($"<p><em>Generated at {DateTime.Now}</em></p>");
-
-            if (result.CuratedReports != null)
-            {
-                if (sections.Contains("Work Classification"))
-                {
-                    sb.AppendLine("<h2>1. Work Classification</h2><ul>");
-                    sb.AppendLine($"<li><strong>Features:</strong> {result.CuratedReports.WorkClassification.Features}</li>");
-                    sb.AppendLine($"<li><strong>Bugs:</strong> {result.CuratedReports.WorkClassification.Bugs}</li>");
-                    sb.AppendLine($"<li><strong>Technical Debt:</strong> {result.CuratedReports.WorkClassification.TechnicalDebt}</li>");
-                    sb.AppendLine($"<li><strong>Chores:</strong> {result.CuratedReports.WorkClassification.Chores}</li>");
-                    sb.AppendLine($"<li><strong>Unclassified:</strong> {result.CuratedReports.WorkClassification.Unclassified}</li>");
-                    sb.AppendLine("</ul>");
-                }
-
-                if (sections.Contains("Developer Onboarding"))
-                {
-                    sb.AppendLine("<h2>2. Developer Onboarding (TTFC)</h2><ul>");
-                    foreach (var dev in result.CuratedReports.Onboarding.Take(10))
-                    {
-                        sb.AppendLine($"<li><strong>{dev.Developer}</strong>: First commit on {dev.FirstCommitDate} ({dev.DaysActive} days active)</li>");
-                    }
-                    sb.AppendLine("</ul>");
-                }
-
-                if (sections.Contains("Code Rot"))
-                {
-                    sb.AppendLine("<h2>3. Code Rot</h2><ul>");
-                    sb.AppendLine($"<li><strong>Zombie Files (&gt;1yr):</strong> {result.CuratedReports.CodeRot.ZombieFileCount}</li>");
-                    sb.AppendLine($"<li><strong>Zombie Lines (&gt;1yr):</strong> {result.CuratedReports.CodeRot.ZombieLines}</li>");
-                    sb.AppendLine("</ul>");
-                }
-
-                if (sections.Contains("Review Collaboration"))
-                {
-                    sb.AppendLine("<h2>4. Review Collaboration & Silos</h2>");
-                    sb.AppendLine($"<p><strong>Reviewer Silos (Single-reviewer):</strong> {result.CuratedReports.ReviewCollaboration.ReviewerSilos}</p>");
-                    sb.AppendLine("<h3>Top Review Pairs</h3><ul>");
-                    foreach (var pair in result.CuratedReports.ReviewCollaboration.Pairs.Take(5))
-                    {
-                        sb.AppendLine($"<li>{pair.Author} reviewed by {pair.Reviewer} ({pair.PrCount} PRs)</li>");
-                    }
-                    sb.AppendLine("</ul>");
-                }
-
-                if (sections.Contains("AI Code Strain"))
-                {
-                    sb.AppendLine("<h2>5. AI Code Strain</h2><ul>");
-                    sb.AppendLine($"<li><strong>High-Volume Commits (&gt;20 files):</strong> {result.CuratedReports.AiCodeStrain.HighVolumeCommits}</li>");
-                    if (result.CuratedReports.AiCodeStrain.ReviewVelocityWarning)
-                    {
-                        sb.AppendLine("<li style='color:red'><strong>⚠️ WARNING:</strong> High proportion of large commits detected. Review capacity may be strained.</li>");
-                    }
-                    sb.AppendLine("</ul>");
-                }
-            }
-
-            sb.AppendLine("<hr/>");
-            sb.AppendLine("<h3>Repository Visualization</h3>");
-            sb.AppendLine("#### Codebase Ownership Treemap</h4>");
-            sb.AppendLine("<div>" + SvgGeneratorHelper.GenerateGeTreemapSvg(result) + "</div>");
-            sb.AppendLine("</body></html>");
-
-            return sb.ToString();
-        }
-
-
-
-        private int PromptSingleSelection(string prompt, string[] options)
-        {
-            if (Console.IsInputRedirected || Console.IsOutputRedirected || Console.IsErrorRedirected)
-            {
-                Console.WriteLine(prompt);
-                for (int i = 0; i < options.Length; i++) Console.WriteLine($"[{i}] {options[i]}");
-                Console.Write("Enter selection (number): ");
-                string? line = Console.ReadLine();
-                if (line == null || line == "back" || line == "escape") return -1;
-                if (int.TryParse(line, out int val) && val >= 0 && val < options.Length) return val;
-                return 0;
-            }
-
-            int currentSelection = 0;
-            ConsoleKey key;
-            int startTop = Console.CursorTop;
-            bool firstDraw = true;
-
-            try { Console.CursorVisible = false; } catch { }
-
-            do
-            {
-                if (!firstDraw)
-                {
-                    try { Console.SetCursorPosition(0, startTop); } catch { }
-                }
-                firstDraw = false;
-
-                int winW = 80;
-                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winW = Console.WindowWidth; } catch { }
-                int bWidth = Math.Max(50, Math.Min(80, winW));
-                Console.WriteLine($"\x1b[38;2;249;226;175m┌{new string('─', bWidth - 2)}┐\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"\x1b[1m󰜎 {prompt}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
-                for (int i = 0; i < options.Length; i++)
-                {
-                    if (i == currentSelection)
-                    {
-                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"\x1b[38;2;137;180;250m󰅂\x1b[0m \x1b[1;38;2;137;180;250m{options[i]}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"  {options[i]}", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
-                    }
-                }
-                Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi("\x1b[38;2;108;112;147m󰌑 Up/Down: Navigate │ Enter: Select\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m└{new string('─', bWidth - 2)}┘\x1b[0m");
-
-                key = Console.ReadKey(true).Key;
-
-                switch (key)
-                {
-                    case ConsoleKey.UpArrow:
-                        currentSelection = (currentSelection == 0) ? options.Length - 1 : currentSelection - 1;
-                        break;
-                    case ConsoleKey.DownArrow:
-                        currentSelection = (currentSelection == options.Length - 1) ? 0 : currentSelection + 1;
-                        break;
-                    case ConsoleKey.Escape:
-                        try { Console.CursorVisible = true; } catch { }
-                        return -1;
-                }
-            } while (key != ConsoleKey.Enter);
-
-            try { Console.CursorVisible = true; } catch { }
-            return currentSelection;
-        }
-
-        private List<int> PromptMultiSelection(string prompt, string[] options)
-        {
-            if (Console.IsInputRedirected || Console.IsOutputRedirected || Console.IsErrorRedirected)
-            {
-                Console.WriteLine(prompt);
-                for (int i = 0; i < options.Length; i++) Console.WriteLine($"[{i}] {options[i]}");
-                Console.Write("Enter selections (comma separated numbers): ");
-                var line = Console.ReadLine();
-                if (line == null || line == "back" || line == "escape") return new List<int> { -1 };
-                var parts = line.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                var sel = parts.Select(p => int.TryParse(p, out int v) ? v : -1).Where(v => v >= 0 && v < options.Length).ToList();
-                return sel.Count > 0 ? sel : new List<int> { 0 };
-            }
-
-            int currentSelection = 0;
-            HashSet<int> selected = new HashSet<int>();
-            ConsoleKey key;
-            int startTop = Console.CursorTop;
-            bool firstDraw = true;
-
-            try { Console.CursorVisible = false; } catch { }
-
-            do
-            {
-                if (!firstDraw)
-                {
-                    try { Console.SetCursorPosition(0, startTop); } catch { }
-                }
-                firstDraw = false;
-
-                int winW = 80;
-                try { if (!Console.IsOutputRedirected && Console.WindowWidth > 0) winW = Console.WindowWidth; } catch { }
-                int bWidth = Math.Max(50, Math.Min(80, winW));
-                Console.WriteLine($"\x1b[38;2;249;226;175m┌{new string('─', bWidth - 2)}┐\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"\x1b[1m󰜎 {prompt}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
-                for (int i = 0; i < options.Length; i++)
-                {
-                    string checkbox = selected.Contains(i) ? "󰄲" : "󰄱";
-                    if (i == currentSelection)
-                    {
-                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"\x1b[38;2;137;180;250m󰅂\x1b[0m {checkbox} \x1b[1;38;2;137;180;250m{options[i]}\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi($"  {checkbox} {options[i]}", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
-                    }
-                }
-                Console.WriteLine($"\x1b[38;2;249;226;175m├{new string('─', bWidth - 2)}┤\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m│\x1b[0m {ConsoleUtils.PadRightAnsi("\x1b[38;2;108;112;147m󰌑 Up/Down: Navigate │ Space: Toggle │ Enter: Select\x1b[0m", bWidth - 4)} \x1b[38;2;249;226;175m│\x1b[0m");
-                Console.WriteLine($"\x1b[38;2;249;226;175m└{new string('─', bWidth - 2)}┘\x1b[0m");
-
-                key = Console.ReadKey(true).Key;
-
-                switch (key)
-                {
-                    case ConsoleKey.UpArrow:
-                        currentSelection = (currentSelection == 0) ? options.Length - 1 : currentSelection - 1;
-                        break;
-                    case ConsoleKey.DownArrow:
-                        currentSelection = (currentSelection == options.Length - 1) ? 0 : currentSelection + 1;
-                        break;
-                    case ConsoleKey.Spacebar:
-                        if (selected.Contains(currentSelection))
-                            selected.Remove(currentSelection);
-                        else
-                            selected.Add(currentSelection);
-                        break;
-                    case ConsoleKey.Escape:
-                        try { Console.CursorVisible = true; } catch { }
-                        return new List<int> { -1 };
-                }
-            } while (key != ConsoleKey.Enter);
-
-            try { Console.CursorVisible = true; } catch { }
-            return selected.OrderBy(x => x).ToList();
-        }
     }
 }
