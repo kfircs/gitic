@@ -27,14 +27,16 @@ public class ConfigurationEngine : IConfigurationEngine
     private readonly AnalysisSettingsNormalizer _normalizer;
     private readonly IConfigMerger _configMerger;
     private readonly IConfigOverridesNormalizer _overridesNormalizer;
+    private readonly IFileSystem _fileSystem;
 
-    public ConfigurationEngine(IYamlParser? yamlParser = null, IConfigMerger? configMerger = null)
+    public ConfigurationEngine(IYamlParser? yamlParser = null, IConfigMerger? configMerger = null, IFileSystem? fileSystem = null)
     {
         _validator = new ConfigValidator();
         _yamlParser = yamlParser ?? new YamlSubsetParserImpl();
         _normalizer = new AnalysisSettingsNormalizer();
         _configMerger = configMerger ?? new ConfigMerger();
         _overridesNormalizer = new ConfigOverridesNormalizer(_validator);
+        _fileSystem = fileSystem ?? new PhysicalFileSystem();
     }
 
     public string RenderStarterConfig()
@@ -115,7 +117,7 @@ public class ConfigurationEngine : IConfigurationEngine
         };
     }
 
-    private static string GetUserConfigPath(LoadGiticConfigOptions options, string userHome)
+    private string GetUserConfigPath(LoadGiticConfigOptions options, string userHome)
     {
         if (options.UserConfigPath != null)
         {
@@ -124,11 +126,11 @@ public class ConfigurationEngine : IConfigurationEngine
 
         string preferredUserPath = Path.Combine(userHome, ".config", "gitic", "config.yml");
         string fallbackUserPath = Path.Combine(userHome, ".config", "gitizer", "config.yml");
-        if (File.Exists(preferredUserPath))
+        if (_fileSystem.FileExists(preferredUserPath))
         {
             return preferredUserPath;
         }
-        if (File.Exists(fallbackUserPath))
+        if (_fileSystem.FileExists(fallbackUserPath))
         {
             Console.Error.WriteLine($"Warning: Using legacy user configuration file at '{fallbackUserPath}'. Please migrate to '{preferredUserPath}'.");
             return fallbackUserPath;
@@ -136,7 +138,7 @@ public class ConfigurationEngine : IConfigurationEngine
         return preferredUserPath;
     }
 
-    private static string? GetRepoConfigPath(LoadGiticConfigOptions options)
+    private string? GetRepoConfigPath(LoadGiticConfigOptions options)
     {
         if (options.RepoConfigPath != null)
         {
@@ -149,11 +151,11 @@ public class ConfigurationEngine : IConfigurationEngine
 
         string preferredRepoPath = Path.Combine(options.RepoRoot, ".gitic.yml");
         string fallbackRepoPath = Path.Combine(options.RepoRoot, ".gitizer.yml");
-        if (File.Exists(preferredRepoPath))
+        if (_fileSystem.FileExists(preferredRepoPath))
         {
             return preferredRepoPath;
         }
-        if (File.Exists(fallbackRepoPath))
+        if (_fileSystem.FileExists(fallbackRepoPath))
         {
             Console.Error.WriteLine($"Warning: Using legacy repository configuration file at '{fallbackRepoPath}'. Please migrate to '{preferredRepoPath}'.");
             return fallbackRepoPath;
@@ -161,11 +163,13 @@ public class ConfigurationEngine : IConfigurationEngine
         return preferredRepoPath;
     }
 
-    private static async Task<string?> ReadOptionalUtf8Async(string path)
+    private async Task<string?> ReadOptionalUtf8Async(string path)
     {
         try
         {
-            return await File.ReadAllTextAsync(path);
+            using var stream = _fileSystem.OpenRead(path);
+            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+            return await reader.ReadToEndAsync();
         }
         catch (FileNotFoundException)
         {
