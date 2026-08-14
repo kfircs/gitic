@@ -178,6 +178,56 @@ namespace Gitic.Tests
             ScoringValidator.ValidateScoring(invalidScoring, "test", errors);
             Assert.NotEmpty(errors);
             Assert.Contains("weights must sum to 1", errors[0]);
+
+            // Invalid attention weights: non-numeric value
+            errors.Clear();
+            var nonNumericScoring = new Dictionary<string, object?>
+            {
+                { "attention", new Dictionary<string, object?>
+                    {
+                        { "churn", "not-a-number" },
+                        { "recency", 0.25 },
+                        { "contributor_spread", 0.25 },
+                        { "low_familiarity_concentration", 0.25 }
+                    }
+                }
+            };
+            ScoringValidator.ValidateScoring(nonNumericScoring, "test", errors);
+            Assert.NotEmpty(errors);
+            Assert.Contains("must be a finite number", errors[0]);
+
+            // Invalid attention weights: out of bounds numeric value
+            errors.Clear();
+            var outOfBoundsScoring = new Dictionary<string, object?>
+            {
+                { "attention", new Dictionary<string, object?>
+                    {
+                        { "churn", 1.5 },
+                        { "recency", 0.25 },
+                        { "contributor_spread", 0.25 },
+                        { "low_familiarity_concentration", 0.25 }
+                    }
+                }
+            };
+            ScoringValidator.ValidateScoring(outOfBoundsScoring, "test", errors);
+            Assert.NotEmpty(errors);
+            Assert.Contains("must be between 0 and 1", errors[0]);
+
+            // Valid attention weights with other numeric types (int)
+            errors.Clear();
+            var intScoring = new Dictionary<string, object?>
+            {
+                { "attention", new Dictionary<string, object?>
+                    {
+                        { "churn", 1 },
+                        { "recency", 0 },
+                        { "contributor_spread", 0 },
+                        { "low_familiarity_concentration", 0 }
+                    }
+                }
+            };
+            ScoringValidator.ValidateScoring(intScoring, "test", errors);
+            Assert.Empty(errors);
         }
 
         [Fact]

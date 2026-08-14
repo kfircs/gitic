@@ -463,40 +463,30 @@ public class ScoringValidator
     {
         if (attentionRecord.TryGetValue(key, out var val))
         {
-            if (ValidateWeightObject(val, key, source, errors))
+            if (val is double d)
             {
-                return ConfigUtils.ConvertToDouble(val);
+                return d;
             }
+            if (val is int i)
+            {
+                return (double)i;
+            }
+            if (val is long l)
+            {
+                return (double)l;
+            }
+            if (val is float f)
+            {
+                return (double)f;
+            }
+            if (val is decimal dec)
+            {
+                return (double)dec;
+            }
+
+            errors.Add($"{source}: scoring.attention.{key} must be a finite number.");
         }
         return null;
-    }
-
-    private static bool ValidateWeightObject(
-        object? value,
-        string key,
-        string source,
-        List<string> errors)
-    {
-        double numVal;
-        if (value is double d)
-        {
-            numVal = d;
-        }
-        else if (value is long l)
-        {
-            numVal = l;
-        }
-        else if (value is int i)
-        {
-            numVal = i;
-        }
-        else
-        {
-            errors.Add($"{source}: scoring.attention.{key} must be a finite number.");
-            return false;
-        }
-
-        return ValidateWeightValue(numVal, key, source, errors);
     }
 }
 
