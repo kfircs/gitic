@@ -18,8 +18,7 @@ public static class ConsoleUtils
             }
             catch { }
 
-            if (consoleWidth < 40) consoleWidth = 40;
-            if (consoleWidth > 200) consoleWidth = 200;
+            consoleWidth = Math.Clamp(consoleWidth, 40, 200);
         }
         return consoleWidth;
     }
