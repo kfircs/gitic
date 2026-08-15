@@ -6,6 +6,8 @@ namespace Gitic;
 
 public static class PercentileCalculator
 {
+    private const double MaxPercentile = 100.0;
+
     public static double CalculatePercentile(IEnumerable<double> values, double percentile)
     {
         if (values == null)
@@ -13,9 +15,9 @@ public static class PercentileCalculator
             throw new ArgumentNullException(nameof(values));
         }
 
-        if (percentile < 0.0 || percentile > 100.0)
+        if (percentile < 0.0 || percentile > MaxPercentile)
         {
-            throw new ArgumentOutOfRangeException(nameof(percentile), "Percentile must be between 0.0 and 100.0 inclusive.");
+            throw new ArgumentOutOfRangeException(nameof(percentile), $"Percentile must be between 0.0 and {MaxPercentile} inclusive.");
         }
 
         var sorted = values.OrderBy(v => v).ToArray();
@@ -30,7 +32,7 @@ public static class PercentileCalculator
             return sorted[0];
         }
 
-        double interpolatedIndex = (percentile / 100.0) * (n - 1);
+        double interpolatedIndex = (percentile / MaxPercentile) * (n - 1);
         int low = (int)Math.Floor(interpolatedIndex);
         int high = (int)Math.Ceiling(interpolatedIndex);
 
