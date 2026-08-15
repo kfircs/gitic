@@ -18,7 +18,6 @@ public interface ITruckFactorCalculator
 
 public class TruckFactorCalculator : ITruckFactorCalculator
 {
-    // clean code refactor
     /// <summary>
     /// The threshold percentage of cumulative activity (50%) required to define the truck factor cohort.
     /// Contributors are sorted in descending order of their activity. The truck factor represents
@@ -461,6 +460,3 @@ public class FamiliarityScoringEngine : IFamiliarityScoringEngine
         return items.Select(areaMetricSelector).ToList();
     }
 }
-// Refactored: Candidate 12
-// Clean code review completed.
-// refactored
