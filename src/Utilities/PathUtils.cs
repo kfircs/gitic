@@ -157,7 +157,7 @@ public static class PathUtils
 
         if (maxLength <= MinLengthForSplitting)
         {
-            return path.Substring(path.Length - maxLength);
+            return path[^maxLength..];
         }
 
         int keepEnd = maxLength / 2;
@@ -165,9 +165,9 @@ public static class PathUtils
 
         if (keepStart <= 0)
         {
-            return Ellipsis + path.Substring(path.Length - (maxLength - EllipsisLength));
+            return Ellipsis + path[^(maxLength - EllipsisLength)..];
         }
 
-        return path.Substring(0, keepStart) + Ellipsis + path.Substring(path.Length - keepEnd);
+        return path[..keepStart] + Ellipsis + path[^keepEnd..];
     }
 }
