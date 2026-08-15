@@ -30,7 +30,7 @@ public class CachedGlobMatcher : IGlobMatcher
         {
             return GlobToRegExp(normalizedPattern).IsMatch(normalizedPath);
         }
-        return normalizedPath == normalizedPattern || normalizedPath.StartsWith(normalizedPattern + "/");
+        return normalizedPath == normalizedPattern || normalizedPath.StartsWith(normalizedPattern + "/", StringComparison.Ordinal);
     }
 
     public bool MatchesTextPattern(string value, string pattern)
