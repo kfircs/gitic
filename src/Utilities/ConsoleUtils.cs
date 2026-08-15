@@ -4,9 +4,13 @@ namespace Gitic;
 
 public static class ConsoleUtils
 {
+    private const int DefaultConsoleWidth = 80;
+    private const int MinConsoleWidth = 40;
+    private const int MaxConsoleWidth = 200;
+
     public static int GetBoundedConsoleWidth(int? overrideWidth = null)
     {
-        int consoleWidth = overrideWidth ?? 80;
+        int consoleWidth = overrideWidth ?? DefaultConsoleWidth;
         if (overrideWidth == null)
         {
             try
@@ -22,7 +26,7 @@ public static class ConsoleUtils
                 // environments where Console.WindowWidth throws), we fallback to the default consoleWidth value of 80.
             }
 
-            consoleWidth = Math.Clamp(consoleWidth, 40, 200);
+            consoleWidth = Math.Clamp(consoleWidth, MinConsoleWidth, MaxConsoleWidth);
         }
         return consoleWidth;
     }
