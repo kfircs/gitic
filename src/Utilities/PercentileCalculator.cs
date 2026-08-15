@@ -30,15 +30,15 @@ public static class PercentileCalculator
             return sorted[0];
         }
 
-        double idx = (percentile / 100.0) * (n - 1);
-        int low = (int)Math.Floor(idx);
-        int high = (int)Math.Ceiling(idx);
+        double interpolatedIndex = (percentile / 100.0) * (n - 1);
+        int low = (int)Math.Floor(interpolatedIndex);
+        int high = (int)Math.Ceiling(interpolatedIndex);
 
         if (low == high)
         {
             return sorted[low];
         }
 
-        return sorted[low] + (idx - low) * (sorted[high] - sorted[low]);
+        return sorted[low] + (interpolatedIndex - low) * (sorted[high] - sorted[low]);
     }
 }
