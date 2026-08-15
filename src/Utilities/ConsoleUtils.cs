@@ -16,7 +16,11 @@ public static class ConsoleUtils
                     consoleWidth = Console.WindowWidth;
                 }
             }
-            catch { }
+            catch
+            {
+                // Swallowing exceptions is safe here: if Console API queries fail (e.g., in non-interactive
+                // environments where Console.WindowWidth throws), we fallback to the default consoleWidth value of 80.
+            }
 
             consoleWidth = Math.Clamp(consoleWidth, 40, 200);
         }
