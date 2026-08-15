@@ -14,9 +14,7 @@ namespace Gitic.Tests
         [InlineData(null, "Repository")]
         public void TestGetRepositoryName(string? repoRoot, string expected)
         {
-            // Handle null specifically because GetRepositoryName expects string but let's test null handling if we want to be safe.
-            // Wait, the parameter in GetRepositoryName is string, not string?. So we pass string.Empty or check null.
-            string actual = ReportUtils.GetRepositoryName(repoRoot ?? string.Empty);
+            string actual = ReportUtils.GetRepositoryName(repoRoot);
             Assert.Equal(expected, actual);
         }
 
