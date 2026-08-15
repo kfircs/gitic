@@ -4,8 +4,23 @@ using System.Linq;
 
 namespace Gitic;
 
+/// <summary>
+/// Provides utility methods for statistical percentile calculations on numeric sequences.
+/// </summary>
 public static class PercentileCalculator
 {
+    private const double MaxPercentile = 100.0;
+
+    /// <summary>
+    /// Calculates the value at a specified percentile from a sequence of double-precision floating-point numbers
+    /// using linear interpolation between the closest ranks.
+    /// </summary>
+    /// <param name="values">The sequence of values to calculate the percentile from.</param>
+    /// <param name="percentile">The percentile value to calculate (must be between 0.0 and 100.0 inclusive).</param>
+    /// <returns>The calculated percentile value.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="percentile"/> is less than 0.0 or greater than 100.0.</exception>
+    /// <exception cref="ArgumentException">Thrown when the <paramref name="values"/> sequence is empty.</exception>
     public static double CalculatePercentile(IEnumerable<double> values, double percentile)
     {
         if (values == null)
@@ -13,9 +28,9 @@ public static class PercentileCalculator
             throw new ArgumentNullException(nameof(values));
         }
 
-        if (percentile < 0.0 || percentile > 100.0)
+        if (percentile < 0.0 || percentile > MaxPercentile)
         {
-            throw new ArgumentOutOfRangeException(nameof(percentile), "Percentile must be between 0.0 and 100.0 inclusive.");
+            throw new ArgumentOutOfRangeException(nameof(percentile), $"Percentile must be between 0.0 and {MaxPercentile} inclusive.");
         }
 
         var sorted = values.OrderBy(v => v).ToArray();
@@ -30,15 +45,15 @@ public static class PercentileCalculator
             return sorted[0];
         }
 
-        double idx = (percentile / 100.0) * (n - 1);
-        int low = (int)Math.Floor(idx);
-        int high = (int)Math.Ceiling(idx);
+        double interpolatedIndex = (percentile / MaxPercentile) * (n - 1);
+        int low = (int)Math.Floor(interpolatedIndex);
+        int high = (int)Math.Ceiling(interpolatedIndex);
 
         if (low == high)
         {
             return sorted[low];
         }
 
-        return sorted[low] + (idx - low) * (sorted[high] - sorted[low]);
+        return sorted[low] + (interpolatedIndex - low) * (sorted[high] - sorted[low]);
     }
 }
