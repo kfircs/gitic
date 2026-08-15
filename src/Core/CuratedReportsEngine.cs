@@ -12,6 +12,8 @@ public interface ICuratedReportsEngine
 
 public class CuratedReportsEngine : ICuratedReportsEngine
 {
+    private const double MsPerDay = 86400000.0;
+
     private readonly ICommitClassifier _classifier;
 
     private static readonly List<ClassificationRule> CuratedRules = new List<ClassificationRule>
@@ -69,7 +71,7 @@ public class CuratedReportsEngine : ICuratedReportsEngine
 
         long minTimestamp = commits.Min(c => c.Timestamp);
         long maxTimestamp = commits.Max(c => c.Timestamp);
-        double spanDays = (maxTimestamp - minTimestamp) / 86400000.0;
+        double spanDays = (maxTimestamp - minTimestamp) / MsPerDay;
 
         if (spanDays < 90) // under 3 months
         {
@@ -178,7 +180,7 @@ public class CuratedReportsEngine : ICuratedReportsEngine
 
         foreach (var item in firstCommits)
         {
-            double days = (item.LastCommit.Timestamp - item.FirstCommit.Timestamp) / 86400000.0;
+            double days = (item.LastCommit.Timestamp - item.FirstCommit.Timestamp) / MsPerDay;
             onboarding.Add(new()
             {
                 Developer = item.Author,
