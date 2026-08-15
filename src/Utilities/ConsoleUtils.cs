@@ -51,4 +51,27 @@ public static class ConsoleUtils
         }
         return text;
     }
+
+#pragma warning disable CA1416
+    public static bool TryGetCursorVisible(bool defaultValue = true)
+    {
+        try
+        {
+            return Console.CursorVisible;
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    public static void TrySetCursorVisible(bool visible)
+    {
+        try
+        {
+            Console.CursorVisible = visible;
+        }
+        catch { }
+    }
+#pragma warning restore CA1416
 }

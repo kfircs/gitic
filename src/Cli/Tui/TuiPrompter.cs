@@ -24,7 +24,7 @@ namespace Gitic
             int startTop = Console.CursorTop;
             bool firstDraw = true;
 
-            try { Console.CursorVisible = false; } catch { }
+            ConsoleUtils.TrySetCursorVisible(false);
 
             do
             {
@@ -66,12 +66,12 @@ namespace Gitic
                         currentSelection = (currentSelection == options.Length - 1) ? 0 : currentSelection + 1;
                         break;
                     case ConsoleKey.Escape:
-                        try { Console.CursorVisible = true; } catch { }
+                        ConsoleUtils.TrySetCursorVisible(true);
                         return -1;
                 }
             } while (key != ConsoleKey.Enter);
 
-            try { Console.CursorVisible = true; } catch { }
+            ConsoleUtils.TrySetCursorVisible(true);
             return currentSelection;
         }
 
@@ -95,7 +95,7 @@ namespace Gitic
             int startTop = Console.CursorTop;
             bool firstDraw = true;
 
-            try { Console.CursorVisible = false; } catch { }
+            ConsoleUtils.TrySetCursorVisible(false);
 
             do
             {
@@ -144,12 +144,12 @@ namespace Gitic
                             selected.Add(currentSelection);
                         break;
                     case ConsoleKey.Escape:
-                        try { Console.CursorVisible = true; } catch { }
+                        ConsoleUtils.TrySetCursorVisible(true);
                         return new List<int> { -1 };
                 }
             } while (key != ConsoleKey.Enter);
 
-            try { Console.CursorVisible = true; } catch { }
+            ConsoleUtils.TrySetCursorVisible(true);
             return selected.OrderBy(x => x).ToList();
         }
     }
