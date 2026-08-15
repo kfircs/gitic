@@ -18,7 +18,6 @@ public interface ITruckFactorCalculator
 
 public class TruckFactorCalculator : ITruckFactorCalculator
 {
-    // clean code refactor
     /// <summary>
     /// The threshold percentage of cumulative activity (50%) required to define the truck factor cohort.
     /// Contributors are sorted in descending order of their activity. The truck factor represents
@@ -181,7 +180,7 @@ public static class ScoringUtils
 
     public static double RoundRatio(double value)
     {
-        return Math.Round(value * 100.0) / 100.0;
+        return Math.Round(value * ScoreScaleMultiplier) / ScoreScaleMultiplier;
     }
 
     public static double RoundActivity(double value) => RoundRatio(value);
@@ -219,7 +218,7 @@ public static class ScoringUtils
         return Math.Round(
             (breakdown.Touches * w.Touches +
              breakdown.Churn * w.Churn +
-             breakdown.Recency * w.Recency) * 100.0
+             breakdown.Recency * w.Recency) * ScoreScaleMultiplier
         );
     }
 
@@ -229,7 +228,7 @@ public static class ScoringUtils
             (breakdown.Churn * weights.Churn +
              breakdown.Recency * weights.Recency +
              breakdown.ContributorSpread * weights.ContributorSpread +
-             breakdown.LowFamiliarityConcentration * weights.LowFamiliarityConcentration) * 100.0
+             breakdown.LowFamiliarityConcentration * weights.LowFamiliarityConcentration) * ScoreScaleMultiplier
         );
     }
 }
@@ -461,6 +460,3 @@ public class FamiliarityScoringEngine : IFamiliarityScoringEngine
         return items.Select(areaMetricSelector).ToList();
     }
 }
-// Refactored: Candidate 12
-// Clean code review completed.
-// refactored

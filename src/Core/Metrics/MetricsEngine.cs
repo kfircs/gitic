@@ -238,7 +238,7 @@ public class MetricsEngine : IMetricsEngine
         }
 
         double averageLeadTimeHours = merges.Count > 0
-            ? ScoringUtils.RoundRatio(merges.Sum(m => m.LeadTimeHours) / merges.Count)
+            ? ScoringUtils.RoundRatio(merges.Average(m => m.LeadTimeHours))
             : 0.0;
 
         return new LeadTimesInfo

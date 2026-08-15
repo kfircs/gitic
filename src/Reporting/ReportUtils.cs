@@ -5,8 +5,13 @@ namespace Gitic;
 
 public static class ReportUtils
 {
-    public static string GetRepositoryName(string repoRoot)
+    public static string GetRepositoryName(string? repoRoot)
     {
+        if (string.IsNullOrWhiteSpace(repoRoot))
+        {
+            return "Repository";
+        }
+
         string name = Path.GetFileName(repoRoot.TrimEnd(Path.DirectorySeparatorChar));
         return string.IsNullOrEmpty(name) ? "Repository" : name;
     }

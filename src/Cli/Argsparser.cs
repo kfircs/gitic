@@ -35,10 +35,6 @@ public class CommandLineParser : ICommandLineParser
 
     public ParsedArgs Parse()
     {
-        if (_args == null)
-        {
-            throw new CommandLineParseError("Arguments cannot be null.");
-        }
         if (_args.Any(arg => arg == null || arg.Trim() == ""))
         {
             throw new CommandLineParseError("Command name or argument cannot be empty or null.");

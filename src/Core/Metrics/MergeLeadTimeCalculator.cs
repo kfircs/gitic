@@ -36,14 +36,7 @@ public class MergeLeadTimeCalculator : IMergeLeadTimeCalculator
             double leadTimeMs = m.Timestamp - earliest.Timestamp;
             double leadTimeHours = ScoringUtils.RoundRatio(Math.Max(_config.MinHours, leadTimeMs / MsPerHour));
 
-            var filesSet = new HashSet<string>();
-            foreach (var bc in branchCommits)
-            {
-                foreach (var f in bc.Files)
-                {
-                    filesSet.Add(f.Path);
-                }
-            }
+            var filesSet = branchCommits.SelectMany(bc => bc.Files).Select(f => f.Path).ToHashSet();
 
             return new MergeLeadTimeRecord
             {

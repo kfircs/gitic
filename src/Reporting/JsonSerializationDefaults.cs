@@ -8,8 +8,6 @@ namespace Gitic;
 /// </summary>
 public static class JsonSerializationDefaults
 {
-    // clean code refactor
-
     /// <summary>
     /// Default options for compact JSON serialization.
     /// Null values are intentionally ignored during serialization to minimize payload/file size of the generated reports, 
@@ -32,8 +30,3 @@ public static class JsonSerializationDefaults
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 }
-// Refactored: Candidate 9
-// Clean code review completed.
-// refactored
-
-

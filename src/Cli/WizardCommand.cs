@@ -29,35 +29,7 @@ namespace Gitic
             bool isInteractiveTest = isTestMock && Environment.GetEnvironmentVariable("GITIC_INTERACTIVE_TEST") == "1";
             if ((Console.IsInputRedirected || Console.IsOutputRedirected || Console.IsErrorRedirected) && !isInteractiveTest)
             {
-                // In non-interactive mode, if they passed reporting options like --html or --md, we can run the report generation directly!
-                if (!string.IsNullOrEmpty(_parsed.HtmlPath) || !string.IsNullOrEmpty(_parsed.MdPath) || !string.IsNullOrEmpty(_parsed.SvgPath))
-                {
-                    var cmd = new ReportCommand(_parsed);
-                    return await cmd.ExecuteAsync(reporter, cancellationToken);
-                }
-
-                // If they passed --json, we can output the raw JSON format of the full analysis
-                if (_parsed.Settings.Json || string.Equals(_parsed.Settings.Format, "json", StringComparison.OrdinalIgnoreCase))
-                {
-                    var gitClient = new GitClient(_parsed.RepoPath);
-                    string? repoRoot = await gitClient.GetRepositoryRootAsync(cancellationToken);
-                    if (repoRoot == null)
-                    {
-                        string nonRepoMsg = $"Path {_parsed.RepoPath} is not inside a Git repository.\n";
-                        reporter?.WriteError(nonRepoMsg);
-                        return Cli.CliFailure(nonRepoMsg);
-                    }
-                    var result = await ExecuteAnalysisAsync(repoRoot, cancellationToken);
-                    var jsonRenderer = new JsonRenderer();
-                    string jsonOutput = await jsonRenderer.RenderAsync(result, cancellationToken);
-                    reporter?.Write(jsonOutput);
-                    return Cli.CliSuccess(jsonOutput);
-                }
-
-                // Otherwise, print error and exit gracefully or with 2
-                string errMsg = "Interactive TUI cannot be run because standard input/output is redirected. Run 'gitic --help' for non-interactive options.\n";
-                reporter?.WriteError(errMsg);
-                return Cli.CliFailure(errMsg, exitCode: 2);
+                return await ExecuteNonInteractiveAsync(reporter, cancellationToken);
             }
 
             bool exit = false;
@@ -197,6 +169,39 @@ namespace Gitic
             }
 
             return Cli.CliSuccess("TUI session ended successfully.");
+        }
+
+        private async Task<CliResult> ExecuteNonInteractiveAsync(IConsoleReporter? reporter, CancellationToken cancellationToken)
+        {
+            // In non-interactive mode, if they passed reporting options like --html or --md, we can run the report generation directly!
+            if (!string.IsNullOrEmpty(_parsed.HtmlPath) || !string.IsNullOrEmpty(_parsed.MdPath) || !string.IsNullOrEmpty(_parsed.SvgPath))
+            {
+                var cmd = new ReportCommand(_parsed);
+                return await cmd.ExecuteAsync(reporter, cancellationToken);
+            }
+
+            // If they passed --json, we can output the raw JSON format of the full analysis
+            if (_parsed.Settings.Json || string.Equals(_parsed.Settings.Format, "json", StringComparison.OrdinalIgnoreCase))
+            {
+                var gitClient = new GitClient(_parsed.RepoPath);
+                string? repoRoot = await gitClient.GetRepositoryRootAsync(cancellationToken);
+                if (repoRoot == null)
+                {
+                    string nonRepoMsg = $"Path {_parsed.RepoPath} is not inside a Git repository.\n";
+                    reporter?.WriteError(nonRepoMsg);
+                    return Cli.CliFailure(nonRepoMsg);
+                }
+                var result = await ExecuteAnalysisAsync(repoRoot, cancellationToken);
+                var jsonRenderer = new JsonRenderer();
+                string jsonOutput = await jsonRenderer.RenderAsync(result, cancellationToken);
+                reporter?.Write(jsonOutput);
+                return Cli.CliSuccess(jsonOutput);
+            }
+
+            // Otherwise, print error and exit gracefully or with 2
+            string errMsg = "Interactive TUI cannot be run because standard input/output is redirected. Run 'gitic --help' for non-interactive options.\n";
+            reporter?.WriteError(errMsg);
+            return Cli.CliFailure(errMsg, exitCode: 2);
         }
 
         private async Task GenerateCuratedReportAsync(IConsoleReporter? reporter, CancellationToken cancellationToken)

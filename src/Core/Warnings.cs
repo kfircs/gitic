@@ -77,14 +77,15 @@ public class BotConfigWarningRule : WarningRuleBase
 {
     public override List<Diagnostic> CollectDiagnostics(WarningContext context)
     {
-        if (context.SafeConfiguredBotCount == 0 && (context.AutomationMetrics?.Count ?? 0) > 0)
+        int detectedBots = context.AutomationMetrics?.Count ?? 0;
+        if (context.SafeConfiguredBotCount == 0 && detectedBots > 0)
         {
             return [
                 new()
                 {
                     Code = "GITIC002",
                     Severity = "Warning",
-                    Message = $"No bots are explicitly configured; {context.AutomationMetrics?.Count ?? 0} automation identities were detected using default heuristics.",
+                    Message = $"No bots are explicitly configured; {detectedBots} automation identities were detected using default heuristics.",
                     Hint = "Configure bots in .gitic.yml (or legacy .gitizer.yml) to control automation detection (e.g. workspace-specific agents like test harnesses)."
                 }
             ];

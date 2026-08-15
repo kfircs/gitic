@@ -1,5 +1,4 @@
 using Kfc.Cli.Tui;
-using Kfc.Cli.Tui;
 using System;
 using System.Collections.Generic;
 using System.Linq;

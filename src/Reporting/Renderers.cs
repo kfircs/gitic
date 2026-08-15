@@ -9,8 +9,6 @@ namespace Gitic;
 /// </summary>
 public interface IReportRenderer
 {
-    // clean code refactor
-
     /// <summary>
     /// Asynchronously renders the analysis result into a string payload.
     /// </summary>
@@ -19,9 +17,3 @@ public interface IReportRenderer
     /// <returns>A task representing the asynchronous render operation, returning the rendered string content.</returns>
     Task<string> RenderAsync(AnalysisResult result, CancellationToken cancellationToken = default);
 }
-
-// Refactored: Candidate 1
-
-// Clean code review completed.
-
-// refactored

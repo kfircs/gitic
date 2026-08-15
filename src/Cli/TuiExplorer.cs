@@ -51,13 +51,8 @@ public class TuiExplorer
             ScrollOffset = 0
         };
 
-        bool oldCursorVisible = true;
-        try
-        {
-            oldCursorVisible = Console.CursorVisible;
-            Console.CursorVisible = false;
-        }
-        catch { }
+        bool oldCursorVisible = ConsoleUtils.TryGetCursorVisible();
+        ConsoleUtils.TrySetCursorVisible(false);
 
         try
         {
@@ -69,7 +64,7 @@ public class TuiExplorer
         }
         finally
         {
-            try { Console.CursorVisible = oldCursorVisible; } catch { }
+            ConsoleUtils.TrySetCursorVisible(oldCursorVisible);
             Console.Clear();
         }
     }
