@@ -180,7 +180,7 @@ public static class ScoringUtils
 
     public static double RoundRatio(double value)
     {
-        return Math.Round(value * 100.0) / 100.0;
+        return Math.Round(value * ScoreScaleMultiplier) / ScoreScaleMultiplier;
     }
 
     public static double RoundActivity(double value) => RoundRatio(value);
@@ -218,7 +218,7 @@ public static class ScoringUtils
         return Math.Round(
             (breakdown.Touches * w.Touches +
              breakdown.Churn * w.Churn +
-             breakdown.Recency * w.Recency) * 100.0
+             breakdown.Recency * w.Recency) * ScoreScaleMultiplier
         );
     }
 
@@ -228,7 +228,7 @@ public static class ScoringUtils
             (breakdown.Churn * weights.Churn +
              breakdown.Recency * weights.Recency +
              breakdown.ContributorSpread * weights.ContributorSpread +
-             breakdown.LowFamiliarityConcentration * weights.LowFamiliarityConcentration) * 100.0
+             breakdown.LowFamiliarityConcentration * weights.LowFamiliarityConcentration) * ScoreScaleMultiplier
         );
     }
 }
