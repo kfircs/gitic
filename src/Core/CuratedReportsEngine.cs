@@ -14,6 +14,10 @@ public class CuratedReportsEngine : ICuratedReportsEngine
 {
     private const double MsPerDay = 86400000.0;
 
+    // AI Code Strain heuristics (see CalculateAiCodeStrain).
+    private const int HighVolumeCommitFileThreshold = 20;
+    private const double ReviewVelocityWarningFraction = 0.05;
+
     private readonly ICommitClassifier _classifier;
 
     private static readonly List<ClassificationRule> CuratedRules = new List<ClassificationRule>
@@ -253,14 +257,14 @@ public class CuratedReportsEngine : ICuratedReportsEngine
         foreach (var c in commits)
         {
             // Proxy for AI-generated code: huge commits without much time/review structure
-            if (c.Files.Count > 20)
+            if (c.Files.Count > HighVolumeCommitFileThreshold)
             {
                 report.HighVolumeCommits++;
             }
         }
 
         // Warning if more than 5% of commits are massive
-        if (commits.Count > 0 && ((double)report.HighVolumeCommits / commits.Count) > 0.05)
+        if (commits.Count > 0 && ((double)report.HighVolumeCommits / commits.Count) > ReviewVelocityWarningFraction)
         {
             report.ReviewVelocityWarning = true;
         }
