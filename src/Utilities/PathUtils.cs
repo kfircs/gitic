@@ -22,7 +22,7 @@ public class CachedGlobMatcher : IGlobMatcher
     {
         string normalizedPath = PathUtils.NormalizeGitPath(path);
         string normalizedPattern = PathUtils.NormalizeGitPath(pattern).Trim('/');
-        if (normalizedPattern.Length == 0)
+        if (string.IsNullOrEmpty(normalizedPattern))
         {
             return false;
         }
