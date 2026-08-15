@@ -29,15 +29,7 @@ public static class ConsoleUtils
 
     public static string PadRightAnsi(string text, int totalWidth, string? bgAnsi = null)
     {
-        int visibleLength = 0;
-        bool inEscape = false;
-        for (int i = 0; i < text.Length; i++)
-        {
-            char c = text[i];
-            if (c == '\x1b') inEscape = true;
-            else if (inEscape && c == 'm') inEscape = false;
-            else if (!inEscape) visibleLength++;
-        }
+        int visibleLength = GetAnsiVisibleLength(text);
         int paddingCount = totalWidth - visibleLength;
         if (paddingCount > 0)
         {
@@ -53,5 +45,32 @@ public static class ConsoleUtils
             return text + new string(' ', paddingCount);
         }
         return text;
+    }
+
+    public static int GetAnsiVisibleLength(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return 0;
+        }
+
+        int visibleLength = 0;
+        bool inEscape = false;
+        foreach (char c in text)
+        {
+            if (c == '\x1b')
+            {
+                inEscape = true;
+            }
+            else if (inEscape && c == 'm')
+            {
+                inEscape = false;
+            }
+            else if (!inEscape)
+            {
+                visibleLength++;
+            }
+        }
+        return visibleLength;
     }
 }
