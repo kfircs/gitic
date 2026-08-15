@@ -41,7 +41,7 @@ public static class ConsoleUtils
             if (bgAnsi != null)
             {
                 // If text ends with reset, strip it first so padding receives the background color
-                if (text.EndsWith("\x1b[0m"))
+                if (text.EndsWith("\x1b[0m") && text.Length >= 4)
                 {
                     return text.Substring(0, text.Length - 4) + new string(' ', paddingCount) + "\x1b[0m";
                 }
