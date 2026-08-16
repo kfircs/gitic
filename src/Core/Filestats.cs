@@ -164,9 +164,14 @@ public class DiskFileStatsProvider : IFileStatsProvider
 
 public static class FileStats
 {
+    /// <summary>
+    /// Maximum number of leading bytes scanned for a NUL byte when detecting binary files.
+    /// </summary>
+    private const int BinaryDetectionScanLimit = 8000;
+
     public static bool IsBinaryFile(byte[] buffer)
     {
-        int limit = Math.Min(buffer.Length, 8000);
+        int limit = Math.Min(buffer.Length, BinaryDetectionScanLimit);
         for (int i = 0; i < limit; i++)
         {
             if (buffer[i] == 0)

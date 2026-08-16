@@ -187,19 +187,12 @@ public class ChangeAccumulator : IChangeAccumulator
         {
             return existing;
         }
+        // ItemAccumulator already initializes every other field to its default value
+        // (see Types.cs); restating them here would only re-assert defaults and risk
+        // silently diverging if those defaults ever change. Only Key is meaningful.
         var created = new ItemAccumulator
         {
-            Key = key,
-            Touches = 0,
-            Added = 0,
-            Deleted = 0,
-            Churn = 0,
-            LastTouched = 0,
-            Files = new HashSet<string>(),
-            ContributorCredits = new Dictionary<string, ContributorCredit>(),
-            Symbols = new Dictionary<string, int>(),
-            BugFixTouches = 0,
-            FeatureTouches = 0
+            Key = key
         };
         items[key] = created;
         return created;
