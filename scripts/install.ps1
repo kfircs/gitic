@@ -12,7 +12,7 @@ Write-Host "Building and packing Gitic..."
 dotnet pack -c Release
 
 $PackagePath = "$ProjectRoot/nupkg"
-$Version = "0.2.0"
+$Version = "0.2.1"
 
 Write-Host "Uninstalling any existing global tool..."
 dotnet tool uninstall -g gitic -ErrorAction SilentlyContinue
