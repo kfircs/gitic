@@ -43,7 +43,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
    ```
 5. **Install and run locally** to test in action:
    ```bash
-   ./scripts/install.sh
+   ./install.sh
    gitic
    ```
 6. **Submit a Pull Request** to the `main` branch.

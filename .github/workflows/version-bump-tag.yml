@@ -1,0 +1,65 @@
+name: Auto Version Bump and Tag
+
+on:
+  push:
+    branches: [ main, master ]
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    name: Bump Version & Push Tag
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Determine Bump Type
+      id: bump_type
+      run: |
+        COMMIT_MSG="${{ github.event.head_commit.message }}"
+        if [[ "$COMMIT_MSG" == *"[major]"* || "$COMMIT_MSG" == *"#major"* || "$COMMIT_MSG" == "major:"* ]]; then
+          echo "TYPE=major" >> $GITHUB_OUTPUT
+        elif [[ "$COMMIT_MSG" == *"[minor]"* || "$COMMIT_MSG" == *"#minor"* || "$COMMIT_MSG" == "minor:"* ]]; then
+          echo "TYPE=minor" >> $GITHUB_OUTPUT
+        else
+          echo "TYPE=patch" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run Bump Version Script
+      run: |
+        chmod +x ./scripts/bump-version.sh
+        ./scripts/bump-version.sh ${{ steps.bump_type.outputs.TYPE }}
+
+    - name: Commit and Push Changes & Tag
+      run: |
+        # Find the main .csproj file to read the new version
+        CSPROJ_FILE=$(find src -maxdepth 2 -name "*.csproj" | head -n 1 || find . -maxdepth 1 -name "*.csproj" | head -n 1)
+        NEW_VERSION=$(grep -m 1 "<Version>" "$CSPROJ_FILE" | sed -E 's/.*<Version>(.*)<\/Version>.*/\1/')
+        
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        git add .
+        
+        if git diff --staged --quiet; then
+          echo "No version changes to commit."
+        else
+          git commit -m "chore(version): bump version to ${NEW_VERSION} [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
+        fi
+        
+        # Tag and push tag
+        git tag "v${NEW_VERSION}"
+        git push origin "v${NEW_VERSION}"
