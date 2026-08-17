@@ -53,3 +53,13 @@ fix.py
 fix.sh
 fix_namespace.py
 test_refactor.sh
+
+# Agentic developer workflows & local temporary files
+.cadwa/
+.cadwa-issue.json
+.gemini/
+.pi/
+progress.txt
+run-summary.md
+pr_review_report*.md
+publish/
