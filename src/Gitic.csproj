@@ -10,7 +10,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>gitic</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
-    <Version>0.2.1</Version>
+    <Version>0.2.2</Version>
     <Description>Gitic Strategic Codebase Analysis CLI</Description>
     <Authors>Author</Authors>
   </PropertyGroup>
