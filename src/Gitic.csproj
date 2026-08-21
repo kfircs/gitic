@@ -25,9 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kfc.Cli.Core" Version="0.1.1" />
-    <PackageReference Include="Kfc.Cli.Terminal" Version="0.1.1" />
-    <PackageReference Include="Kfc.Cli.Tui" Version="0.1.1" />
+    <PackageReference Include="Kfc.Cli.Core" Version="0.1.12" />
+    <PackageReference Include="Kfc.Cli.Terminal" Version="0.1.12" />
+    <PackageReference Include="Kfc.Cli.Tui" Version="0.1.12" />
   </ItemGroup>
 
 </Project>

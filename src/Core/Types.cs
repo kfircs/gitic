@@ -288,6 +288,13 @@ public class FileMetric
     [JsonPropertyName("lines")]
     public int? Lines { get; set; }
 
+    [JsonPropertyName("lines_of_code")]
+    public int? LinesOfCode
+    {
+        get => Lines;
+        set => Lines = value;
+    }
+
     [JsonPropertyName("work_classification")]
     public WorkClassificationMetrics WorkClassification { get; set; } = new();
 }
