@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Gitic.csproj" />
-    <ProjectReference Include="..\..\..\clic\src\Kfc.Cli.Tui\Kfc.Cli.Tui.csproj" />
   </ItemGroup>
 
 </Project>

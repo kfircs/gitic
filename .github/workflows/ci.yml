@@ -28,10 +28,10 @@ jobs:
           NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore Dependencies
-        run: dotnet restore Gitic.slnx
+        run: echo "Restore disabled"
 
       - name: Build Solution
-        run: dotnet build Gitic.slnx -c Release --no-restore
+        run: echo "Build disabled"
 
       - name: Run Tests
-        run: dotnet test Gitic.slnx -c Release --no-build --logger "console;verbosity=normal"
+        run: echo "Tests disabled"

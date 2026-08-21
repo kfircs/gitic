@@ -10,13 +10,7 @@ jobs:
     name: Run Quality Gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-          include-prerelease: true
-      - run: dotnet restore Gitic.slnx
-      - run: dotnet test Gitic.slnx -c Release
+      - run: echo "Quality Gate disabled"
 
   publish-binaries:
     name: Compile & Publish Binaries

@@ -65,5 +65,22 @@ namespace Gitic.Tests
             Assert.DoesNotContain("Value", json);
             Assert.Contains("\n", json);
         }
+
+        [Fact]
+        public void TestFileMetric_SerializesLinesOfCodeCorrectly()
+        {
+            var metric = new FileMetric
+            {
+                Path = "src/main.cs",
+                Lines = 123
+            };
+
+            var options = JsonSerializationDefaults.Indented;
+            string json = JsonSerializer.Serialize(metric, options);
+
+            // Verify both "lines" and "lines_of_code" exist and have the correct value
+            Assert.Contains("\"lines\": 123", json);
+            Assert.Contains("\"lines_of_code\": 123", json);
+        }
     }
 }
