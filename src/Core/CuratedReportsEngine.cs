@@ -229,6 +229,15 @@ public class CuratedReportsEngine : ICuratedReportsEngine
         // Simple silo calculation: people who only review 1 person
         int silos = pairs.GroupBy(p => p.Key.Split('|')[1]).Count(g => g.Count() == 1);
         report.ReviewerSilos = silos;
+
+        var dummyResult = new AnalysisResult
+        {
+            CuratedReports = new CuratedReports { ReviewCollaboration = report }
+        };
+        var loadAnalysis = new ReviewLoadAnalyzer().AnalyzeReviewLoad(dummyResult);
+        report.RedistributionNotes = new List<string>(loadAnalysis.ActionableRecommendations);
+        report.LoadProfiles = new List<ReviewLoadProfile>(loadAnalysis.Profiles);
+        report.GiniCoefficient = loadAnalysis.GiniCoefficient;
     }
 
     private void CalculateCodeRot(List<FileMetric> files, CodeRotMetric report, int thresholdDays, DateTimeOffset referenceDate)

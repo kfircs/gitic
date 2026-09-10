@@ -30,6 +30,22 @@ public class MarkdownRenderer : IReportRenderer
         sb.AppendLine($"- **Time Window Filter:** {(result.Settings.AllTime ? "All History" : result.Settings.Since ?? "Default Window")}");
         sb.AppendLine();
 
+        if (result.Narrative != null)
+        {
+            sb.AppendLine("## 📝 Executive Narrative Summary");
+            sb.AppendLine(result.Narrative.ExecutiveSummaryParagraph);
+            sb.AppendLine();
+            sb.AppendLine("### Velocity & Delivery");
+            sb.AppendLine(result.Narrative.VelocityAndDeliveryParagraph);
+            sb.AppendLine();
+            sb.AppendLine("### Ownership & Risk Highlights");
+            sb.AppendLine(result.Narrative.OwnershipAndRiskParagraph);
+            sb.AppendLine();
+            sb.AppendLine("### Recommended Actions");
+            sb.AppendLine(result.Narrative.RecommendationsParagraph);
+            sb.AppendLine();
+        }
+
         sb.AppendLine("## 🔥 Top Code Hotspots & Attention Metrics");
         sb.AppendLine("These files have the highest **Attention Score**, which combines change recency, churn volume, code complexity (file length/size), and contributor dispersion to find code needing active review.");
         sb.AppendLine();

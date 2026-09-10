@@ -10,12 +10,15 @@ namespace Gitic;
 
 public static class Cli
 {
+    private static string? _cachedVersion;
     public static string GetDisplayVersion()
     {
+        if (_cachedVersion != null) return _cachedVersion;
         var assembly = typeof(Cli).Assembly;
         var version = assembly.GetName().Version?.ToString(3) ?? "0.1.0";
         var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        return string.IsNullOrEmpty(infoVersion) ? version : infoVersion;
+        _cachedVersion = string.IsNullOrEmpty(infoVersion) ? version : infoVersion;
+        return _cachedVersion;
     }
 
     public static CliResult CliSuccess(string stdout, string stderr = "")

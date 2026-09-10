@@ -22,7 +22,8 @@ public class ConfigValidator : IConfigValidator
         "areas",
         "scoring",
         "identity",
-        "metrics"
+        "metrics",
+        "boundaries"
     ];
 
     public static readonly List<string> AttentionWeightKeys = [
@@ -69,6 +70,10 @@ public class ConfigValidator : IConfigValidator
         if (record.TryGetValue("metrics", out var metricsVal))
         {
             MetricsConfigValidator.ValidateMetricsConfig(metricsVal, source, errors);
+        }
+        if (record.TryGetValue("boundaries", out var boundariesVal))
+        {
+            BoundaryValidator.ValidateBoundaries(boundariesVal, source, errors);
         }
 
         if (errors.Count > 0)
@@ -544,3 +549,99 @@ public class MetricsConfigValidator
         }
     }
 }
+
+public class BoundaryValidator
+{
+    public static readonly List<string> AllowedKeys = [
+        "name",
+        "source",
+        "forbidden_coupling",
+        "allowed_coupling",
+        "threshold"
+    ];
+
+    public static void ValidateBoundaries(object? value, string source, List<string> errors)
+    {
+        if (value == null) return;
+
+        if (!ConfigValidator.RequireArray(value, $"{source}: boundaries must be an array.", errors, out var array))
+        {
+            return;
+        }
+
+        for (int i = 0; i < array.Count; i++)
+        {
+            object? entry = array[i];
+            string path = $"boundaries[{i}]";
+            if (!ConfigValidator.RequireRecord(entry, $"{source}: {path} must be an object.", errors, out var record))
+            {
+                continue;
+            }
+
+            ConfigValidator.CheckUnknownKeys(record, AllowedKeys, path, source, errors);
+
+            record.TryGetValue("name", out var nameVal);
+            ConfigValidator.RequireNonEmptyString(nameVal, $"{source}: {path}.name", errors);
+
+            record.TryGetValue("source", out var sourceVal);
+            ConfigValidator.RequireNonEmptyString(sourceVal, $"{source}: {path}.source", errors);
+
+            record.TryGetValue("forbidden_coupling", out var forbiddenVal);
+            record.TryGetValue("allowed_coupling", out var allowedVal);
+
+            if (forbiddenVal == null && allowedVal == null)
+            {
+                errors.Add($"{source}: {path} must define at least one of forbidden_coupling or allowed_coupling.");
+            }
+
+            if (forbiddenVal != null)
+            {
+                ValidateGlobEntry(forbiddenVal, $"{path}.forbidden_coupling", source, errors);
+            }
+
+            if (allowedVal != null)
+            {
+                ValidateGlobEntry(allowedVal, $"{path}.allowed_coupling", source, errors);
+            }
+
+            if (record.TryGetValue("threshold", out var threshVal) && threshVal != null)
+            {
+                double d = ConfigUtils.ConvertToDouble(threshVal);
+                if (double.IsNaN(d) || double.IsInfinity(d) || d < 0.0 || d > 1.0)
+                {
+                    errors.Add($"{source}: {path}.threshold must be a number between 0 and 1.");
+                }
+            }
+        }
+    }
+
+    private static void ValidateGlobEntry(object value, string path, string source, List<string> errors)
+    {
+        if (value is string s)
+        {
+            if (string.IsNullOrWhiteSpace(s))
+            {
+                errors.Add($"{source}: {path} must be a non-empty string or array of strings.");
+            }
+        }
+        else if (value is List<object?> list)
+        {
+            if (list.Count == 0)
+            {
+                errors.Add($"{source}: {path} cannot be an empty array.");
+            }
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] is not string str || string.IsNullOrWhiteSpace(str))
+                {
+                    errors.Add($"{source}: {path}[{i}] must be a non-empty string.");
+                }
+            }
+        }
+        else
+        {
+            errors.Add($"{source}: {path} must be a string or an array of strings.");
+        }
+    }
+}
+

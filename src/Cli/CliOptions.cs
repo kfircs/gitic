@@ -51,11 +51,14 @@ public class CliOptions
     public Option<string> SortOption { get; } = new("--sort") { Description = "Sort results by field", Recursive = true };
     public Option<string> ColumnsOption { get; } = new("--columns") { Description = "Select columns to show", Recursive = true };
     public Option<bool> QuietOption { get; } = new("--quiet") { Description = "Suppress non-critical warnings", Recursive = true };
+    public Option<string> DeveloperOption { get; } = new("--developer") { Description = "Target developer name or email for departure risk or trajectory analysis", Recursive = true };
+    public Option<bool> TrajectoryOption { get; } = new("--trajectory") { Description = "Show contributor trajectory evolution over time", Recursive = true };
 
     public Argument<string> RepoPathArg { get; } = new("repo_path") { Description = "Path to the repository", DefaultValueFactory = _ => "." };
 
     public CliOptions()
     {
+        DeveloperOption.Aliases.Add("-d");
         DepthOption.Validators.Add(result =>
         {
             try
@@ -99,6 +102,8 @@ public class CliOptions
         rootCommand.Options.Add(SortOption);
         rootCommand.Options.Add(ColumnsOption);
         rootCommand.Options.Add(QuietOption);
+        rootCommand.Options.Add(DeveloperOption);
+        rootCommand.Options.Add(TrajectoryOption);
         rootCommand.Arguments.Add(RepoPathArg);
     }
 }

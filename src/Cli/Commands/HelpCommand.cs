@@ -7,8 +7,8 @@ namespace Gitic;
 
 public class HelpCommand : IGiticCommand
 {
-    private const string DefaultVersion = "0.1.0";
-    private static readonly string HelpTemplate =
+    internal const string DefaultVersion = "0.1.0";
+    internal static readonly string HelpTemplate =
 @"Gitic Strategic Codebase Analysis (v{0})
 A tool to analyze Git repositories and identify code hotspots, contributor ownership, areas, and temporal coupling.
 
@@ -20,9 +20,12 @@ Commands:
   areas [repo_path]                     Analyze code ownership and changes across directories
   contributors [repo_path]              Show contributor metrics and profiles
   contributor <name> [repo_path]        Analyze a specific contributor's details
+  departure-risk [repo_path] [options]  Analyze developer departure risk & knowledge recovery plan
   report [repo_path] [options]          Generate reports (visual HTML, Markdown, and/or SVG)
   temporal-coupling [repo_path]        Analyze temporal coupling between files
   lead-time [repo_path]                 Measure code change and merge lead times
+  impact [files...] [options]           Predict change impact and co-change risks
+  sprint-report [options]               Generate sprint health card summary and deltas
   config init                           Generate a starter config file (.gitic.yml)
   version                               Show version information
 
@@ -49,6 +52,9 @@ Options:
   --include-deleted                     Include deleted files in stats
   --merge-by-email                      Merge contributor identities by email
   --anonymize                           Anonymize contributor names/emails in output
+  --staged                              Analyze currently staged files
+  --install-hook                        Install git pre-commit hook for impact analysis
+  --warn-threshold <float>              Coupling warning threshold (default: 0.5)
 ";
 
     private readonly string? _generatedHelpText;

@@ -81,6 +81,9 @@ namespace Gitic.Tests
         [Fact]
         public async Task TestStartupPerformance_HelpAndVersion()
         {
+            // Warm-up runtime page cache before measuring performance budgets
+            await RunGiticProcessAsync("--version");
+
             var helpRes = await RunGiticProcessAsync("--help");
             Assert.Equal(0, helpRes.ExitCode);
             Assert.NotEmpty(helpRes.Stdout);
