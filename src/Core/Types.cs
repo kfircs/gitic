@@ -31,7 +31,10 @@ public enum AnalysisCommand
     TemporalCoupling,
     LeadTime,
     GeReport,
-    Wizard
+    Wizard,
+    DepartureRisk,
+    Impact,
+    Gate
 }
 public class AnalysisSettings
 {
@@ -522,6 +525,15 @@ public class ReviewCollaborationMetric
 
     [JsonPropertyName("collaboration_pairs")]
     public List<ReviewPair> Pairs { get; set; } = new();
+
+    [JsonPropertyName("redistribution_notes")]
+    public List<string> RedistributionNotes { get; set; } = new();
+
+    [JsonPropertyName("load_profiles")]
+    public List<ReviewLoadProfile>? LoadProfiles { get; set; }
+
+    [JsonPropertyName("gini_coefficient")]
+    public double? GiniCoefficient { get; set; }
 }
 
 public class ReviewPair
@@ -545,7 +557,7 @@ public class AiCodeStrainMetric
     public bool ReviewVelocityWarning { get; set; }
 }
 
-public class AnalysisResult
+public partial class AnalysisResult
 {
     [JsonPropertyName("schema_version")]
     public string SchemaVersion { get; set; } = "1.1";

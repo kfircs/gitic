@@ -133,6 +133,16 @@ public interface IGitClient
         var history = await ExtractHistoryAsync(options, cancellationToken);
         return new GitCommitGraph(history);
     }
+
+    /// <summary>
+    /// Retrieves the list of staged files (via git diff --name-only --cached).
+    /// Default interface implementation returns an empty list for test/mock compatibility.
+    /// </summary>
+    async Task<List<string>> GetStagedFilesAsync(CancellationToken cancellationToken = default)
+    {
+        await Task.Yield();
+        return new List<string>();
+    }
 }
 
 public class GitClient : IGitClient
@@ -182,6 +192,27 @@ public class GitClient : IGitClient
             {
                 files.Add(trimmed);
             }
+        }
+        return files;
+    }
+
+    public async Task<List<string>> GetStagedFilesAsync(CancellationToken cancellationToken = default)
+    {
+        List<string> files = [];
+        try
+        {
+            await foreach (var line in _executor.RunAsync(["diff", "--name-only", "--cached"], _repoRoot, cancellationToken))
+            {
+                string trimmed = PathUtils.NormalizeGitPath(line.Trim());
+                if (trimmed.Length > 0)
+                {
+                    files.Add(trimmed);
+                }
+            }
+        }
+        catch
+        {
+            // If not in a git repo or git fails, return empty list
         }
         return files;
     }

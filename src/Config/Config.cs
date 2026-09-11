@@ -100,12 +100,16 @@ public class GiticConfig
     [JsonPropertyName("metrics")]
     public MetricsConfig Metrics { get; set; } = new();
 
+    [JsonPropertyName("boundaries")]
+    public List<BoundaryRule> Boundaries { get; set; } = new();
+
     public static GiticConfig Default => new()
     {
         Aliases = new(),
         Bots = new(),
         Excludes = new(),
         Areas = new(),
+        Boundaries = new(),
         Scoring = new()
         {
             Attention = new()
@@ -136,6 +140,7 @@ public class GiticConfigOverrides
     public ScoringConfigOverrides? Scoring { get; set; }
     public IdentityConfigOverrides? Identity { get; set; }
     public MetricsConfigOverrides? Metrics { get; set; }
+    public List<BoundaryRule>? Boundaries { get; set; }
 }
 
 public class ScoringConfigOverrides

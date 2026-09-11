@@ -56,7 +56,8 @@ public class ConfigMerger : IConfigMerger
             Metrics = config.Metrics != null ? new MetricsConfigOverrides
             {
                 TemporalCouplingMaxCommitFileCount = config.Metrics.TemporalCouplingMaxCommitFileCount
-            } : null
+            } : null,
+            Boundaries = config.Boundaries
         };
     }
 
@@ -109,7 +110,16 @@ public class ConfigMerger : IConfigMerger
             Metrics = config.Metrics != null ? new MetricsConfig
             {
                 TemporalCouplingMaxCommitFileCount = config.Metrics.TemporalCouplingMaxCommitFileCount
-            } : new MetricsConfig()
+            } : new MetricsConfig(),
+
+            Boundaries = config.Boundaries?.Select(b => new BoundaryRule
+            {
+                Name = b.Name,
+                Source = b.Source,
+                ForbiddenCoupling = new GlobList(b.ForbiddenCoupling),
+                AllowedCoupling = new GlobList(b.AllowedCoupling),
+                Threshold = b.Threshold
+            }).ToList() ?? new List<BoundaryRule>()
         };
     }
 
@@ -235,6 +245,15 @@ public class ConfigMerger : IConfigMerger
             if (source.Metrics.TemporalCouplingMaxCommitFileCount.HasValue)
             {
                 target.Metrics.TemporalCouplingMaxCommitFileCount = source.Metrics.TemporalCouplingMaxCommitFileCount.Value;
+            }
+        }
+
+        if (source.Boundaries != null)
+        {
+            target.Boundaries ??= new List<BoundaryRule>();
+            foreach (var item in source.Boundaries)
+            {
+                target.Boundaries.Add(item);
             }
         }
     }

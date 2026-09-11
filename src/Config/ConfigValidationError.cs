@@ -7,6 +7,7 @@ namespace Gitic;
 public sealed class ConfigValidationError : Exception
 {
     public List<string> Details { get; }
+    public List<string> Errors => Details;
 
     public ConfigValidationError(List<string> details) : base(string.Join(Environment.NewLine, details)) =>
         Details = details;

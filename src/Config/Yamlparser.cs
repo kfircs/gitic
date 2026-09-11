@@ -414,6 +414,16 @@ public class YamlSubsetParser
             case "false": return false;
         }
 
+        if (value.StartsWith('[') && value.EndsWith(']'))
+        {
+            string inner = value.Substring(1, value.Length - 2).Trim();
+            if (inner.Length == 0)
+            {
+                return new List<object?>();
+            }
+            return ParseInlineSequence(inner);
+        }
+
         if (Regex.IsMatch(value, @"^[-+]?\d+(\.\d+)?$"))
         {
             if (value.Contains('.'))
@@ -439,6 +449,113 @@ public class YamlSubsetParser
         }
 
         return value;
+    }
+
+    public static List<object?> ParseInlineSequence(string inner)
+    {
+        var result = new List<object?>();
+        if (string.IsNullOrWhiteSpace(inner))
+        {
+            return result;
+        }
+
+        var tokens = SplitInlineListTokens(inner);
+        foreach (var token in tokens)
+        {
+            string trimmed = token.Trim();
+            if (trimmed.Length > 0)
+            {
+                result.Add(ParseInlineScalar(trimmed));
+            }
+        }
+        return result;
+    }
+
+    private static List<string> SplitInlineListTokens(string text)
+    {
+        var tokens = new List<string>();
+        bool inSingleQuote = false;
+        bool inDoubleQuote = false;
+        int start = 0;
+
+        for (int i = 0; i < text.Length; i++)
+        {
+            char c = text[i];
+            char prev = i > 0 ? text[i - 1] : '\0';
+
+            if (c == '\'' && !inDoubleQuote)
+            {
+                inSingleQuote = !inSingleQuote;
+            }
+            else if (c == '"' && !inSingleQuote && prev != '\\')
+            {
+                inDoubleQuote = !inDoubleQuote;
+            }
+            else if (c == ',' && !inSingleQuote && !inDoubleQuote)
+            {
+                tokens.Add(text.Substring(start, i - start));
+                start = i + 1;
+            }
+        }
+
+        if (start < text.Length)
+        {
+            tokens.Add(text.Substring(start));
+        }
+
+        return tokens;
+    }
+
+    private static object? ParseInlineScalar(string value)
+    {
+        switch (value)
+        {
+            case "[]": return new List<object?>();
+            case "{}": return new Dictionary<string, object?>();
+            case "null":
+            case "~": return null;
+            case "true": return true;
+            case "false": return false;
+        }
+
+        if (Regex.IsMatch(value, @"^[-+]?\d+(\.\d+)?$"))
+        {
+            if (value.Contains('.'))
+            {
+                if (double.TryParse(value, out double doubleValue)) return doubleValue;
+            }
+            else
+            {
+                if (long.TryParse(value, out long longValue)) return longValue;
+            }
+        }
+
+        if ((value.StartsWith("\"") && value.EndsWith("\"")) ||
+            (value.StartsWith("'") && value.EndsWith("'")))
+        {
+            return UnquoteStatic(value);
+        }
+
+        return value;
+    }
+
+    private static string UnquoteStatic(string value)
+    {
+        if (value.Length < 2) return value;
+        char quote = value[0];
+        string body = value.Substring(1, value.Length - 2);
+
+        if (quote == '\'')
+        {
+            return body.Replace("''", "'");
+        }
+
+        return body
+            .Replace("\\\"", "\"")
+            .Replace("\\n", "\n")
+            .Replace("\\r", "\r")
+            .Replace("\\t", "\t")
+            .Replace("\\\\", "\\");
     }
 
     /// <summary>

@@ -57,6 +57,10 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
         {
             @override.Metrics = NormalizeMetricsConfig(metricsRecord);
         }
+        if (record.TryGetValue("boundaries", out var boundariesVal) && boundariesVal is List<object?> boundariesList)
+        {
+            @override.Boundaries = NormalizeBoundaries(boundariesList);
+        }
 
         return @override;
     }
@@ -201,5 +205,71 @@ public class ConfigOverridesNormalizer : IConfigOverridesNormalizer
             return trimmed.Length > 0 ? trimmed : null;
         }
         return null;
+    }
+
+    private static List<BoundaryRule> NormalizeBoundaries(List<object?> array)
+    {
+        return array.Select(entry =>
+        {
+            var record = (Dictionary<string, object?>)entry!;
+            var rule = new BoundaryRule();
+
+            if (record.TryGetValue("name", out var nameVal))
+            {
+                rule.Name = NormalizeNonEmptyString(nameVal) ?? string.Empty;
+            }
+
+            if (record.TryGetValue("source", out var sourceVal))
+            {
+                rule.Source = NormalizeNonEmptyString(sourceVal) ?? string.Empty;
+            }
+
+            if (record.TryGetValue("forbidden_coupling", out var forbiddenVal))
+            {
+                rule.ForbiddenCoupling = ExtractGlobList(forbiddenVal);
+            }
+
+            if (record.TryGetValue("allowed_coupling", out var allowedVal))
+            {
+                rule.AllowedCoupling = ExtractGlobList(allowedVal);
+            }
+
+            if (record.TryGetValue("threshold", out var threshVal) && threshVal != null)
+            {
+                rule.Threshold = ConfigUtils.ConvertToDouble(threshVal);
+            }
+
+            return rule;
+        }).ToList();
+    }
+
+    public static GlobList ExtractGlobList(object? value)
+    {
+        if (value == null) return new GlobList();
+
+        if (value is GlobList gl) return gl;
+
+        if (value is string s)
+        {
+            string trimmed = s.Trim();
+            if (trimmed.StartsWith('[') && trimmed.EndsWith(']'))
+            {
+                var parsed = YamlSubsetParser.ParseInlineSequence(trimmed[1..^1]);
+                return new GlobList(parsed.Select(p => p?.ToString()?.Trim()).Where(p => !string.IsNullOrEmpty(p))!);
+            }
+            return string.IsNullOrEmpty(trimmed) ? new GlobList() : new GlobList { trimmed };
+        }
+
+        if (value is List<object?> list)
+        {
+            return new GlobList(list.Select(item => item?.ToString()?.Trim()).Where(item => !string.IsNullOrEmpty(item))!);
+        }
+
+        if (value is IEnumerable<string> seq)
+        {
+            return new GlobList(seq.Where(item => !string.IsNullOrWhiteSpace(item)));
+        }
+
+        return new GlobList();
     }
 }
