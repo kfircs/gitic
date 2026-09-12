@@ -9,7 +9,7 @@ namespace Gitic.Tests
     public class TablebuilderRefactoredTests
     {
         [Fact]
-        public void TestConsoleTableBuilder_NormalBehaviorPreserved()
+        public void Render_WithNormalInputs_ShouldPreserveNormalBehavior()
         {
             // Arrange
             var builder = new ConsoleTableBuilder();
@@ -30,8 +30,9 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestConsoleTableBuilder_WithAnsiCodes_LeftAligned()
+        public void Render_WithLeftAlignedAnsiCodes_ShouldPadCorrectly()
         {
+            // Arrange
             var builder = new ConsoleTableBuilder();
             builder.AddColumn("Status", 10, "left");
 
@@ -39,9 +40,11 @@ namespace Gitic.Tests
             // With width = 10, it should be padded with 5 spaces at the end.
             builder.AddRow(new List<string> { "\x1B[31mError\x1B[0m" });
 
+            // Act
             var result = builder.Render();
             var lines = result.Split('\n');
 
+            // Assert
             Assert.Equal(2, lines.Length);
             // Header is "Status" padded left to width 10 -> "Status    "
             Assert.Equal("Status    ", lines[0]);
@@ -50,8 +53,9 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestConsoleTableBuilder_WithAnsiCodes_RightAligned()
+        public void Render_WithRightAlignedAnsiCodes_ShouldPadCorrectly()
         {
+            // Arrange
             var builder = new ConsoleTableBuilder();
             builder.AddColumn("Count", 8, "right");
 
@@ -59,9 +63,11 @@ namespace Gitic.Tests
             // With width = 8, it should be padded with 6 spaces in the front.
             builder.AddRow(new List<string> { "\x1B[32m42\x1B[0m" });
 
+            // Act
             var result = builder.Render();
             var lines = result.Split('\n');
 
+            // Assert
             Assert.Equal(2, lines.Length);
             // Header is "   Count" (3 padding spaces in the front to reach 8 chars)
             Assert.Equal("   Count", lines[0]);
@@ -70,8 +76,9 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestConsoleTableBuilder_MultipleAnsiCodesInSingleCell()
+        public void Render_WithMultipleAnsiCodesInSingleCell_ShouldNotAddExcessPadding()
         {
+            // Arrange
             var builder = new ConsoleTableBuilder();
             builder.AddColumn("Mix", 12, "left");
 
@@ -81,32 +88,38 @@ namespace Gitic.Tests
             var cell = "\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m";
             builder.AddRow(new List<string> { cell });
 
+            // Act
             var result = builder.Render();
             var lines = result.Split('\n');
 
+            // Assert
             Assert.Equal("Mix         ", lines[0]); // Header padded to 12
             Assert.Equal(cell, lines[1]); // Cell has visible length 12, so no spaces added
         }
 
         [Fact]
-        public void TestConsoleTableBuilder_NullOrEmptyHandling()
+        public void Render_WithNullOrEmptyValues_ShouldHandleNullsAsEmpty()
         {
+            // Arrange
             var builder = new ConsoleTableBuilder();
             builder.AddColumn("Col", 5, "left");
             builder.AddRow(new List<string?> { null });
             builder.AddRow(new List<string?> { "" });
 
+            // Act
             var result = builder.Render();
             var lines = result.Split('\n');
 
+            // Assert
             Assert.Equal("Col  ", lines[0]); // Width 5
             Assert.Equal("     ", lines[1]); // Null treated as empty and padded with 5 spaces
             Assert.Equal("     ", lines[2]); // Empty padded with 5 spaces
         }
 
         [Fact]
-        public void TestConsoleTableBuilder_InterfaceCovariance()
+        public void AddRow_WithVariousEnumerableTypes_ShouldCompileAndRenderCorrectly()
         {
+            // Arrange
             IConsoleTableBuilder builder = new ConsoleTableBuilder();
             builder.AddColumn("Col", 5, "left");
 
@@ -128,9 +141,11 @@ namespace Gitic.Tests
             IEnumerable<string?> enumerableNullable = new List<string?> { "five" };
             builder.AddRow(enumerableNullable);
 
+            // Act
             var result = builder.Render();
             var lines = result.Split('\n');
 
+            // Assert
             Assert.Equal("Col  ", lines[0]);
             Assert.Equal("one  ", lines[1]);
             Assert.Equal("two  ", lines[2]);
@@ -140,23 +155,53 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestAnsiUtils_GetVisibleLength()
+        public void GetVisibleLength_WithAnsiAndPlainStrings_ShouldReturnCorrectLength()
         {
-            Assert.Equal(0, AnsiUtils.GetVisibleLength(null));
-            Assert.Equal(0, AnsiUtils.GetVisibleLength(""));
-            Assert.Equal(5, AnsiUtils.GetVisibleLength("Hello"));
-            Assert.Equal(5, AnsiUtils.GetVisibleLength("\x1B[31mError\x1B[0m"));
-            Assert.Equal(12, AnsiUtils.GetVisibleLength("\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m"));
+            // Arrange
+            var nullStr = (string?)null;
+            var emptyStr = "";
+            var normalStr = "Hello";
+            var ansiStr = "\x1B[31mError\x1B[0m";
+            var complexAnsiStr = "\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m";
+
+            // Act
+            var nullLength = AnsiUtils.GetVisibleLength(nullStr);
+            var emptyLength = AnsiUtils.GetVisibleLength(emptyStr);
+            var normalLength = AnsiUtils.GetVisibleLength(normalStr);
+            var ansiLength = AnsiUtils.GetVisibleLength(ansiStr);
+            var complexAnsiLength = AnsiUtils.GetVisibleLength(complexAnsiStr);
+
+            // Assert
+            Assert.Equal(0, nullLength);
+            Assert.Equal(0, emptyLength);
+            Assert.Equal(5, normalLength);
+            Assert.Equal(5, ansiLength);
+            Assert.Equal(12, complexAnsiLength);
         }
 
         [Fact]
-        public void TestAnsiUtils_StripAnsi()
+        public void StripAnsi_WithAnsiAndPlainStrings_ShouldRemoveAnsiCodes()
         {
-            Assert.Equal(string.Empty, AnsiUtils.StripAnsi(null));
-            Assert.Equal(string.Empty, AnsiUtils.StripAnsi(""));
-            Assert.Equal("Hello", AnsiUtils.StripAnsi("Hello"));
-            Assert.Equal("Error", AnsiUtils.StripAnsi("\x1B[31mError\x1B[0m"));
-            Assert.Equal("BoldRedGreen", AnsiUtils.StripAnsi("\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m"));
+            // Arrange
+            var nullStr = (string?)null;
+            var emptyStr = "";
+            var normalStr = "Hello";
+            var ansiStr = "\x1B[31mError\x1B[0m";
+            var complexAnsiStr = "\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m";
+
+            // Act
+            var nullResult = AnsiUtils.StripAnsi(nullStr);
+            var emptyResult = AnsiUtils.StripAnsi(emptyStr);
+            var normalResult = AnsiUtils.StripAnsi(normalStr);
+            var ansiResult = AnsiUtils.StripAnsi(ansiStr);
+            var complexAnsiResult = AnsiUtils.StripAnsi(complexAnsiStr);
+
+            // Assert
+            Assert.Equal(string.Empty, nullResult);
+            Assert.Equal(string.Empty, emptyResult);
+            Assert.Equal("Hello", normalResult);
+            Assert.Equal("Error", ansiResult);
+            Assert.Equal("BoldRedGreen", complexAnsiResult);
         }
     }
 }
