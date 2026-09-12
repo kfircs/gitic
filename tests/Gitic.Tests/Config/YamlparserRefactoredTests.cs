@@ -39,6 +39,7 @@ metrics:
         [Fact]
         public void TestSequences()
         {
+            // Arrange
             string yaml = @"
 excludes:
   - pattern: 'node_modules/**'
@@ -46,7 +47,11 @@ excludes:
   - pattern: 'dist/**'
     category: build
 ";
+
+            // Act
             var parsed = (Dictionary<string, object?>)YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source")!;
+
+            // Assert
             Assert.NotNull(parsed);
 
             var excludes = (List<object?>)parsed["excludes"]!;
