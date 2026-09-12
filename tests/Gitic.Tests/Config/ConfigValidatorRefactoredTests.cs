@@ -7,12 +7,10 @@ namespace Gitic.Tests
     public class ConfigValidatorRefactoredTests
     {
         [Fact]
-        public void TestAliasValidator_ValidAndInvalid()
+        public void TestAliasValidator_ValidAliases_HasNoErrors()
         {
-            var errors = new List<string>();
-
-            // Case 1: Valid aliases
             // Arrange
+            var errors = new List<string>();
             var validAlias = new List<object?>
             {
                 new Dictionary<string, object?>
@@ -31,11 +29,13 @@ namespace Gitic.Tests
 
             // Assert
             Assert.Empty(errors);
+        }
 
-
-            // Case 2: Invalid aliases: not an array
+        [Fact]
+        public void TestAliasValidator_NotAnArray_HasFormatError()
+        {
             // Arrange
-            errors.Clear();
+            var errors = new List<string>();
 
             // Act
             AliasValidator.ValidateAliases("not-an-array", "test", errors);
@@ -43,11 +43,13 @@ namespace Gitic.Tests
             // Assert
             Assert.Single(errors);
             Assert.Contains("must be an array", errors[0]);
+        }
 
-
-            // Case 3: Invalid alias entry: missing field
+        [Fact]
+        public void TestAliasValidator_MissingField_HasValidationError()
+        {
             // Arrange
-            errors.Clear();
+            var errors = new List<string>();
             var invalidAlias = new List<object?>
             {
                 new Dictionary<string, object?>
