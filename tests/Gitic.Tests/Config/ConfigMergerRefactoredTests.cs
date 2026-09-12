@@ -11,7 +11,10 @@ namespace Gitic.Tests
         [Fact]
         public void Test_CloneDefaultConfig_ReturnsValidInstance()
         {
+            // Act
             var config = _merger.CloneDefaultConfig();
+
+            // Assert
             Assert.NotNull(config);
             Assert.NotNull(config.Aliases);
             Assert.NotNull(config.Scoring?.Attention);
