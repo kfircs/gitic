@@ -12,7 +12,7 @@ namespace Gitic.Tests
         [InlineData("my-repo", "my-repo")]
         [InlineData("", "Repository")]
         [InlineData(null, "Repository")]
-        public void TestGetRepositoryName(string? repoRoot, string expected)
+        public void GetRepositoryName_ShouldExtractRepositoryName(string? repoRoot, string expected)
         {
             // Arrange
             // No setup required as input is provided as theory parameters
@@ -25,7 +25,7 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestFormatGeneratedAt_WithValidDate()
+        public void FormatGeneratedAt_WithValidDate_ShouldFormatCorrectly()
         {
             // Arrange
             string input = "2023-10-27T15:30:00Z";
@@ -44,7 +44,7 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestFormatGeneratedAt_WithInvalidDate()
+        public void FormatGeneratedAt_WithInvalidDate_ShouldReturnOriginalString()
         {
             // Arrange
             string input = "not-a-date";
@@ -57,3 +57,4 @@ namespace Gitic.Tests
         }
     }
 }
+
