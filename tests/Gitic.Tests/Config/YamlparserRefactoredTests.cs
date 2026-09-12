@@ -9,6 +9,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestBasicMappingsAndScalars()
         {
+            // Arrange
             string yaml = @"
 # Simple config test
 identity:
@@ -18,8 +19,11 @@ metrics:
   ratio: 0.75
   neg_int: -123
 ";
+
+            // Act
             var parsed = (Dictionary<string, object?>)YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source")!;
 
+            // Assert
             Assert.NotNull(parsed);
             Assert.True(parsed.ContainsKey("identity"));
 
