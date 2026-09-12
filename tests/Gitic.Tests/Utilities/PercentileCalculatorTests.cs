@@ -64,11 +64,17 @@ public class PercentileCalculatorTests
         // Arrange
         var values = new double[] { 42.0 };
 
-        // Act & Assert
-        Assert.Equal(42.0, PercentileCalculator.CalculatePercentile(values, 0.0));
-        Assert.Equal(42.0, PercentileCalculator.CalculatePercentile(values, 50.0));
-        Assert.Equal(42.0, PercentileCalculator.CalculatePercentile(values, 90.0));
-        Assert.Equal(42.0, PercentileCalculator.CalculatePercentile(values, 100.0));
+        // Act
+        double resultAt0 = PercentileCalculator.CalculatePercentile(values, 0.0);
+        double resultAt50 = PercentileCalculator.CalculatePercentile(values, 50.0);
+        double resultAt90 = PercentileCalculator.CalculatePercentile(values, 90.0);
+        double resultAt100 = PercentileCalculator.CalculatePercentile(values, 100.0);
+
+        // Assert
+        Assert.Equal(42.0, resultAt0);
+        Assert.Equal(42.0, resultAt50);
+        Assert.Equal(42.0, resultAt90);
+        Assert.Equal(42.0, resultAt100);
     }
 
     [Fact]
