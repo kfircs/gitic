@@ -36,6 +36,7 @@ namespace Gitic.Tests
         [Fact]
         public async Task TestRefactored_TemporalCouplingTable()
         {
+            // Arrange
             var result = new AnalysisResult
             {
                 Analysis = new AnalysisMetadata { IncludedFileChangeCount = 10 },
@@ -47,8 +48,11 @@ namespace Gitic.Tests
 
             var settings = new AnalysisSettings { Format = "plain" };
             var renderer = new CliTableRenderer(AnalysisCommand.TemporalCoupling, settings);
+
+            // Act
             string output = await renderer.RenderAsync(result);
 
+            // Assert
             Assert.Contains("src/Main.cs", output);
             Assert.Contains("src/Helper.cs", output);
             Assert.Contains("85%", output); // coupling degree formatting
