@@ -15,9 +15,10 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestCompactOptions_PropertiesAreCorrect()
+        public void CompactOptions_PropertiesAreCorrect_ShouldMatchExpected()
         {
             // Arrange
+            // No setup required
 
             // Act
             var options = JsonSerializationDefaults.Compact;
@@ -29,8 +30,11 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestIndentedOptions_PropertiesAreCorrect()
+        public void IndentedOptions_PropertiesAreCorrect_ShouldMatchExpected()
         {
+            // Arrange
+            // No setup required
+
             // Act
             var options = JsonSerializationDefaults.Indented;
 
@@ -41,7 +45,7 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestCompactOptions_SerializesCorrectly()
+        public void CompactOptions_SerializesCorrectly_ShouldMatchExpected()
         {
             // Arrange
             var obj = new TestSerializationObject
@@ -61,7 +65,7 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestIndentedOptions_SerializesCorrectly()
+        public void IndentedOptions_SerializesCorrectly_ShouldMatchExpected()
         {
             // Arrange
             var obj = new TestSerializationObject
@@ -81,7 +85,7 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestFileMetric_SerializesLinesOfCodeCorrectly()
+        public void FileMetric_SerializesLinesOfCodeCorrectly_ShouldMatchExpected()
         {
             // Arrange
             var metric = new FileMetric
