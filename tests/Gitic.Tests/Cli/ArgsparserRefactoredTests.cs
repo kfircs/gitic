@@ -11,10 +11,14 @@ namespace Gitic.Tests
         [Fact]
         public void TestCommandLineParser_HelpText_IsPopulated()
         {
+            // Arrange
             var helpArgs = new[] { "--help" };
             var parser = new CommandLineParser(helpArgs);
+
+            // Act
             var parsed = parser.Parse();
 
+            // Assert
             Assert.Equal("help", parsed.Command);
             Assert.NotNull(parsed.HelpText);
             Assert.Null(parsed.HtmlPath);
