@@ -11,7 +11,8 @@ namespace Gitic.Tests
         {
             var errors = new List<string>();
 
-            // Valid aliases mapping object
+            // Case 1: Valid aliases
+            // Arrange
             var validAlias = new List<object?>
             {
                 new Dictionary<string, object?>
@@ -24,16 +25,28 @@ namespace Gitic.Tests
                     }
                 }
             };
+
+            // Act
             AliasValidator.ValidateAliases(validAlias, "test", errors);
+
+            // Assert
             Assert.Empty(errors);
 
-            // Invalid aliases: not an array
+
+            // Case 2: Invalid aliases: not an array
+            // Arrange
             errors.Clear();
+
+            // Act
             AliasValidator.ValidateAliases("not-an-array", "test", errors);
+
+            // Assert
             Assert.Single(errors);
             Assert.Contains("must be an array", errors[0]);
 
-            // Invalid alias entry: missing field
+
+            // Case 3: Invalid alias entry: missing field
+            // Arrange
             errors.Clear();
             var invalidAlias = new List<object?>
             {
@@ -43,7 +56,11 @@ namespace Gitic.Tests
                     { "identities", new List<object?>() }
                 }
             };
+
+            // Act
             AliasValidator.ValidateAliases(invalidAlias, "test", errors);
+
+            // Assert
             Assert.NotEmpty(errors);
         }
 
