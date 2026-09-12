@@ -56,6 +56,7 @@ public class BaselineCliCommandExecutionTests
         string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
         {
+            // Arrange
             var parsed = new ParsedArgs
             {
                 Command = "baseline",
@@ -68,8 +69,10 @@ public class BaselineCliCommandExecutionTests
             var command = new BaselineCommand(parsed, analyzer: new FakeRepositoryAnalyzerForBaseline());
             var reporter = new MockConsoleReporter();
 
+            // Act
             var result = await command.ExecuteAsync(reporter);
 
+            // Assert
             Assert.Equal(0, result.ExitCode);
             Assert.Contains("Baseline snapshot saved successfully", reporter.Output);
             Assert.Contains("v1.0", reporter.Output);
