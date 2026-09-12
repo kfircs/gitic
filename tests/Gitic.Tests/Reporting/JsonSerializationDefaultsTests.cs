@@ -17,6 +17,8 @@ namespace Gitic.Tests
         [Fact]
         public void TestCompactOptions_PropertiesAreCorrect()
         {
+            // Arrange
+
             // Act
             var options = JsonSerializationDefaults.Compact;
 
