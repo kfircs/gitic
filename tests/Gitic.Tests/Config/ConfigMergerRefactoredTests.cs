@@ -11,13 +11,11 @@ namespace Gitic.Tests
         [Fact]
         public void CloneDefaultConfig_ShouldReturnValidInstance()
         {
-            // Arrange
+
             var merger = new ConfigMerger();
 
-            // Act
             var config = merger.CloneDefaultConfig();
 
-            // Assert
             Assert.NotNull(config);
             Assert.NotNull(config.Aliases);
             Assert.NotNull(config.Scoring?.Attention);
@@ -28,7 +26,7 @@ namespace Gitic.Tests
         [Fact]
         public void CloneConfig_ShouldCreateIndependentDeepCopy()
         {
-            // Arrange
+
             var original = new GiticConfig
             {
                 Aliases = new List<AliasRule>
@@ -68,10 +66,8 @@ namespace Gitic.Tests
                 Metrics = new MetricsConfig { TemporalCouplingMaxCommitFileCount = 42 }
             };
 
-            // Act
             var clone = _merger.CloneConfig(original);
 
-            // Assert
             // Verify they are identical in content
             Assert.Single(clone.Aliases);
             Assert.Equal("Canonical", clone.Aliases[0].Canonical.Name);
@@ -120,7 +116,7 @@ namespace Gitic.Tests
         [Fact]
         public void ConvertToOverrides_ShouldMapAllPropertiesCorrectly()
         {
-            // Arrange
+
             var config = new GiticConfig
             {
                 Aliases = new List<AliasRule>
@@ -144,10 +140,8 @@ namespace Gitic.Tests
                 Metrics = new MetricsConfig { TemporalCouplingMaxCommitFileCount = 50 }
             };
 
-            // Act
             var overrides = _merger.ConvertToOverrides(config);
 
-            // Assert
             Assert.NotNull(overrides);
             Assert.Same(config.Aliases, overrides.Aliases);
             Assert.Same(config.Bots, overrides.Bots);
@@ -170,7 +164,7 @@ namespace Gitic.Tests
         [Fact]
         public void MergeConfig_ShouldAppendListsAndOverrideValues()
         {
-            // Arrange
+
             var baseConfig = new GiticConfig
             {
                 Aliases = new List<AliasRule>
@@ -217,10 +211,8 @@ namespace Gitic.Tests
                 Metrics = new MetricsConfigOverrides { TemporalCouplingMaxCommitFileCount = 99 }
             };
 
-            // Act
             var merged = _merger.MergeConfig(baseConfig, overrides);
 
-            // Assert
             // Lists should be appended (base + overrides)
             Assert.Equal(2, merged.Aliases.Count);
             Assert.Equal("Base C", merged.Aliases[0].Canonical.Name);
@@ -251,7 +243,7 @@ namespace Gitic.Tests
         [Fact]
         public void MergeConfig_WithNullOverrides_ShouldReturnDeepClone()
         {
-            // Arrange
+
             var baseConfig = new GiticConfig
             {
                 Identity = new IdentityConfig { MergeOnEmail = true }
@@ -259,10 +251,8 @@ namespace Gitic.Tests
 
             var merger = new ConfigMerger();
 
-            // Act
             var result = merger.MergeConfig(baseConfig, (GiticConfigOverrides?)null);
 
-            // Assert
             Assert.NotSame(baseConfig, result);
             Assert.True(result.Identity.MergeOnEmail);
         }
