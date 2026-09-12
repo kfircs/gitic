@@ -11,7 +11,6 @@ public class ActionEnginePrioritizationTests
     [Fact]
     public void Evaluates_HighChurnSilo_TriggeredAsTopPriority()
     {
-        // Arrange: Hotspot file with >75% single owner share
         var file = new FileMetric
         {
             Path = "src/Core/HotspotService.cs",
@@ -42,10 +41,8 @@ public class ActionEnginePrioritizationTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         Assert.NotEmpty(actions);
         var siloAction = actions.FirstOrDefault(a => a.DetectionRules.Contains("distribute_silo"));
         Assert.NotNull(siloAction);
@@ -59,7 +56,6 @@ public class ActionEnginePrioritizationTests
     [Fact]
     public void Evaluates_CouplingHub_AcrossMultipleAreas()
     {
-        // Arrange: Hub file with temporal coupling to multiple files in different areas
         var couplings = new List<TemporalCoupling>
         {
             new() { FileA = "src/Core/Types.cs", FileB = "src/Cli/Cli.cs", CouplingDegree = 0.75, SharedCommits = 15 },
@@ -81,10 +77,8 @@ public class ActionEnginePrioritizationTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         var hubAction = actions.FirstOrDefault(a => a.DetectionRules.Contains("coupling_hub"));
         Assert.NotNull(hubAction);
         Assert.Equal(2, hubAction.Priority);
@@ -96,7 +90,6 @@ public class ActionEnginePrioritizationTests
     [Fact]
     public void Evaluates_RefactorGodFile_WhenLinesOver800TouchesOver20AndCouplingOver3()
     {
-        // Arrange: God file matching criteria: lines > 800, touches > 20, coupling > 3
         var file = new FileMetric
         {
             Path = "src/Core/MonolithEngine.cs",
@@ -127,10 +120,8 @@ public class ActionEnginePrioritizationTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         var godAction = actions.FirstOrDefault(a => a.DetectionRules.Contains("refactor_god_file"));
         Assert.NotNull(godAction);
         Assert.Equal(1, godAction.Priority);
@@ -143,7 +134,6 @@ public class ActionEnginePrioritizationTests
     [Fact]
     public void Evaluates_ReviewBottleneck_WhenSingleReviewerExceeds30Percent()
     {
-        // Arrange: Review collaboration where Carol handles 45% of reviews
         var result = new AnalysisResult
         {
             CuratedReports = new CuratedReports
@@ -164,10 +154,8 @@ public class ActionEnginePrioritizationTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         var reviewAction = actions.FirstOrDefault(a => a.DetectionRules.Contains("review_bottleneck"));
         Assert.NotNull(reviewAction);
         Assert.Equal(2, reviewAction.Priority);
@@ -179,7 +167,6 @@ public class ActionEnginePrioritizationTests
     [Fact]
     public void Evaluates_AcceleratingRot_WhenZombieFilesGrowOver20PercentAgainstBaseline()
     {
-        // Arrange: Previous baseline with 10 zombie files, current result with 16 zombie files (60% growth)
         var baseline = new BaselineSnapshot
         {
             Summary = new BaselineSummaryMetrics
@@ -204,10 +191,8 @@ public class ActionEnginePrioritizationTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result, baseline);
 
-        // Assert
         var rotAction = actions.FirstOrDefault(a => a.DetectionRules.Contains("accelerating_rot"));
         Assert.NotNull(rotAction);
         Assert.Equal(3, rotAction.Priority);
@@ -219,7 +204,6 @@ public class ActionEnginePrioritizationTests
     [Fact]
     public void Ranks_Recommendations_StrictlyByPriorityAscending()
     {
-        // Arrange: Result triggering P1 (god file & silo), P2 (hub & review), P3 (rot)
         var result = new AnalysisResult
         {
             Files = new List<FileMetric>
@@ -265,10 +249,8 @@ public class ActionEnginePrioritizationTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         Assert.True(actions.Count >= 3);
         for (int i = 0; i < actions.Count - 1; i++)
         {
@@ -280,7 +262,6 @@ public class ActionEnginePrioritizationTests
     [Fact]
     public void CleanCodebase_ProducesNoRecommendations()
     {
-        // Arrange: Clean, well-distributed codebase
         var result = new AnalysisResult
         {
             Files = new List<FileMetric>
@@ -303,10 +284,8 @@ public class ActionEnginePrioritizationTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         Assert.Empty(actions);
     }
 }
@@ -316,7 +295,6 @@ public class ActionRationaleAndAssigneeTests
     [Fact]
     public void DistributeSiloRule_SuggestsSecondaryDeveloper_WithFamiliarity()
     {
-        // Arrange
         var file = new FileMetric
         {
             Path = "src/Core/PaymentEngine.cs",
@@ -343,10 +321,8 @@ public class ActionRationaleAndAssigneeTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         var action = actions.First(a => a.DetectionRules.Contains("distribute_silo"));
         Assert.Contains("Bob", action.SuggestedAssignee);
         Assert.Contains("20%", action.SuggestedAssignee);
@@ -356,7 +332,6 @@ public class ActionRationaleAndAssigneeTests
     [Fact]
     public void DistributeSiloRule_FallsBackToAreaDeveloper_WhenNoSecondaryOnFile()
     {
-        // Arrange: File only touched by Alice, but Carol has familiarity in "Core"
         var file = new FileMetric
         {
             Path = "src/Core/IsolatedFeature.cs",
@@ -392,10 +367,8 @@ public class ActionRationaleAndAssigneeTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         var action = actions.First(a => a.DetectionRules.Contains("distribute_silo"));
         Assert.Contains("Carol", action.SuggestedAssignee);
         Assert.Contains("45%", action.SuggestedAssignee);
@@ -404,7 +377,6 @@ public class ActionRationaleAndAssigneeTests
     [Fact]
     public void RefactorGodFileRule_SuggestsPrimaryAuthor()
     {
-        // Arrange
         var file = new FileMetric
         {
             Path = "src/Core/GiantService.cs",
@@ -433,10 +405,8 @@ public class ActionRationaleAndAssigneeTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         var action = actions.First(a => a.DetectionRules.Contains("refactor_god_file"));
         Assert.Contains("Alice", action.SuggestedAssignee);
         Assert.Contains("primary author", action.SuggestedAssignee);
@@ -447,7 +417,6 @@ public class ActionRationaleAndAssigneeTests
     [Fact]
     public void ReviewBottleneckRule_SuggestsRedistributingToAlternativeReviewers()
     {
-        // Arrange
         var result = new AnalysisResult
         {
             CuratedReports = new CuratedReports
@@ -466,10 +435,8 @@ public class ActionRationaleAndAssigneeTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         var action = actions.First(a => a.DetectionRules.Contains("review_bottleneck"));
         Assert.Contains("Carol", action.Narrative);
         Assert.Contains("Redistribute reviews", action.SuggestedAssignee);
@@ -478,7 +445,6 @@ public class ActionRationaleAndAssigneeTests
     [Fact]
     public void AllActions_ContainEvidenceAndDetectionRules()
     {
-        // Arrange
         var file = new FileMetric
         {
             Path = "src/Core/Hotspot.cs",
@@ -495,10 +461,8 @@ public class ActionRationaleAndAssigneeTests
 
         var engine = new ActionEngine();
 
-        // Act
         var actions = engine.Evaluate(result);
 
-        // Assert
         foreach (var action in actions)
         {
             Assert.NotEmpty(action.DetectionRules);
@@ -515,7 +479,6 @@ public class ActionFormattingTests
     [Fact]
     public void FormatCliTable_RendersFormattedTableWithHeadersAndRows()
     {
-        // Arrange
         var actions = new List<ActionRecommendation>
         {
             new()
@@ -540,10 +503,8 @@ public class ActionFormattingTests
 
         var engine = new ActionEngine();
 
-        // Act
         string table = engine.FormatCliTable(actions);
 
-        // Assert
         Assert.Contains("ACT-001", table);
         Assert.Contains("ACT-002", table);
         Assert.Contains("P1", table);
@@ -555,20 +516,16 @@ public class ActionFormattingTests
     [Fact]
     public void FormatCliTable_HandlesEmptyActionsGracefully()
     {
-        // Arrange
         var engine = new ActionEngine();
 
-        // Act
         string table = engine.FormatCliTable(new List<ActionRecommendation>());
 
-        // Assert
         Assert.Contains("No proactive action recommendations", table);
     }
 
     [Fact]
     public void FormatMarkdown_RendersHeaderSummaryTableAndNarratives()
     {
-        // Arrange
         var actions = new List<ActionRecommendation>
         {
             new()
@@ -586,10 +543,8 @@ public class ActionFormattingTests
 
         var engine = new ActionEngine();
 
-        // Act
         string markdown = engine.FormatMarkdown(actions);
 
-        // Assert
         Assert.Contains("## 🎯 Recommended Actions", markdown);
         Assert.Contains("| ID | Priority | Category | Action | Suggested Assignee | Estimated Impact |", markdown);
         Assert.Contains("| **ACT-001** | P1 | `knowledge_risk` | Distribute ownership of Scoring.cs |", markdown);
@@ -602,13 +557,10 @@ public class ActionFormattingTests
     [Fact]
     public void FormatMarkdown_HandlesEmptyActionsGracefully()
     {
-        // Arrange
         var engine = new ActionEngine();
 
-        // Act
         string markdown = engine.FormatMarkdown(new List<ActionRecommendation>());
 
-        // Assert
         Assert.Contains("## 🎯 Recommended Actions", markdown);
         Assert.Contains("No proactive action recommendations at this time", markdown);
     }
