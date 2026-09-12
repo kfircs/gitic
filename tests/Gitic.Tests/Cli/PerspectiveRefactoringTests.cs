@@ -8,9 +8,8 @@ namespace Gitic.Tests;
 public class PerspectiveRefactoringTests
 {
     [Fact]
-    public void CodeRotPerspective_UsesGeneratedAtAsReferenceDate()
+    public void CodeRotPerspective_WhenGeneratedAtIsSoonAfterLastTouched_IsNotZombie()
     {
-        // Arrange
         var fileMetric = new FileMetric
         {
             Path = "src/test.cs",
@@ -23,11 +22,8 @@ public class PerspectiveRefactoringTests
             IsDirectory = false,
             FileMetric = fileMetric
         };
-
         var perspective = new CodeRotPerspective();
-
-        // Case A: GeneratedAt is soon after LastTouched (not a zombie)
-        var resultNotZombie = new AnalysisResult
+        var result = new AnalysisResult
         {
             Analysis = new AnalysisMetadata
             {
@@ -44,15 +40,30 @@ public class PerspectiveRefactoringTests
             }
         };
 
-        // Act
-        var linesNotZombie = perspective.GetRightSidebarLines(node, 80, resultNotZombie);
+        var lines = perspective.GetRightSidebarLines(node, 80, result);
 
-        // Assert
-        Assert.Contains("Zombie Files in this folder: 0", string.Join("\n", linesNotZombie));
-        Assert.Contains("Zombie Lines in this folder: 0", string.Join("\n", linesNotZombie));
+        var output = string.Join("\n", lines);
+        Assert.Contains("Zombie Files in this folder: 0", output);
+        Assert.Contains("Zombie Lines in this folder: 0", output);
+    }
 
-        // Case B: GeneratedAt is long after LastTouched (is a zombie)
-        var resultZombie = new AnalysisResult
+    [Fact]
+    public void CodeRotPerspective_WhenGeneratedAtIsLongAfterLastTouched_IsZombie()
+    {
+        var fileMetric = new FileMetric
+        {
+            Path = "src/test.cs",
+            Lines = 100,
+            LastTouched = "2023-01-01T00:00:00Z"
+        };
+        var node = new TuiNode
+        {
+            Name = "test.cs",
+            IsDirectory = false,
+            FileMetric = fileMetric
+        };
+        var perspective = new CodeRotPerspective();
+        var result = new AnalysisResult
         {
             Analysis = new AnalysisMetadata
             {
@@ -69,18 +80,16 @@ public class PerspectiveRefactoringTests
             }
         };
 
-        // Act
-        var linesZombie = perspective.GetRightSidebarLines(node, 80, resultZombie);
+        var lines = perspective.GetRightSidebarLines(node, 80, result);
 
-        // Assert
-        Assert.Contains("Zombie Files in this folder: 1", string.Join("\n", linesZombie));
-        Assert.Contains("Zombie Lines in this folder: 100", string.Join("\n", linesZombie));
+        var output = string.Join("\n", lines);
+        Assert.Contains("Zombie Files in this folder: 1", output);
+        Assert.Contains("Zombie Lines in this folder: 100", output);
     }
 
     [Fact]
-    public void LinesStructurePerspective_UsesGeneratedAtAsReferenceDate()
+    public void LinesStructurePerspective_WhenGeneratedAtIsSameDay_ShowsToday()
     {
-        // Arrange
         var fileMetric = new FileMetric
         {
             Path = "src/test.cs",
@@ -94,11 +103,8 @@ public class PerspectiveRefactoringTests
             FileMetric = fileMetric,
             TotalLines = 100
         };
-
         var perspective = new LinesStructurePerspective();
-
-        // Case A: GeneratedAt is the same day -> "today"
-        var resultSameDay = new AnalysisResult
+        var result = new AnalysisResult
         {
             Analysis = new AnalysisMetadata
             {
@@ -106,14 +112,29 @@ public class PerspectiveRefactoringTests
             }
         };
 
-        // Act
-        var linesSameDay = perspective.GetRightSidebarLines(node, 80, resultSameDay);
+        var lines = perspective.GetRightSidebarLines(node, 80, result);
 
-        // Assert
-        Assert.Contains("(today)", string.Join("\n", linesSameDay));
+        Assert.Contains("(today)", string.Join("\n", lines));
+    }
 
-        // Case B: GeneratedAt is 1 day after -> "1 day ago"
-        var resultOneDay = new AnalysisResult
+    [Fact]
+    public void LinesStructurePerspective_WhenGeneratedAtIsOneDayAfter_ShowsOneDayAgo()
+    {
+        var fileMetric = new FileMetric
+        {
+            Path = "src/test.cs",
+            Lines = 100,
+            LastTouched = "2023-01-01T00:00:00Z"
+        };
+        var node = new TuiNode
+        {
+            Name = "test.cs",
+            IsDirectory = false,
+            FileMetric = fileMetric,
+            TotalLines = 100
+        };
+        var perspective = new LinesStructurePerspective();
+        var result = new AnalysisResult
         {
             Analysis = new AnalysisMetadata
             {
@@ -121,14 +142,29 @@ public class PerspectiveRefactoringTests
             }
         };
 
-        // Act
-        var linesOneDay = perspective.GetRightSidebarLines(node, 80, resultOneDay);
+        var lines = perspective.GetRightSidebarLines(node, 80, result);
 
-        // Assert
-        Assert.Contains("(1 day ago)", string.Join("\n", linesOneDay));
+        Assert.Contains("(1 day ago)", string.Join("\n", lines));
+    }
 
-        // Case C: GeneratedAt is 10 days after -> "10 days ago"
-        var resultTenDays = new AnalysisResult
+    [Fact]
+    public void LinesStructurePerspective_WhenGeneratedAtIsTenDaysAfter_ShowsTenDaysAgo()
+    {
+        var fileMetric = new FileMetric
+        {
+            Path = "src/test.cs",
+            Lines = 100,
+            LastTouched = "2023-01-01T00:00:00Z"
+        };
+        var node = new TuiNode
+        {
+            Name = "test.cs",
+            IsDirectory = false,
+            FileMetric = fileMetric,
+            TotalLines = 100
+        };
+        var perspective = new LinesStructurePerspective();
+        var result = new AnalysisResult
         {
             Analysis = new AnalysisMetadata
             {
@@ -136,10 +172,8 @@ public class PerspectiveRefactoringTests
             }
         };
 
-        // Act
-        var linesTenDays = perspective.GetRightSidebarLines(node, 80, resultTenDays);
+        var lines = perspective.GetRightSidebarLines(node, 80, result);
 
-        // Assert
-        Assert.Contains("(10 days ago)", string.Join("\n", linesTenDays));
+        Assert.Contains("(10 days ago)", string.Join("\n", lines));
     }
 }
