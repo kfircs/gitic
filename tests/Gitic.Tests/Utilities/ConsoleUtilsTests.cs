@@ -11,8 +11,11 @@ public class ConsoleUtilsTests
     [InlineData(250, 250)]
     public void GetBoundedConsoleWidth_WithOverride_ReturnsOverrideValue(int? widthOverride, int expected)
     {
+        // Arrange
+        int? consoleWidthOverride = widthOverride;
+
         // Act
-        int result = ConsoleUtils.GetBoundedConsoleWidth(widthOverride);
+        int result = ConsoleUtils.GetBoundedConsoleWidth(consoleWidthOverride);
 
         // Assert
         Assert.Equal(expected, result);
