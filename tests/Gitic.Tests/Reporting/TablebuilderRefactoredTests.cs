@@ -11,6 +11,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestConsoleTableBuilder_NormalBehaviorPreserved()
         {
+            // Arrange
             var builder = new ConsoleTableBuilder();
             builder.AddColumn("Name", 10, "left");
             builder.AddColumn("Age", 5, "right");
@@ -20,7 +21,12 @@ namespace Gitic.Tests
             builder.AddRow(new List<string> { "Bob", "25", "Designer" });
 
             var expected = "Name         Age Role\nAlice         30 Engineer\nBob           25 Designer";
-            Assert.Equal(expected, builder.Render());
+
+            // Act
+            var result = builder.Render();
+
+            // Assert
+            Assert.Equal(expected, result);
         }
 
         [Fact]
