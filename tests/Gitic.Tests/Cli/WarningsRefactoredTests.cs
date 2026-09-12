@@ -9,6 +9,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestWarningCollector_ParseOrWrapWarning_WithValidAreaWarning()
         {
+            // Arrange
             var collector = new WarningCollector();
             var context = new WarningContext();
             var existing = new List<string>
@@ -16,8 +17,10 @@ namespace Gitic.Tests
                 "Path src/main.cs matched multiple configured areas (Area1, Area2); using Area1."
             };
 
+            // Act
             var diags = collector.CollectDiagnostics(context, existing);
 
+            // Assert
             var target = diags.Find(d => d.Code == "GITIC007");
             Assert.NotNull(target);
             Assert.Equal("Warning", target!.Severity);
