@@ -11,7 +11,7 @@ public class TuiExplorerTests
     [Fact]
     public void BuildTree_CorrectlyExcludesNonCodeFiles()
     {
-        // Arrange
+        // Build (Arrange)
         var files = new List<FileMetric>
         {
             new() { Path = "src/Core/Analyzer.cs", Lines = 100, Width = 80 },
@@ -21,10 +21,10 @@ public class TuiExplorerTests
             new() { Path = "package-lock.json", Lines = 1000, Width = 120 }
         };
 
-        // Act
+        // Operate (Act)
         var root = TuiNode.BuildTree(files);
 
-        // Assert
+        // Check (Assert)
         // The tree should only include "src/Core/Analyzer.cs"
         Assert.NotNull(root);
         Assert.True(root.IsDirectory);
