@@ -326,11 +326,13 @@ public class BoundaryViolationDetectionTests
         var enforcer = new BoundaryEnforcer();
 
         var emptyReport = enforcer.EnforceBoundaries((List<TemporalCoupling>?)null, (List<BoundaryRule>?)null);
+
         Assert.True(emptyReport.Passed);
         Assert.Empty(emptyReport.Violations);
         Assert.Equal(0, emptyReport.TotalRulesChecked);
 
         var emptyListReport = enforcer.EnforceBoundaries(new List<TemporalCoupling>(), new List<BoundaryRule>());
+
         Assert.True(emptyListReport.Passed);
         Assert.Empty(emptyListReport.Violations);
 
@@ -340,6 +342,7 @@ public class BoundaryViolationDetectionTests
         };
 
         var nullCouplingReport = enforcer.EnforceBoundaries((List<TemporalCoupling>?)null, ruleList);
+
         Assert.True(nullCouplingReport.Passed);
         Assert.Empty(nullCouplingReport.Violations);
         Assert.Equal(1, nullCouplingReport.TotalRulesChecked);
@@ -421,8 +424,8 @@ public class BoundaryDiagnosticReportingTests
         };
 
         var report = enforcer.EnforceBoundaries(couplings, rules);
-        var violation = Assert.Single(report.Violations);
 
+        var violation = Assert.Single(report.Violations);
         Assert.Contains("src/Core/Types.cs", violation.ViolationMessage);
         Assert.Contains("src/Cli/Program.cs", violation.ViolationMessage);
         Assert.Contains("0.65", violation.ViolationMessage);
@@ -447,6 +450,7 @@ public class BoundaryDiagnosticReportingTests
         };
 
         var report = enforcer.EnforceBoundaries(new List<TemporalCoupling>(), rules);
+
         string summary = enforcer.FormatSummary(report);
 
         Assert.Contains("Architectural Boundary Report", summary);
@@ -490,6 +494,7 @@ public class BoundaryDiagnosticReportingTests
         };
 
         var report = enforcer.EnforceBoundaries(couplings, rules);
+
         string summary = enforcer.FormatSummary(report);
 
         Assert.Contains("Architectural Boundary Report", summary);
@@ -525,6 +530,7 @@ public class BoundaryDiagnosticReportingTests
         };
 
         var report = enforcer.EnforceBoundaries(couplings, rules);
+
         string summary = report.FormatSummary();
 
         Assert.Contains("Worst offender: src/Git/Gitgraph.cs ↔ src/Core/Analyzer.cs (degree: 0.67)", summary);
@@ -558,6 +564,7 @@ public class BoundaryDiagnosticReportingTests
         };
 
         var report = enforcer.EnforceBoundaries(couplings, rules);
+
         string summary = enforcer.FormatSummary(report);
 
         Assert.Contains("PASS", summary);
