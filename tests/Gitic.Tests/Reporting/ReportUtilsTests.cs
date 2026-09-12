@@ -21,6 +21,7 @@ namespace Gitic.Tests
         [Fact]
         public void TestFormatGeneratedAt_WithValidDate()
         {
+            // Arrange
             string input = "2023-10-27T15:30:00Z";
             // Parsed to a DateTimeOffset, since it is UTC "Z", parsedGenAt will be 2023-10-27 15:30:00 +00:00.
             // When ToString is called, depending on local culture/timezone representation, we should be careful.
@@ -29,15 +30,23 @@ namespace Gitic.Tests
             var expectedParsed = DateTimeOffset.Parse(input);
             string expected = expectedParsed.ToString("yyyy-MM-dd HH:mm:ss") + " UTC";
 
+            // Act
             string actual = ReportUtils.FormatGeneratedAt(input);
+
+            // Assert
             Assert.Equal(expected, actual);
         }
 
         [Fact]
         public void TestFormatGeneratedAt_WithInvalidDate()
         {
+            // Arrange
             string input = "not-a-date";
+
+            // Act
             string actual = ReportUtils.FormatGeneratedAt(input);
+
+            // Assert
             Assert.Equal(input, actual);
         }
     }
