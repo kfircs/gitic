@@ -7,7 +7,7 @@ namespace Gitic.Tests
     public class YamlparserRefactoredTests
     {
         [Fact]
-        public void TestBasicMappingsAndScalars()
+        public void BasicMappingsAndScalars_ShouldParseCorrectly()
         {
             // Arrange
             string yaml = @"
@@ -37,7 +37,7 @@ metrics:
         }
 
         [Fact]
-        public void TestSequences()
+        public void Sequences_ShouldParseCorrectly()
         {
             // Arrange
             string yaml = @"
@@ -67,27 +67,39 @@ excludes:
         }
 
         [Fact]
-        public void TestTabsNotSupported()
+        public void TabsNotSupported_ShouldThrowConfigValidationError()
         {
+            // Arrange
             string yaml = "identity:\n\tmerge_on_email: true";
-            Assert.Throws<ConfigValidationError>(() => YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source"));
+
+            // Act
+            Action act = () => YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source");
+
+            // Assert
+            Assert.Throws<ConfigValidationError>(act);
         }
 
         [Fact]
-        public void TestCommentsWithQuotes()
+        public void CommentsWithQuotes_ShouldParseCorrectly()
         {
+            // Arrange
             string yaml = @"
 key_with_hash: 'value # with hash' # actual comment
 key_with_hash_double: ""value # with double hash"" # comment
 ";
+
+            // Act
             var parsed = (Dictionary<string, object?>)YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source")!;
+
+            // Assert
             Assert.Equal("value # with hash", parsed["key_with_hash"]);
             Assert.Equal("value # with double hash", parsed["key_with_hash_double"]);
         }
 
         [Fact]
-        public void TestEmptyAndNullValues()
+        public void EmptyAndNullValues_ShouldParseCorrectly()
         {
+            // Arrange
             string yaml = @"
 empty_list: []
 empty_dict: {}
@@ -95,7 +107,11 @@ null_value: null
 tilde_null: ~
 empty_implicit: 
 ";
+
+            // Act
             var parsed = (Dictionary<string, object?>)YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source")!;
+
+            // Assert
             Assert.Empty((List<object?>)parsed["empty_list"]!);
             Assert.Empty((Dictionary<string, object?>)parsed["empty_dict"]!);
             Assert.Null(parsed["null_value"]);
@@ -104,47 +120,66 @@ empty_implicit:
         }
 
         [Fact]
-        public void TestUnquotingAndEscaping()
+        public void UnquotingAndEscaping_ShouldParseCorrectly()
         {
+            // Arrange
             string yaml = "single_quoted: 'hello ''world'''\n" +
                           "double_quoted: \"hello \\\"world\\\"\\nnewline\\ttab\"";
+
+            // Act
             var parsed = (Dictionary<string, object?>)YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source")!;
+
+            // Assert
             Assert.Equal("hello 'world'", parsed["single_quoted"]);
             Assert.Equal("hello \"world\"\nnewline\ttab", parsed["double_quoted"]);
         }
 
         [Fact]
-        public void TestInvalidIndentationThrows()
+        public void InvalidIndentation_ShouldThrowConfigValidationError()
         {
-            // Invalid indentation structure
+            // Arrange
             string yaml = @"
 key:
     nested: value
   sibling: bad_indent
 ";
-            Assert.Throws<ConfigValidationError>(() => YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source"));
+
+            // Act
+            Action act = () => YamlSubsetParserHelper.ParseYamlSubset(yaml, "test_source");
+
+            // Assert
+            Assert.Throws<ConfigValidationError>(act);
         }
 
         [Fact]
-        public void TestTokenStream()
+        public void TokenStream_ShouldManageTokensCorrectly()
         {
+            // Arrange
             var lines = new List<YamlLine>
             {
                 new YamlLine { Indent = 0, Text = "key: val", LineNumber = 1 }
             };
             var stream = new YamlTokenStream(lines, "test_source");
 
-            Assert.True(stream.HasMore);
-            Assert.False(stream.IsAtEnd());
-            Assert.Equal(1, stream.LineNumber());
-
-            var line = stream.Peek();
-            Assert.NotNull(line);
-            Assert.Equal("key: val", line.Text);
+            // Act
+            bool initialHasMore = stream.HasMore;
+            bool initialIsAtEnd = stream.IsAtEnd();
+            int initialLineNumber = stream.LineNumber();
+            var linePeek = stream.Peek();
 
             stream.Consume();
-            Assert.False(stream.HasMore);
-            Assert.True(stream.IsAtEnd());
+
+            bool afterConsumeHasMore = stream.HasMore;
+            bool afterConsumeIsAtEnd = stream.IsAtEnd();
+
+            // Assert
+            Assert.True(initialHasMore);
+            Assert.False(initialIsAtEnd);
+            Assert.Equal(1, initialLineNumber);
+            Assert.NotNull(linePeek);
+            Assert.Equal("key: val", linePeek.Text);
+            Assert.False(afterConsumeHasMore);
+            Assert.True(afterConsumeIsAtEnd);
         }
     }
 }
