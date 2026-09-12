@@ -14,7 +14,13 @@ namespace Gitic.Tests
         [InlineData(null, "Repository")]
         public void TestGetRepositoryName(string? repoRoot, string expected)
         {
+            // Arrange
+            // No setup required as input is provided as theory parameters
+
+            // Act
             string actual = ReportUtils.GetRepositoryName(repoRoot);
+
+            // Assert
             Assert.Equal(expected, actual);
         }
 
