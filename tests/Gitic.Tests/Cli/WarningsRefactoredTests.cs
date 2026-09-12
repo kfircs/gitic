@@ -9,7 +9,6 @@ namespace Gitic.Tests
         [Fact]
         public void WarningCollector_ParseOrWrapWarning_WithValidAreaWarning_ShouldCollectCorrectDiagnostics()
         {
-            // Arrange
             var collector = new WarningCollector();
             var context = new WarningContext();
             var existing = new List<string>
@@ -17,10 +16,8 @@ namespace Gitic.Tests
                 "Path src/main.cs matched multiple configured areas (Area1, Area2); using Area1."
             };
 
-            // Act
             var diags = collector.CollectDiagnostics(context, existing);
 
-            // Assert
             var target = diags.Find(d => d.Code == "GITIC007");
             Assert.NotNull(target);
             Assert.Equal("Warning", target!.Severity);
@@ -31,7 +28,6 @@ namespace Gitic.Tests
         [Fact]
         public void WarningCollector_ParseOrWrapWarning_NoUsingPart_ShouldCollectCorrectDiagnostics()
         {
-            // Arrange
             var collector = new WarningCollector();
             var context = new WarningContext();
             var existing = new List<string>
@@ -39,10 +35,8 @@ namespace Gitic.Tests
                 "Path src/main.cs matched multiple configured areas (Area1, Area2)"
             };
 
-            // Act
             var diags = collector.CollectDiagnostics(context, existing);
 
-            // Assert
             var target = diags.Find(d => d.Code == "GITIC007");
             Assert.NotNull(target);
             Assert.Equal("Warning", target!.Severity);
@@ -53,15 +47,12 @@ namespace Gitic.Tests
         [Fact]
         public void WarningCollector_ParseOrWrapWarning_NullAndEmptyWarnings_ShouldCollectCorrectDiagnostics()
         {
-            // Arrange
             var collector = new WarningCollector();
             var context = new WarningContext();
             var existingWarnings = new List<string> { null!, "" };
 
-            // Act
             var diags = collector.CollectDiagnostics(context, existingWarnings);
 
-            // Assert
             var targetNull = diags.Find(d => d.Code == "GITIC999" && d.Message == string.Empty);
             Assert.NotNull(targetNull);
         }
@@ -69,7 +60,6 @@ namespace Gitic.Tests
         [Fact]
         public void WarningCollector_ParseOrWrapWarning_MalformedAreaWarningAtEnd_ShouldCollectCorrectDiagnostics()
         {
-            // Arrange
             var collector = new WarningCollector();
             var context = new WarningContext();
             var existing = new List<string>
@@ -77,10 +67,8 @@ namespace Gitic.Tests
                 "matched multiple configured areas; using "
             };
 
-            // Act
             var diags = collector.CollectDiagnostics(context, existing);
 
-            // Assert
             var target = diags.Find(d => d.Code == "GITIC007");
             Assert.NotNull(target);
             Assert.Equal("matched multiple configured areas", target!.Message);
@@ -90,7 +78,6 @@ namespace Gitic.Tests
         [Fact]
         public void WarningCollector_ParseOrWrapWarning_SemicolonUsingNoSpace_ShouldCollectCorrectDiagnostics()
         {
-            // Arrange
             var collector = new WarningCollector();
             var context = new WarningContext();
             var existing = new List<string>
@@ -98,10 +85,8 @@ namespace Gitic.Tests
                 "matched multiple configured areas;using"
             };
 
-            // Act
             var diags = collector.CollectDiagnostics(context, existing);
 
-            // Assert
             var target = diags.Find(d => d.Code == "GITIC007");
             Assert.NotNull(target);
             Assert.Equal("matched multiple configured areas;using", target!.Message);
@@ -111,7 +96,6 @@ namespace Gitic.Tests
         [Fact]
         public void WarningCollector_ParseOrWrapWarning_StandardUnmatchedWarning_ShouldCollectCorrectDiagnostics()
         {
-            // Arrange
             var collector = new WarningCollector();
             var context = new WarningContext();
             var existing = new List<string>
@@ -119,10 +103,8 @@ namespace Gitic.Tests
                 "Some other warning message."
             };
 
-            // Act
             var diags = collector.CollectDiagnostics(context, existing);
 
-            // Assert
             var target = diags.Find(d => d.Code == "GITIC999");
             Assert.NotNull(target);
             Assert.Equal("Some other warning message.", target!.Message);
@@ -132,7 +114,6 @@ namespace Gitic.Tests
         [Fact]
         public void GetSeverityOrder_ShouldReturnCorrectPrecedence()
         {
-            // Act & Assert
             Assert.Equal(3, Warnings.GetSeverityOrder(null!));
             Assert.Equal(1, Warnings.GetSeverityOrder("critical"));
             Assert.Equal(1, Warnings.GetSeverityOrder("CRITICAL"));
