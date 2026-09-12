@@ -361,7 +361,6 @@ public class BaselineCliCommandExecutionTests
     [Fact]
     public async Task BaselineCommand_WithMissingSubcommand_ShouldReturnExitCode2()
     {
-        // Arrange
         var parsed = new ParsedArgs
         {
             Command = "baseline",
@@ -371,10 +370,8 @@ public class BaselineCliCommandExecutionTests
         var command = new BaselineCommand(parsed);
         var reporter = new MockConsoleReporter();
 
-        // Act
         var result = await command.ExecuteAsync(reporter);
 
-        // Assert
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("baseline requires a subcommand", reporter.Error);
     }
@@ -434,13 +431,10 @@ public class BaselineCliCommandExecutionTests
     [Fact]
     public async Task Cli_RunCliAsync_WithBaselineCommand_ShouldReturnExitCode2()
     {
-        // Arrange
         var reporter = new MockConsoleReporter();
 
-        // Act
         var result = await Cli.RunCliAsync(new[] { "baseline" }, reporter);
 
-        // Assert
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("baseline requires a subcommand", reporter.Error);
     }
