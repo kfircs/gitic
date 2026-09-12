@@ -11,14 +11,11 @@ namespace Gitic.Tests
         [Fact]
         public void CommandLineParser_HelpText_ShouldBePopulated()
         {
-            // Arrange
             var helpArgs = new[] { "--help" };
             var parser = new CommandLineParser(helpArgs);
 
-            // Act
             var parsed = parser.Parse();
 
-            // Assert
             Assert.Equal("help", parsed.Command);
             Assert.NotNull(parsed.HelpText);
             Assert.Null(parsed.HtmlPath);
@@ -28,14 +25,11 @@ namespace Gitic.Tests
         [Fact]
         public void CommandLineParser_HelpShort_ShouldBePopulated()
         {
-            // Arrange
             var helpArgs = new[] { "-h" };
             var parser = new CommandLineParser(helpArgs);
 
-            // Act
             var parsed = parser.Parse();
 
-            // Assert
             Assert.Equal("help", parsed.Command);
             Assert.NotNull(parsed.HelpText);
             Assert.Null(parsed.HtmlPath);
@@ -45,17 +39,14 @@ namespace Gitic.Tests
         [Fact]
         public async Task CliCommandFactory_CreatesHelpCommandWithHelpText_ShouldExecuteSuccessfully()
         {
-            // Arrange
             var helpArgs = new[] { "--help" };
             var parser = new CommandLineParser(helpArgs);
             var parsed = parser.Parse();
             var command = new CliCommandFactoryImpl().CreateCommand(parsed);
             var reporter = new MockConsoleReporter();
 
-            // Act
             var result = await command.ExecuteAsync(reporter);
 
-            // Assert
             Assert.IsType<HelpCommand>(command);
             Assert.Equal(0, result.ExitCode);
             Assert.Contains("Gitic Strategic Codebase Analysis", reporter.Stdout);
@@ -76,7 +67,6 @@ namespace Gitic.Tests
         [Fact]
         public async Task BaseAnalysisCommand_ShouldInjectDependencies()
         {
-            // Arrange
             var parsed = new ParsedArgs
             {
                 RepoPath = "/fake/root",
@@ -89,10 +79,8 @@ namespace Gitic.Tests
             var command = new HotspotsCommand(parsed, fakeGit, fakeAnalyzer);
             var reporter = new MockConsoleReporter();
 
-            // Act
             var result = await command.ExecuteAsync(reporter);
 
-            // Assert
             Assert.True(fakeAnalyzer.AnalyzeAsyncCalled);
             Assert.Same(fakeGit, fakeAnalyzer.ReceivedInput?.GitClient);
             Assert.Equal("/fake/root", fakeAnalyzer.ReceivedInput?.RepoRoot);
