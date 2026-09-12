@@ -65,17 +65,19 @@ public class TuiExplorerTests
         var root = TuiNode.BuildTree(files);
 
         // Assert
+        // 1. Root-level structure and count assertions
         Assert.NotNull(root);
         Assert.Equal(3, root.FileCount);
         Assert.Equal(400, root.TotalLines);
+
+        // 2. Root-level width and lines range assertions
         Assert.Equal(50, root.MinLines);
         Assert.Equal(200, root.MaxLines);
-
         Assert.Equal(40, root.MinWidth);
         Assert.Equal(120, root.MaxWidth);
         Assert.Equal(260, root.TotalWidth); // 100 + 40 + 120
 
-        // Subfolder aggregation checks
+        // 3. Subfolder 'src' aggregation assertions
         var src = root.Children.FirstOrDefault(c => c.Name == "src");
         Assert.NotNull(src);
         Assert.Equal(3, src.FileCount);
@@ -83,6 +85,7 @@ public class TuiExplorerTests
         Assert.Equal(50, src.MinLines);
         Assert.Equal(200, src.MaxLines);
 
+        // 4. Subfolder 'Core' aggregation assertions
         var core = src.Children.FirstOrDefault(c => c.Name == "Core");
         Assert.NotNull(core);
         Assert.Equal(2, core.FileCount);
@@ -92,6 +95,7 @@ public class TuiExplorerTests
         Assert.Equal(40, core.MinWidth);
         Assert.Equal(100, core.MaxWidth);
 
+        // 5. Subfolder 'Cli' aggregation assertions
         var cli = src.Children.FirstOrDefault(c => c.Name == "Cli");
         Assert.NotNull(cli);
         Assert.Equal(1, cli.FileCount);
