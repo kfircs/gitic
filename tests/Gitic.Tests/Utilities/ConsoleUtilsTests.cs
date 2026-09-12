@@ -5,13 +5,17 @@ namespace Gitic.Tests;
 
 public class ConsoleUtilsTests
 {
-    [Fact]
-    public void GetBoundedConsoleWidth_WithOverride_ReturnsOverrideValue()
+    [Theory]
+    [InlineData(120, 120)]
+    [InlineData(30, 30)]
+    [InlineData(250, 250)]
+    public void GetBoundedConsoleWidth_WithOverride_ReturnsOverrideValue(int? widthOverride, int expected)
     {
-        // Act & Assert
-        Assert.Equal(120, ConsoleUtils.GetBoundedConsoleWidth(120));
-        Assert.Equal(30, ConsoleUtils.GetBoundedConsoleWidth(30));
-        Assert.Equal(250, ConsoleUtils.GetBoundedConsoleWidth(250));
+        // Act
+        int result = ConsoleUtils.GetBoundedConsoleWidth(widthOverride);
+
+        // Assert
+        Assert.Equal(expected, result);
     }
 
     [Fact]
@@ -35,12 +39,16 @@ public class ConsoleUtilsTests
         Assert.Equal("hello     ", result);
     }
 
-    [Fact]
-    public void PadRightAnsi_NormalText_NoOpWhenWidthIsLessThanOrEqual()
+    [Theory]
+    [InlineData("hello", 5, "hello")]
+    [InlineData("hello", 3, "hello")]
+    public void PadRightAnsi_NormalText_NoOpWhenWidthIsLessThanOrEqual(string input, int width, string expected)
     {
-        // Act & Assert
-        Assert.Equal("hello", ConsoleUtils.PadRightAnsi("hello", 5));
-        Assert.Equal("hello", ConsoleUtils.PadRightAnsi("hello", 3));
+        // Act
+        string result = ConsoleUtils.PadRightAnsi(input, width);
+
+        // Assert
+        Assert.Equal(expected, result);
     }
 
     [Fact]
