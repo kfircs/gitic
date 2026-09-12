@@ -10,6 +10,7 @@ namespace Gitic.Tests
         [Fact]
         public async Task TestRefactored_HotspotsTable()
         {
+            // Arrange
             var result = new AnalysisResult
             {
                 Analysis = new AnalysisMetadata { IncludedFileChangeCount = 5 },
@@ -22,8 +23,11 @@ namespace Gitic.Tests
 
             var settings = new AnalysisSettings { Format = "plain", Limit = 1 };
             var renderer = new CliTableRenderer(AnalysisCommand.Hotspots, settings);
+
+            // Act
             string output = await renderer.RenderAsync(result);
 
+            // Assert
             Assert.Contains("src/A.cs", output);
             Assert.Contains("[!]", output); // plain format uses ASCII "[!]" for high attention
             Assert.DoesNotContain("src/B.cs", output); // limited to 1 row
