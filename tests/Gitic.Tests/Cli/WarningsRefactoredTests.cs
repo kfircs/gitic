@@ -46,15 +46,15 @@ namespace Gitic.Tests
         [Fact]
         public void TestWarningCollector_ParseOrWrapWarning_NullAndEmptyWarnings()
         {
+            // Arrange
             var collector = new WarningCollector();
             var context = new WarningContext();
+            var existingWarnings = new List<string> { null!, "" };
 
-            var existingWarnings = new List<string>();
-            existingWarnings.Add(null!);
-            existingWarnings.Add("");
-
+            // Act
             var diags = collector.CollectDiagnostics(context, existingWarnings);
 
+            // Assert
             var targetNull = diags.Find(d => d.Code == "GITIC999" && d.Message == string.Empty);
             Assert.NotNull(targetNull);
         }
