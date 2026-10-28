@@ -10,7 +10,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>gitic</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
-    <Version>0.3.1</Version>
+    <Version>0.3.2</Version>
     <Description>Gitic Strategic Codebase Analysis CLI</Description>
     <Authors>Author</Authors>
   </PropertyGroup>
@@ -25,9 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kfc.Cli.Core" Version="0.1.15" />
-    <PackageReference Include="Kfc.Cli.Terminal" Version="0.1.15" />
-    <PackageReference Include="Kfc.Cli.Tui" Version="0.1.15" />
+    <PackageReference Include="Kfc.Cli.Core" Version="0.1.18" />
+    <PackageReference Include="Kfc.Cli.Terminal" Version="0.1.18" />
+    <PackageReference Include="Kfc.Cli.Tui" Version="0.1.18" />
   </ItemGroup>
 
 </Project>
