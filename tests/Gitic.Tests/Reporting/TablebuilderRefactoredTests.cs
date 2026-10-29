@@ -154,54 +154,34 @@ namespace Gitic.Tests
             Assert.Equal("five ", lines[5]);
         }
 
-        [Fact]
-        public void GetVisibleLength_WithAnsiAndPlainStrings_ShouldReturnCorrectLength()
+        [Theory]
+        [InlineData(null, 0)]
+        [InlineData("", 0)]
+        [InlineData("Hello", 5)]
+        [InlineData("\x1B[31mError\x1B[0m", 5)]
+        [InlineData("\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m", 12)]
+        public void GetVisibleLength_WithAnsiAndPlainStrings_ShouldReturnCorrectLength(string? input, int expectedLength)
         {
-            // Arrange
-            var nullStr = (string?)null;
-            var emptyStr = "";
-            var normalStr = "Hello";
-            var ansiStr = "\x1B[31mError\x1B[0m";
-            var complexAnsiStr = "\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m";
-
             // Act
-            var nullLength = AnsiUtils.GetVisibleLength(nullStr);
-            var emptyLength = AnsiUtils.GetVisibleLength(emptyStr);
-            var normalLength = AnsiUtils.GetVisibleLength(normalStr);
-            var ansiLength = AnsiUtils.GetVisibleLength(ansiStr);
-            var complexAnsiLength = AnsiUtils.GetVisibleLength(complexAnsiStr);
+            var length = AnsiUtils.GetVisibleLength(input);
 
             // Assert
-            Assert.Equal(0, nullLength);
-            Assert.Equal(0, emptyLength);
-            Assert.Equal(5, normalLength);
-            Assert.Equal(5, ansiLength);
-            Assert.Equal(12, complexAnsiLength);
+            Assert.Equal(expectedLength, length);
         }
 
-        [Fact]
-        public void StripAnsi_WithAnsiAndPlainStrings_ShouldRemoveAnsiCodes()
+        [Theory]
+        [InlineData(null, "")]
+        [InlineData("", "")]
+        [InlineData("Hello", "Hello")]
+        [InlineData("\x1B[31mError\x1B[0m", "Error")]
+        [InlineData("\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m", "BoldRedGreen")]
+        public void StripAnsi_WithAnsiAndPlainStrings_ShouldRemoveAnsiCodes(string? input, string expectedResult)
         {
-            // Arrange
-            var nullStr = (string?)null;
-            var emptyStr = "";
-            var normalStr = "Hello";
-            var ansiStr = "\x1B[31mError\x1B[0m";
-            var complexAnsiStr = "\x1B[1;31mBoldRed\x1B[0m\x1B[32mGreen\x1B[0m";
-
             // Act
-            var nullResult = AnsiUtils.StripAnsi(nullStr);
-            var emptyResult = AnsiUtils.StripAnsi(emptyStr);
-            var normalResult = AnsiUtils.StripAnsi(normalStr);
-            var ansiResult = AnsiUtils.StripAnsi(ansiStr);
-            var complexAnsiResult = AnsiUtils.StripAnsi(complexAnsiStr);
+            var result = AnsiUtils.StripAnsi(input);
 
             // Assert
-            Assert.Equal(string.Empty, nullResult);
-            Assert.Equal(string.Empty, emptyResult);
-            Assert.Equal("Hello", normalResult);
-            Assert.Equal("Error", ansiResult);
-            Assert.Equal("BoldRedGreen", complexAnsiResult);
+            Assert.Equal(expectedResult, result);
         }
     }
 }

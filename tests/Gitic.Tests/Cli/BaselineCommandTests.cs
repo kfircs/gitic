@@ -398,30 +398,48 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public void CommandLineParser_ShouldParseBaselineCommandAndSubcommands()
+    public void CommandLineParser_BaselineSave_ShouldParseArguments()
     {
         // Arrange
         var parserSave = new CommandLineParser(new[] { "baseline", "save", "--tag", "v1.5", "--storage", "/var/baselines" });
-        var parserDiff = new CommandLineParser(new[] { "baseline", "diff", "--from", "b1.json", "--to", "b2.json", "--json" });
-        var parserTrend = new CommandLineParser(new[] { "baseline", "trend", "--metric", "attention_score", "--area", "Frontend" });
 
         // Act
         var parsedSave = parserSave.Parse();
-        var parsedDiff = parserDiff.Parse();
-        var parsedTrend = parserTrend.Parse();
 
         // Assert
         Assert.Equal("baseline", parsedSave.Command);
         Assert.Equal("save", parsedSave.BaselineSubcommand);
         Assert.Equal("v1.5", parsedSave.BaselineTag);
         Assert.Equal("/var/baselines", parsedSave.BaselineStorageDir);
+    }
 
+    [Fact]
+    public void CommandLineParser_BaselineDiff_ShouldParseArguments()
+    {
+        // Arrange
+        var parserDiff = new CommandLineParser(new[] { "baseline", "diff", "--from", "b1.json", "--to", "b2.json", "--json" });
+
+        // Act
+        var parsedDiff = parserDiff.Parse();
+
+        // Assert
         Assert.Equal("baseline", parsedDiff.Command);
         Assert.Equal("diff", parsedDiff.BaselineSubcommand);
         Assert.Equal("b1.json", parsedDiff.BaselineFrom);
         Assert.Equal("b2.json", parsedDiff.BaselineTo);
         Assert.True(parsedDiff.Settings.Json);
+    }
 
+    [Fact]
+    public void CommandLineParser_BaselineTrend_ShouldParseArguments()
+    {
+        // Arrange
+        var parserTrend = new CommandLineParser(new[] { "baseline", "trend", "--metric", "attention_score", "--area", "Frontend" });
+
+        // Act
+        var parsedTrend = parserTrend.Parse();
+
+        // Assert
         Assert.Equal("baseline", parsedTrend.Command);
         Assert.Equal("trend", parsedTrend.BaselineSubcommand);
         Assert.Equal("attention_score", parsedTrend.BaselineMetric);
