@@ -267,7 +267,9 @@ public class BaselineEngineSnapshotStorageTests
     public void TestListBaselines_NonExistentDirectory_ReturnsEmpty()
     {
         var engine = new BaselineEngine();
+
         var list = engine.ListBaselines("/non/existent/path/for/baselines");
+
         Assert.Empty(list);
     }
 }

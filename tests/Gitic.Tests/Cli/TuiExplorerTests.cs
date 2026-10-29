@@ -11,7 +11,7 @@ public class TuiExplorerTests
     [Fact]
     public void BuildTree_CorrectlyExcludesNonCodeFiles()
     {
-        // Arrange
+        // Build (Arrange)
         var files = new List<FileMetric>
         {
             new() { Path = "src/Core/Analyzer.cs", Lines = 100, Width = 80 },
@@ -21,10 +21,10 @@ public class TuiExplorerTests
             new() { Path = "package-lock.json", Lines = 1000, Width = 120 }
         };
 
-        // Act
+        // Operate (Act)
         var root = TuiNode.BuildTree(files);
 
-        // Assert
+        // Check (Assert)
         // The tree should only include "src/Core/Analyzer.cs"
         Assert.NotNull(root);
         Assert.True(root.IsDirectory);
@@ -65,17 +65,19 @@ public class TuiExplorerTests
         var root = TuiNode.BuildTree(files);
 
         // Assert
+        // 1. Root-level structure and count assertions
         Assert.NotNull(root);
         Assert.Equal(3, root.FileCount);
         Assert.Equal(400, root.TotalLines);
+
+        // 2. Root-level width and lines range assertions
         Assert.Equal(50, root.MinLines);
         Assert.Equal(200, root.MaxLines);
-
         Assert.Equal(40, root.MinWidth);
         Assert.Equal(120, root.MaxWidth);
         Assert.Equal(260, root.TotalWidth); // 100 + 40 + 120
 
-        // Subfolder aggregation checks
+        // 3. Subfolder 'src' aggregation assertions
         var src = root.Children.FirstOrDefault(c => c.Name == "src");
         Assert.NotNull(src);
         Assert.Equal(3, src.FileCount);
@@ -83,6 +85,7 @@ public class TuiExplorerTests
         Assert.Equal(50, src.MinLines);
         Assert.Equal(200, src.MaxLines);
 
+        // 4. Subfolder 'Core' aggregation assertions
         var core = src.Children.FirstOrDefault(c => c.Name == "Core");
         Assert.NotNull(core);
         Assert.Equal(2, core.FileCount);
@@ -92,6 +95,7 @@ public class TuiExplorerTests
         Assert.Equal(40, core.MinWidth);
         Assert.Equal(100, core.MaxWidth);
 
+        // 5. Subfolder 'Cli' aggregation assertions
         var cli = src.Children.FirstOrDefault(c => c.Name == "Cli");
         Assert.NotNull(cli);
         Assert.Equal(1, cli.FileCount);
@@ -105,40 +109,74 @@ public class TuiExplorerTests
     [Fact]
     public void TuiViewport_Calculate_AppliesSaneBounds()
     {
-        // Test standard bounds
-        var normal = TuiViewport.Calculate(80, 24);
+        int width = 80;
+        int height = 24;
+
+        var normal = TuiViewport.Calculate(width, height);
+
         Assert.Equal(80, normal.Width);
         Assert.Equal(23, normal.Height); // Height - 1
         Assert.Equal(78, normal.SafeWidth);
         Assert.Equal(15, normal.ContentHeight); // Height - 8 = 23 - 8 = 15
+    }
 
-        // Test minimum bounds
-        var tooSmall = TuiViewport.Calculate(40, 10);
+    [Fact]
+    public void TuiViewport_Calculate_ClampsToMinimumBounds()
+    {
+        int width = 40;
+        int height = 10;
+
+        var tooSmall = TuiViewport.Calculate(width, height);
+
         Assert.Equal(70, tooSmall.Width); // clamped to 70
         Assert.Equal(15, tooSmall.Height); // clamped to 15
     }
 
     [Fact]
-    public void TuiScrollManager_AdjustScroll_ClampsAndScrollsCorrectly()
+    public void TuiScrollManager_AdjustScroll_ReturnsZerosForZeroItems()
     {
-        // 0 items
-        var (idx0, scroll0) = TuiScrollManager.AdjustScroll(5, 2, 0, 10);
-        Assert.Equal(0, idx0);
-        Assert.Equal(0, scroll0);
+        int itemCount = 0;
+        int visibleHeight = 10;
 
-        // Within content height, no scrolling needed
-        var (idx1, scroll1) = TuiScrollManager.AdjustScroll(3, 0, 20, 10);
-        Assert.Equal(3, idx1);
-        Assert.Equal(0, scroll1);
+        var (selectedIndex, scrollOffset) = TuiScrollManager.AdjustScroll(5, 2, itemCount, visibleHeight);
 
-        // Clamping selected index to bounds
-        var (idx2, scroll2) = TuiScrollManager.AdjustScroll(25, 0, 20, 10);
-        Assert.Equal(19, idx2); // Clamped to itemCount - 1
-        Assert.Equal(10, scroll2); // ScrollOffset adjusts to show index 19 (19 - 10 + 1 = 10)
+        Assert.Equal(0, selectedIndex);
+        Assert.Equal(0, scrollOffset);
+    }
 
-        // Scrolling up
-        var (idx3, scroll3) = TuiScrollManager.AdjustScroll(2, 5, 20, 10);
-        Assert.Equal(2, idx3);
-        Assert.Equal(2, scroll3); // ScrollOffset goes to selected index when scrolling up
+    [Fact]
+    public void TuiScrollManager_AdjustScroll_DoesNotScrollWhenWithinContentHeight()
+    {
+        int itemCount = 20;
+        int visibleHeight = 10;
+
+        var (selectedIndex, scrollOffset) = TuiScrollManager.AdjustScroll(3, 0, itemCount, visibleHeight);
+
+        Assert.Equal(3, selectedIndex);
+        Assert.Equal(0, scrollOffset);
+    }
+
+    [Fact]
+    public void TuiScrollManager_AdjustScroll_ClampsSelectedIndexToBounds()
+    {
+        int itemCount = 20;
+        int visibleHeight = 10;
+
+        var (selectedIndex, scrollOffset) = TuiScrollManager.AdjustScroll(25, 0, itemCount, visibleHeight);
+
+        Assert.Equal(19, selectedIndex); // Clamped to itemCount - 1
+        Assert.Equal(10, scrollOffset); // ScrollOffset adjusts to show index 19 (19 - 10 + 1 = 10)
+    }
+
+    [Fact]
+    public void TuiScrollManager_AdjustScroll_ScrollsUpToSelectedIndex()
+    {
+        int itemCount = 20;
+        int visibleHeight = 10;
+
+        var (selectedIndex, scrollOffset) = TuiScrollManager.AdjustScroll(2, 5, itemCount, visibleHeight);
+
+        Assert.Equal(2, selectedIndex);
+        Assert.Equal(2, scrollOffset); // ScrollOffset goes to selected index when scrolling up
     }
 }

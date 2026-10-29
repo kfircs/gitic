@@ -188,13 +188,16 @@ public class NarrativeProseGenerationTests
     }
 
     [Fact]
-    public void TestGenerateNarrative_ProducesAllRequiredParagraphs_FromDeltas()
+    public void GenerateNarrative_WithDeltas_ShouldProduceAllRequiredParagraphs()
     {
+        // Arrange
         var (curr, prev) = CreateSampleData();
         var engine = new NarrativeEngine();
 
+        // Act
         var report = engine.GenerateNarrative(curr, prev);
 
+        // Assert
         Assert.NotNull(report);
         Assert.False(string.IsNullOrWhiteSpace(report.Title));
         Assert.Contains("Repository Health Summary", report.Title);
@@ -226,13 +229,16 @@ public class NarrativeProseGenerationTests
     }
 
     [Fact]
-    public void TestGenerateNarrative_StandaloneWithoutBaseline_ProducesCohesiveProse()
+    public void GenerateNarrative_WithoutBaseline_ShouldProduceCohesiveProse()
     {
+        // Arrange
         var (curr, _) = CreateSampleData();
         var engine = new NarrativeEngine();
 
+        // Act
         var report = engine.GenerateNarrative(curr);
 
+        // Assert
         Assert.NotNull(report);
         Assert.Null(report.PreviousDxIndex);
         Assert.Null(report.DeltaDxIndex);
@@ -246,13 +252,16 @@ public class NarrativeProseGenerationTests
     }
 
     [Fact]
-    public void TestGenerateNarrative_HandlesEmptyOrMinimalAnalysisResult()
+    public void GenerateNarrative_WithEmptyOrMinimalAnalysisResult_ShouldHandleGracefully()
     {
+        // Arrange
         var emptyResult = new AnalysisResult();
         var engine = new NarrativeEngine();
 
+        // Act
         var report = engine.GenerateNarrative(emptyResult);
 
+        // Assert
         Assert.NotNull(report);
         Assert.False(string.IsNullOrWhiteSpace(report.Title));
         Assert.False(string.IsNullOrWhiteSpace(report.ExecutiveSummaryParagraph));
@@ -262,20 +271,29 @@ public class NarrativeProseGenerationTests
     }
 
     [Fact]
-    public void TestGenerateNarrative_NullResult_ThrowsArgumentNullException()
+    public void GenerateNarrative_WithNullResult_ShouldThrowArgumentNullException()
     {
+        // Arrange
         var engine = new NarrativeEngine();
-        Assert.Throws<ArgumentNullException>(() => engine.GenerateNarrative(null!));
+
+        // Act
+        Action act = () => engine.GenerateNarrative(null!);
+
+        // Assert
+        Assert.Throws<ArgumentNullException>(act);
     }
 
     [Fact]
-    public void TestGenerateNarrative_CapturesTemporalCouplingLeakage()
+    public void GenerateNarrative_WithTemporalCouplingLeakage_ShouldCaptureBoundaryLeakage()
     {
+        // Arrange
         var (curr, prev) = CreateSampleData();
         var engine = new NarrativeEngine();
 
+        // Act
         var report = engine.GenerateNarrative(curr, prev);
 
+        // Assert
         Assert.Contains("Gitgraph.cs", report.OwnershipAndRiskParagraph);
         Assert.Contains("Analyzer.cs", report.OwnershipAndRiskParagraph);
         Assert.Contains("architectural boundary", report.OwnershipAndRiskParagraph, StringComparison.OrdinalIgnoreCase);
@@ -285,8 +303,9 @@ public class NarrativeProseGenerationTests
 public class NarrativeToneTrajectoryTests
 {
     [Fact]
-    public void TestDetermineTone_ImprovingTrajectory_WhenDxScoreIncreases()
+    public void DetermineTone_WhenDxScoreIncreases_ShouldReturnImprovingTrajectory()
     {
+        // Arrange
         var prev = new BaselineSnapshot
         {
             Metrics = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
@@ -301,16 +320,20 @@ public class NarrativeToneTrajectoryTests
         };
 
         var engine = new NarrativeEngine();
+
+        // Act
         var report = engine.GenerateNarrative(curr, prev);
 
+        // Assert
         Assert.Equal(NarrativeTone.Improving, report.Tone);
         Assert.Equal(15.0, report.DeltaDxIndex);
         Assert.Contains("improved notably", report.ExecutiveSummaryParagraph, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void TestDetermineTone_RegressingTrajectory_WhenDxScoreDecreases()
+    public void DetermineTone_WhenDxScoreDecreases_ShouldReturnRegressingTrajectory()
     {
+        // Arrange
         var prev = new BaselineSnapshot
         {
             Metrics = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
@@ -325,16 +348,20 @@ public class NarrativeToneTrajectoryTests
         };
 
         var engine = new NarrativeEngine();
+
+        // Act
         var report = engine.GenerateNarrative(curr, prev);
 
+        // Assert
         Assert.Equal(NarrativeTone.Regressing, report.Tone);
         Assert.Equal(-18.0, report.DeltaDxIndex);
         Assert.Contains("regression", report.ExecutiveSummaryParagraph, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void TestDetermineTone_StableTrajectory_WhenDxScoreRemainsClose()
+    public void DetermineTone_WhenDxScoreRemainsClose_ShouldReturnStableTrajectory()
     {
+        // Arrange
         var prev = new BaselineSnapshot
         {
             Metrics = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
@@ -349,60 +376,64 @@ public class NarrativeToneTrajectoryTests
         };
 
         var engine = new NarrativeEngine();
+
+        // Act
         var report = engine.GenerateNarrative(curr, prev);
 
+        // Assert
         Assert.Equal(NarrativeTone.Stable, report.Tone);
         Assert.Equal(0.5, report.DeltaDxIndex);
         Assert.Contains("stable", report.ExecutiveSummaryParagraph, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void TestDetermineTone_StandaloneThresholds()
+    public void DetermineTone_WithStandaloneThresholds_ShouldReturnCorrectToneForEachThreshold()
     {
+        // Arrange
         var engine = new NarrativeEngine();
-
-        // High score -> Improving
         var high = new AnalysisResult { DxIndex = new DxIndexResult { CompositeScore = 85.0 } };
-        var repHigh = engine.GenerateNarrative(high);
-        Assert.Equal(NarrativeTone.Improving, repHigh.Tone);
-
-        // Low score -> Regressing
         var low = new AnalysisResult { DxIndex = new DxIndexResult { CompositeScore = 48.0 } };
-        var repLow = engine.GenerateNarrative(low);
-        Assert.Equal(NarrativeTone.Regressing, repLow.Tone);
-
-        // Mid score -> Stable
         var mid = new AnalysisResult { DxIndex = new DxIndexResult { CompositeScore = 68.0 } };
+
+        // Act
+        var repHigh = engine.GenerateNarrative(high);
+        var repLow = engine.GenerateNarrative(low);
         var repMid = engine.GenerateNarrative(mid);
+
+        // Assert
+        Assert.Equal(NarrativeTone.Improving, repHigh.Tone);
+        Assert.Equal(NarrativeTone.Regressing, repLow.Tone);
         Assert.Equal(NarrativeTone.Stable, repMid.Tone);
     }
 
     [Fact]
-    public void TestVelocityProse_AdjustsAccordingToLeadTimeTrend()
+    public void GenerateNarrative_WithLeadTimeTrend_ShouldAdjustVelocityProse()
     {
+        // Arrange
         var prev = new BaselineSnapshot
         {
             Summary = new BaselineSummaryMetrics { AverageLeadTimeHours = 24.0 }
         };
 
-        // Case 1: Improving lead time (24h -> 12h)
         var improvedResult = new AnalysisResult
         {
             LeadTimes = new LeadTimesInfo { AverageLeadTimeHours = 12.0 }
         };
 
-        var engine = new NarrativeEngine();
-        var report1 = engine.GenerateNarrative(improvedResult, prev);
-        Assert.Contains("improved notably", report1.VelocityAndDeliveryParagraph, StringComparison.OrdinalIgnoreCase);
-
-        // Case 2: Regressing lead time (24h -> 48h)
         var regressedResult = new AnalysisResult
         {
             LeadTimes = new LeadTimesInfo { AverageLeadTimeHours = 48.0 }
         };
 
-        var report2 = engine.GenerateNarrative(regressedResult, prev);
-        Assert.Contains("latency regression", report2.VelocityAndDeliveryParagraph, StringComparison.OrdinalIgnoreCase);
+        var engine = new NarrativeEngine();
+
+        // Act
+        var reportImproved = engine.GenerateNarrative(improvedResult, prev);
+        var reportRegressed = engine.GenerateNarrative(regressedResult, prev);
+
+        // Assert
+        Assert.Contains("improved notably", reportImproved.VelocityAndDeliveryParagraph, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("latency regression", reportRegressed.VelocityAndDeliveryParagraph, StringComparison.OrdinalIgnoreCase);
     }
 }
 
@@ -430,13 +461,16 @@ public class NarrativeEmbeddingTests
     }
 
     [Fact]
-    public void TestGenerateProseMarkdown_IncludesAllParagraphSectionsAndHeadings()
+    public void GenerateProseMarkdown_WithValidReport_ShouldIncludeAllParagraphSectionsAndHeadings()
     {
+        // Arrange
         var engine = new NarrativeEngine();
         var report = CreateSampleReport();
 
+        // Act
         string markdown = engine.GenerateProseMarkdown(report);
 
+        // Assert
         Assert.NotNull(markdown);
         Assert.Contains($"# 📝 {report.Title}", markdown);
         Assert.Contains("## Executive Summary", markdown);
@@ -450,13 +484,16 @@ public class NarrativeEmbeddingTests
     }
 
     [Fact]
-    public void TestGenerateProseHtml_GeneratesCompleteStyledDocumentWithBadges()
+    public void GenerateProseHtml_WithValidReport_ShouldGenerateCompleteStyledDocumentWithBadges()
     {
+        // Arrange
         var engine = new NarrativeEngine();
         var report = CreateSampleReport();
 
+        // Act
         string html = engine.GenerateProseHtml(report);
 
+        // Assert
         Assert.NotNull(html);
         Assert.Contains("<!DOCTYPE html>", html);
         Assert.Contains("<html", html);
@@ -474,11 +511,11 @@ public class NarrativeEmbeddingTests
     }
 
     [Fact]
-    public void TestEmbedIntoMarkdown_InsertsNarrativeSectionCorrectly()
+    public void EmbedIntoMarkdown_WithValidInputs_ShouldInsertNarrativeSectionCorrectly()
     {
+        // Arrange
         var engine = new NarrativeEngine();
         var report = CreateSampleReport();
-
         string baseMarkdown = @"# 📊 Gitic Analysis Report: project
 Generated on: Sep 8, 2026
 
@@ -487,8 +524,10 @@ Generated on: Sep 8, 2026
 - **Total Files Analyzed:** 50
 ";
 
+        // Act
         string embedded = engine.EmbedIntoMarkdown(baseMarkdown, report);
 
+        // Assert
         Assert.Contains("## 📝 Executive Narrative Summary", embedded);
         Assert.Contains(report.ExecutiveSummaryParagraph, embedded);
         Assert.Contains("### Velocity & Delivery", embedded);
@@ -498,11 +537,11 @@ Generated on: Sep 8, 2026
     }
 
     [Fact]
-    public void TestEmbedIntoHtml_InsertsNarrativeCardInsideBody()
+    public void EmbedIntoHtml_WithValidInputs_ShouldInsertNarrativeCardInsideBody()
     {
+        // Arrange
         var engine = new NarrativeEngine();
         var report = CreateSampleReport();
-
         string baseHtml = @"<!DOCTYPE html>
 <html>
 <head><title>Dashboard</title></head>
@@ -511,8 +550,10 @@ Generated on: Sep 8, 2026
 </body>
 </html>";
 
+        // Act
         string embedded = engine.EmbedIntoHtml(baseHtml, report);
 
+        // Assert
         Assert.Contains("narrative-embed", embedded);
         Assert.Contains("📝 Executive Narrative Summary", embedded);
         Assert.Contains(report.ExecutiveSummaryParagraph, embedded);
@@ -520,8 +561,9 @@ Generated on: Sep 8, 2026
     }
 
     [Fact]
-    public async Task TestMarkdownRenderer_IntegratesNarrative_WhenPresentOnAnalysisResult()
+    public async Task RenderAsync_WhenNarrativeIsPresentOnAnalysisResult_ShouldIntegrateNarrativeCorrectly()
     {
+        // Arrange
         var report = CreateSampleReport();
         var result = new AnalysisResult
         {
@@ -534,8 +576,11 @@ Generated on: Sep 8, 2026
         };
 
         var renderer = new MarkdownRenderer();
+
+        // Act
         string md = await renderer.RenderAsync(result);
 
+        // Assert
         Assert.Contains("## 📝 Executive Narrative Summary", md);
         Assert.Contains(report.ExecutiveSummaryParagraph, md);
         Assert.Contains("### Velocity & Delivery", md);
@@ -544,8 +589,9 @@ Generated on: Sep 8, 2026
     }
 
     [Fact]
-    public void TestHtmlEncodingAndSafety_EscapesHtmlEntities()
+    public void GenerateProseHtml_WithMaliciousReport_ShouldEscapeHtmlEntities()
     {
+        // Arrange
         var engine = new NarrativeEngine();
         var maliciousReport = new NarrativeReport
         {
@@ -557,8 +603,10 @@ Generated on: Sep 8, 2026
             RecommendationsParagraph = "1. Fix <risk> & avoid <tags>"
         };
 
+        // Act
         string html = engine.GenerateProseHtml(maliciousReport);
 
+        // Assert
         Assert.DoesNotContain("<script>alert", html);
         Assert.Contains("&lt;script&gt;alert", html);
         Assert.Contains("&amp;", html);

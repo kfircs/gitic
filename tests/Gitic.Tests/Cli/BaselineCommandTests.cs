@@ -51,11 +51,12 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestBaselineSave_ExecutesAndExitsZero()
+    public async Task BaselineSave_ShouldExecuteAndExitZero()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
         {
+            // Arrange
             var parsed = new ParsedArgs
             {
                 Command = "baseline",
@@ -68,8 +69,10 @@ public class BaselineCliCommandExecutionTests
             var command = new BaselineCommand(parsed, analyzer: new FakeRepositoryAnalyzerForBaseline());
             var reporter = new MockConsoleReporter();
 
+            // Act
             var result = await command.ExecuteAsync(reporter);
 
+            // Assert
             Assert.Equal(0, result.ExitCode);
             Assert.Contains("Baseline snapshot saved successfully", reporter.Output);
             Assert.Contains("v1.0", reporter.Output);
@@ -83,11 +86,12 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestBaselineSave_JsonFormat_OutputsJson()
+    public async Task BaselineSave_WithJsonFormat_ShouldOutputJson()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
         {
+            // Arrange
             var parsed = new ParsedArgs
             {
                 Command = "baseline",
@@ -101,8 +105,10 @@ public class BaselineCliCommandExecutionTests
             var command = new BaselineCommand(parsed, analyzer: new FakeRepositoryAnalyzerForBaseline());
             var reporter = new MockConsoleReporter();
 
+            // Act
             var result = await command.ExecuteAsync(reporter);
 
+            // Assert
             Assert.Equal(0, result.ExitCode);
             using var doc = JsonDocument.Parse(reporter.Output);
             Assert.Equal("saved", doc.RootElement.GetProperty("status").GetString());
@@ -115,11 +121,12 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestBaselineDiff_WithFromAndTo_ExecutesAndExitsZero()
+    public async Task BaselineDiff_WithFromAndTo_ShouldExecuteAndExitZero()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
         {
+            // Arrange
             var engine = new BaselineEngine();
             string pathA = Path.Combine(tempDir, "baseA.json");
             string pathB = Path.Combine(tempDir, "baseB.json");
@@ -149,8 +156,10 @@ public class BaselineCliCommandExecutionTests
             var command = new BaselineCommand(parsed, baselineEngine: engine);
             var reporter = new MockConsoleReporter();
 
+            // Act
             var result = await command.ExecuteAsync(reporter);
 
+            // Assert
             Assert.Equal(0, result.ExitCode);
             Assert.Contains("Baseline Comparison", reporter.Output);
             Assert.Contains("commit_count", reporter.Output);
@@ -163,11 +172,12 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestBaselineDiff_JsonFormat_OutputsJson()
+    public async Task BaselineDiff_WithJsonFormat_ShouldOutputJson()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
         {
+            // Arrange
             var engine = new BaselineEngine();
             string pathA = Path.Combine(tempDir, "baseA.json");
             string pathB = Path.Combine(tempDir, "baseB.json");
@@ -187,8 +197,10 @@ public class BaselineCliCommandExecutionTests
             var command = new BaselineCommand(parsed, baselineEngine: engine);
             var reporter = new MockConsoleReporter();
 
+            // Act
             var result = await command.ExecuteAsync(reporter);
 
+            // Assert
             Assert.Equal(0, result.ExitCode);
             using var doc = JsonDocument.Parse(reporter.Output);
             Assert.Equal("idA", doc.RootElement.GetProperty("from_baseline_id").GetString());
@@ -201,12 +213,13 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestBaselineDiff_MissingBaselines_ReturnsExitCode1()
+    public async Task BaselineDiff_MissingBaselines_ShouldReturnExitCode1()
     {
         string emptyTempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(emptyTempDir);
         try
         {
+            // Arrange
             var parsed = new ParsedArgs
             {
                 Command = "baseline",
@@ -218,8 +231,10 @@ public class BaselineCliCommandExecutionTests
             var command = new BaselineCommand(parsed);
             var reporter = new MockConsoleReporter();
 
+            // Act
             var result = await command.ExecuteAsync(reporter);
 
+            // Assert
             Assert.Equal(1, result.ExitCode);
             Assert.Contains("requires two snapshots", reporter.Error);
         }
@@ -230,11 +245,12 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestBaselineTrend_WithMetricAndArea_ExecutesAndExitsZero()
+    public async Task BaselineTrend_WithMetricAndArea_ShouldExecuteAndExitZero()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
         {
+            // Arrange
             var engine = new BaselineEngine();
 
             var snap1 = new BaselineSnapshot { Timestamp = DateTimeOffset.UtcNow.AddDays(-2), Tag = "v1" };
@@ -258,8 +274,10 @@ public class BaselineCliCommandExecutionTests
             var command = new BaselineCommand(parsed, baselineEngine: engine);
             var reporter = new MockConsoleReporter();
 
+            // Act
             var result = await command.ExecuteAsync(reporter);
 
+            // Assert
             Assert.Equal(0, result.ExitCode);
             Assert.Contains("Historical Trend: churn", reporter.Output);
             Assert.Contains("Area: Core", reporter.Output);
@@ -271,11 +289,12 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestBaselineTrend_JsonFormat_OutputsJson()
+    public async Task BaselineTrend_WithJsonFormat_ShouldOutputJson()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
         {
+            // Arrange
             var engine = new BaselineEngine();
             engine.SaveBaseline(tempDir, new BaselineSnapshot { Summary = new() { TotalChurn = 500 } });
 
@@ -292,8 +311,10 @@ public class BaselineCliCommandExecutionTests
             var command = new BaselineCommand(parsed, baselineEngine: engine);
             var reporter = new MockConsoleReporter();
 
+            // Act
             var result = await command.ExecuteAsync(reporter);
 
+            // Assert
             Assert.Equal(0, result.ExitCode);
             using var doc = JsonDocument.Parse(reporter.Output);
             Assert.Equal("churn", doc.RootElement.GetProperty("metric_name").GetString());
@@ -306,12 +327,13 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestBaselineTrend_NoSnapshots_ReturnsExitCode1()
+    public async Task BaselineTrend_WithNoSnapshots_ShouldReturnExitCode1()
     {
         string emptyTempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(emptyTempDir);
         try
         {
+            // Arrange
             var parsed = new ParsedArgs
             {
                 Command = "baseline",
@@ -323,8 +345,10 @@ public class BaselineCliCommandExecutionTests
             var command = new BaselineCommand(parsed);
             var reporter = new MockConsoleReporter();
 
+            // Act
             var result = await command.ExecuteAsync(reporter);
 
+            // Assert
             Assert.Equal(1, result.ExitCode);
             Assert.Contains("No baseline snapshots found", reporter.Error);
         }
@@ -335,7 +359,7 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestBaselineCommand_MissingSubcommand_ReturnsExitCode2()
+    public async Task BaselineCommand_WithMissingSubcommand_ShouldReturnExitCode2()
     {
         var parsed = new ParsedArgs
         {
@@ -353,8 +377,9 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestBaselineCommand_UnknownSubcommand_ReturnsExitCode2()
+    public async Task BaselineCommand_WithUnknownSubcommand_ShouldReturnExitCode2()
     {
+        // Arrange
         var parsed = new ParsedArgs
         {
             Command = "baseline",
@@ -364,32 +389,57 @@ public class BaselineCliCommandExecutionTests
         var command = new BaselineCommand(parsed);
         var reporter = new MockConsoleReporter();
 
+        // Act
         var result = await command.ExecuteAsync(reporter);
 
+        // Assert
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("Unknown baseline subcommand: invalid_action", reporter.Error);
     }
 
     [Fact]
-    public void TestCommandLineParser_ParsesBaselineCommandAndSubcommands()
+    public void CommandLineParser_BaselineSave_ShouldParseArguments()
     {
+        // Arrange
         var parserSave = new CommandLineParser(new[] { "baseline", "save", "--tag", "v1.5", "--storage", "/var/baselines" });
+
+        // Act
         var parsedSave = parserSave.Parse();
+
+        // Assert
         Assert.Equal("baseline", parsedSave.Command);
         Assert.Equal("save", parsedSave.BaselineSubcommand);
         Assert.Equal("v1.5", parsedSave.BaselineTag);
         Assert.Equal("/var/baselines", parsedSave.BaselineStorageDir);
+    }
 
+    [Fact]
+    public void CommandLineParser_BaselineDiff_ShouldParseArguments()
+    {
+        // Arrange
         var parserDiff = new CommandLineParser(new[] { "baseline", "diff", "--from", "b1.json", "--to", "b2.json", "--json" });
+
+        // Act
         var parsedDiff = parserDiff.Parse();
+
+        // Assert
         Assert.Equal("baseline", parsedDiff.Command);
         Assert.Equal("diff", parsedDiff.BaselineSubcommand);
         Assert.Equal("b1.json", parsedDiff.BaselineFrom);
         Assert.Equal("b2.json", parsedDiff.BaselineTo);
         Assert.True(parsedDiff.Settings.Json);
+    }
 
+    [Fact]
+    public void CommandLineParser_BaselineTrend_ShouldParseArguments()
+    {
+        // Arrange
         var parserTrend = new CommandLineParser(new[] { "baseline", "trend", "--metric", "attention_score", "--area", "Frontend" });
+
+        // Act
         var parsedTrend = parserTrend.Parse();
+
+        // Assert
         Assert.Equal("baseline", parsedTrend.Command);
         Assert.Equal("trend", parsedTrend.BaselineSubcommand);
         Assert.Equal("attention_score", parsedTrend.BaselineMetric);
@@ -397,10 +447,12 @@ public class BaselineCliCommandExecutionTests
     }
 
     [Fact]
-    public async Task TestCli_RunCliAsync_WithBaselineCommand()
+    public async Task Cli_RunCliAsync_WithBaselineCommand_ShouldReturnExitCode2()
     {
         var reporter = new MockConsoleReporter();
+
         var result = await Cli.RunCliAsync(new[] { "baseline" }, reporter);
+
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("baseline requires a subcommand", reporter.Error);
     }

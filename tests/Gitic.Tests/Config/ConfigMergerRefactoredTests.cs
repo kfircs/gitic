@@ -9,9 +9,13 @@ namespace Gitic.Tests
         private readonly ConfigMerger _merger = new();
 
         [Fact]
-        public void Test_CloneDefaultConfig_ReturnsValidInstance()
+        public void CloneDefaultConfig_ShouldReturnValidInstance()
         {
-            var config = _merger.CloneDefaultConfig();
+
+            var merger = new ConfigMerger();
+
+            var config = merger.CloneDefaultConfig();
+
             Assert.NotNull(config);
             Assert.NotNull(config.Aliases);
             Assert.NotNull(config.Scoring?.Attention);
@@ -20,8 +24,9 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void Test_CloneConfig_CreatesIndependentDeepCopy()
+        public void CloneConfig_ShouldCreateIndependentDeepCopy()
         {
+
             var original = new GiticConfig
             {
                 Aliases = new List<AliasRule>
@@ -109,8 +114,9 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void Test_ConvertToOverrides_MapsAllPropertiesCorrectly()
+        public void ConvertToOverrides_ShouldMapAllPropertiesCorrectly()
         {
+
             var config = new GiticConfig
             {
                 Aliases = new List<AliasRule>
@@ -156,8 +162,9 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void Test_MergeConfig_AppendsListsAndOverridesValues()
+        public void MergeConfig_ShouldAppendListsAndOverrideValues()
         {
+
             var baseConfig = new GiticConfig
             {
                 Aliases = new List<AliasRule>
@@ -234,14 +241,16 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void Test_MergeConfig_WithNullOverrides_ReturnsDeepClone()
+        public void MergeConfig_WithNullOverrides_ShouldReturnDeepClone()
         {
+
             var baseConfig = new GiticConfig
             {
                 Identity = new IdentityConfig { MergeOnEmail = true }
             };
 
             var merger = new ConfigMerger();
+
             var result = merger.MergeConfig(baseConfig, (GiticConfigOverrides?)null);
 
             Assert.NotSame(baseConfig, result);

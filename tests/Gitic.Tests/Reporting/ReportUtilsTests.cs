@@ -12,15 +12,22 @@ namespace Gitic.Tests
         [InlineData("my-repo", "my-repo")]
         [InlineData("", "Repository")]
         [InlineData(null, "Repository")]
-        public void TestGetRepositoryName(string? repoRoot, string expected)
+        public void GetRepositoryName_ShouldExtractRepositoryName(string? repoRoot, string expected)
         {
+            // Arrange
+            // No setup required as input is provided as theory parameters
+
+            // Act
             string actual = ReportUtils.GetRepositoryName(repoRoot);
+
+            // Assert
             Assert.Equal(expected, actual);
         }
 
         [Fact]
-        public void TestFormatGeneratedAt_WithValidDate()
+        public void FormatGeneratedAt_WithValidDate_ShouldFormatCorrectly()
         {
+            // Arrange
             string input = "2023-10-27T15:30:00Z";
             // Parsed to a DateTimeOffset, since it is UTC "Z", parsedGenAt will be 2023-10-27 15:30:00 +00:00.
             // When ToString is called, depending on local culture/timezone representation, we should be careful.
@@ -29,16 +36,25 @@ namespace Gitic.Tests
             var expectedParsed = DateTimeOffset.Parse(input);
             string expected = expectedParsed.ToString("yyyy-MM-dd HH:mm:ss") + " UTC";
 
+            // Act
             string actual = ReportUtils.FormatGeneratedAt(input);
+
+            // Assert
             Assert.Equal(expected, actual);
         }
 
         [Fact]
-        public void TestFormatGeneratedAt_WithInvalidDate()
+        public void FormatGeneratedAt_WithInvalidDate_ShouldReturnOriginalString()
         {
+            // Arrange
             string input = "not-a-date";
+
+            // Act
             string actual = ReportUtils.FormatGeneratedAt(input);
+
+            // Assert
             Assert.Equal(input, actual);
         }
     }
 }
+

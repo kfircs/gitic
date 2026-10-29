@@ -7,11 +7,9 @@ namespace Gitic.Tests
     public class ConfigValidatorRefactoredTests
     {
         [Fact]
-        public void TestAliasValidator_ValidAndInvalid()
+        public void AliasValidator_WithValidAliases_ShouldHaveNoErrors()
         {
             var errors = new List<string>();
-
-            // Valid aliases mapping object
             var validAlias = new List<object?>
             {
                 new Dictionary<string, object?>
@@ -24,17 +22,27 @@ namespace Gitic.Tests
                     }
                 }
             };
-            AliasValidator.ValidateAliases(validAlias, "test", errors);
-            Assert.Empty(errors);
 
-            // Invalid aliases: not an array
-            errors.Clear();
+            AliasValidator.ValidateAliases(validAlias, "test", errors);
+
+            Assert.Empty(errors);
+        }
+
+        [Fact]
+        public void AliasValidator_WithNonArray_ShouldHaveFormatError()
+        {
+            var errors = new List<string>();
+
             AliasValidator.ValidateAliases("not-an-array", "test", errors);
+
             Assert.Single(errors);
             Assert.Contains("must be an array", errors[0]);
+        }
 
-            // Invalid alias entry: missing field
-            errors.Clear();
+        [Fact]
+        public void AliasValidator_WithMissingField_ShouldHaveValidationError()
+        {
+            var errors = new List<string>();
             var invalidAlias = new List<object?>
             {
                 new Dictionary<string, object?>
@@ -43,16 +51,16 @@ namespace Gitic.Tests
                     { "identities", new List<object?>() }
                 }
             };
+
             AliasValidator.ValidateAliases(invalidAlias, "test", errors);
+
             Assert.NotEmpty(errors);
         }
 
         [Fact]
-        public void TestBotValidator_ValidAndInvalid()
+        public void BotValidator_WithValidBots_ShouldHaveNoErrors()
         {
             var errors = new List<string>();
-
-            // Valid bot mapping object
             var validBots = new List<object?>
             {
                 new Dictionary<string, object?>
@@ -62,11 +70,16 @@ namespace Gitic.Tests
                     { "pattern", ".*dependabot.*" }
                 }
             };
-            BotValidator.ValidateBots(validBots, "test", errors);
-            Assert.Empty(errors);
 
-            // Invalid bot: empty fields
-            errors.Clear();
+            BotValidator.ValidateBots(validBots, "test", errors);
+
+            Assert.Empty(errors);
+        }
+
+        [Fact]
+        public void BotValidator_WithInvalidBots_ShouldHaveValidationError()
+        {
+            var errors = new List<string>();
             var invalidBots = new List<object?>
             {
                 new Dictionary<string, object?>
@@ -76,17 +89,17 @@ namespace Gitic.Tests
                     { "pattern", null }
                 }
             };
+
             BotValidator.ValidateBots(invalidBots, "test", errors);
+
             Assert.NotEmpty(errors);
             Assert.Contains("must define at least one of name, email, or pattern", errors[0]);
         }
 
         [Fact]
-        public void TestExcludeValidator_ValidAndInvalid()
+        public void ExcludeValidator_WithValidExcludes_ShouldHaveNoErrors()
         {
             var errors = new List<string>();
-
-            // Valid excludes
             var validExcludes = new List<object?>
             {
                 new Dictionary<string, object?>
@@ -95,11 +108,16 @@ namespace Gitic.Tests
                     { "category", "dependency" }
                 }
             };
-            ExcludeValidator.ValidateExcludes(validExcludes, "test", errors);
-            Assert.Empty(errors);
 
-            // Invalid excludes: missing category
-            errors.Clear();
+            ExcludeValidator.ValidateExcludes(validExcludes, "test", errors);
+
+            Assert.Empty(errors);
+        }
+
+        [Fact]
+        public void ExcludeValidator_WithMissingCategory_ShouldHaveValidationError()
+        {
+            var errors = new List<string>();
             var invalidExcludes = new List<object?>
             {
                 new Dictionary<string, object?>
@@ -107,16 +125,16 @@ namespace Gitic.Tests
                     { "pattern", "node_modules/**" }
                 }
             };
+
             ExcludeValidator.ValidateExcludes(invalidExcludes, "test", errors);
+
             Assert.NotEmpty(errors);
         }
 
         [Fact]
-        public void TestAreaValidator_ValidAndInvalid()
+        public void AreaValidator_WithValidAreas_ShouldHaveNoErrors()
         {
             var errors = new List<string>();
-
-            // Valid areas
             var validAreas = new List<object?>
             {
                 new Dictionary<string, object?>
@@ -125,11 +143,16 @@ namespace Gitic.Tests
                     { "paths", new List<object?> { "src/ui/**", "src/styles/**" } }
                 }
             };
-            AreaValidator.ValidateAreas(validAreas, "test", errors);
-            Assert.Empty(errors);
 
-            // Invalid area: empty paths
-            errors.Clear();
+            AreaValidator.ValidateAreas(validAreas, "test", errors);
+
+            Assert.Empty(errors);
+        }
+
+        [Fact]
+        public void AreaValidator_WithEmptyPaths_ShouldHaveValidationError()
+        {
+            var errors = new List<string>();
             var invalidAreas = new List<object?>
             {
                 new Dictionary<string, object?>
@@ -138,16 +161,16 @@ namespace Gitic.Tests
                     { "paths", new List<object?>() }
                 }
             };
+
             AreaValidator.ValidateAreas(invalidAreas, "test", errors);
+
             Assert.NotEmpty(errors);
         }
 
         [Fact]
-        public void TestScoringValidator_ValidAndInvalid()
+        public void ScoringValidator_WithValidScoring_ShouldHaveNoErrors()
         {
             var errors = new List<string>();
-
-            // Valid scoring attention weights
             var validScoring = new Dictionary<string, object?>
             {
                 { "attention", new Dictionary<string, object?>
@@ -159,11 +182,16 @@ namespace Gitic.Tests
                     }
                 }
             };
-            ScoringValidator.ValidateScoring(validScoring, "test", errors);
-            Assert.Empty(errors);
 
-            // Invalid attention weights: don't sum to 1.0
-            errors.Clear();
+            ScoringValidator.ValidateScoring(validScoring, "test", errors);
+
+            Assert.Empty(errors);
+        }
+
+        [Fact]
+        public void ScoringValidator_WithAttentionWeightsNotSummingToOne_ShouldHaveValidationError()
+        {
+            var errors = new List<string>();
             var invalidScoring = new Dictionary<string, object?>
             {
                 { "attention", new Dictionary<string, object?>
@@ -175,12 +203,17 @@ namespace Gitic.Tests
                     }
                 }
             };
+
             ScoringValidator.ValidateScoring(invalidScoring, "test", errors);
+
             Assert.NotEmpty(errors);
             Assert.Contains("weights must sum to 1", errors[0]);
+        }
 
-            // Invalid attention weights: non-numeric value
-            errors.Clear();
+        [Fact]
+        public void ScoringValidator_WithNonNumericAttentionWeight_ShouldHaveValidationError()
+        {
+            var errors = new List<string>();
             var nonNumericScoring = new Dictionary<string, object?>
             {
                 { "attention", new Dictionary<string, object?>
@@ -192,12 +225,17 @@ namespace Gitic.Tests
                     }
                 }
             };
+
             ScoringValidator.ValidateScoring(nonNumericScoring, "test", errors);
+
             Assert.NotEmpty(errors);
             Assert.Contains("must be a finite number", errors[0]);
+        }
 
-            // Invalid attention weights: out of bounds numeric value
-            errors.Clear();
+        [Fact]
+        public void ScoringValidator_WithAttentionWeightOutOfBounds_ShouldHaveValidationError()
+        {
+            var errors = new List<string>();
             var outOfBoundsScoring = new Dictionary<string, object?>
             {
                 { "attention", new Dictionary<string, object?>
@@ -209,12 +247,17 @@ namespace Gitic.Tests
                     }
                 }
             };
+
             ScoringValidator.ValidateScoring(outOfBoundsScoring, "test", errors);
+
             Assert.NotEmpty(errors);
             Assert.Contains("must be between 0 and 1", errors[0]);
+        }
 
-            // Valid attention weights with other numeric types (int)
-            errors.Clear();
+        [Fact]
+        public void ScoringValidator_WithIntAttentionWeightsSummingToOne_ShouldHaveNoErrors()
+        {
+            var errors = new List<string>();
             var intScoring = new Dictionary<string, object?>
             {
                 { "attention", new Dictionary<string, object?>
@@ -226,53 +269,65 @@ namespace Gitic.Tests
                     }
                 }
             };
+
             ScoringValidator.ValidateScoring(intScoring, "test", errors);
+
             Assert.Empty(errors);
         }
 
         [Fact]
-        public void TestIdentityConfigValidator_ValidAndInvalid()
+        public void IdentityConfigValidator_WithValidIdentityConfig_ShouldHaveNoErrors()
         {
             var errors = new List<string>();
-
-            // Valid identity config
             var validIdConfig = new Dictionary<string, object?>
             {
                 { "merge_on_email", true }
             };
-            IdentityConfigValidator.ValidateIdentityConfig(validIdConfig, "test", errors);
-            Assert.Empty(errors);
 
-            // Invalid identity config: not a boolean
-            errors.Clear();
+            IdentityConfigValidator.ValidateIdentityConfig(validIdConfig, "test", errors);
+
+            Assert.Empty(errors);
+        }
+
+        [Fact]
+        public void IdentityConfigValidator_WithNonBooleanMergeOnEmail_ShouldHaveValidationError()
+        {
+            var errors = new List<string>();
             var invalidIdConfig = new Dictionary<string, object?>
             {
                 { "merge_on_email", "not-a-bool" }
             };
+
             IdentityConfigValidator.ValidateIdentityConfig(invalidIdConfig, "test", errors);
+
             Assert.NotEmpty(errors);
         }
 
         [Fact]
-        public void TestMetricsConfigValidator_ValidAndInvalid()
+        public void MetricsConfigValidator_WithValidMetricsConfig_ShouldHaveNoErrors()
         {
             var errors = new List<string>();
-
-            // Valid metrics config
             var validMetrics = new Dictionary<string, object?>
             {
                 { "temporal_coupling_max_commit_file_count", 50 }
             };
-            MetricsConfigValidator.ValidateMetricsConfig(validMetrics, "test", errors);
-            Assert.Empty(errors);
 
-            // Invalid metrics config: negative integer
-            errors.Clear();
+            MetricsConfigValidator.ValidateMetricsConfig(validMetrics, "test", errors);
+
+            Assert.Empty(errors);
+        }
+
+        [Fact]
+        public void MetricsConfigValidator_WithNegativeTemporalCouplingMaxCommitFileCount_ShouldHaveValidationError()
+        {
+            var errors = new List<string>();
             var invalidMetrics = new Dictionary<string, object?>
             {
                 { "temporal_coupling_max_commit_file_count", -5 }
             };
+
             MetricsConfigValidator.ValidateMetricsConfig(invalidMetrics, "test", errors);
+
             Assert.NotEmpty(errors);
         }
     }

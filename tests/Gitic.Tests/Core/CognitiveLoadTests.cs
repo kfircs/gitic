@@ -24,6 +24,7 @@ public class CognitiveLoadSequenceSwitchingTests
     [Fact]
     public void TestSequenceSwitching_SingleAreaCommits_ZeroSwitches()
     {
+        var calculator = new CognitiveLoadCalculator();
         var commits = new List<GitCommitRecord>
         {
             CreateCommit("Alice", "src/Core/Foo.cs", 1000),
@@ -32,12 +33,10 @@ public class CognitiveLoadSequenceSwitchingTests
             CreateCommit("Alice", "src/Core/Qux.cs", 4000)
         };
 
-        var calculator = new CognitiveLoadCalculator();
         var profiles = calculator.CalculateProfiles(commits);
 
         Assert.Single(profiles);
         var profile = profiles[0];
-
         Assert.Equal("Alice", profile.Developer);
         Assert.Equal(0, profile.TotalSwitches);
         Assert.Equal(0.0, profile.EstimatedSwitchesPerWeek);
@@ -56,6 +55,7 @@ public class CognitiveLoadSequenceSwitchingTests
         // Cli -> Core (2)
         // Core -> Cli (3)
         // Cli -> Git (4)
+        var calculator = new CognitiveLoadCalculator();
         var commits = new List<GitCommitRecord>
         {
             CreateCommit("Alice", "src/Core/Foo.cs", 1000),
@@ -65,12 +65,10 @@ public class CognitiveLoadSequenceSwitchingTests
             CreateCommit("Alice", "src/Git/Quux.cs", 5000)
         };
 
-        var calculator = new CognitiveLoadCalculator();
         var profiles = calculator.CalculateProfiles(commits);
 
         Assert.Single(profiles);
         var profile = profiles[0];
-
         Assert.Equal(4, profile.TotalSwitches);
         Assert.Equal(3, profile.AreaBreadth);
         Assert.Equal(5, profile.FileBreadth);

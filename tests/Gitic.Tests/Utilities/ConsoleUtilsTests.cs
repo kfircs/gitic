@@ -5,20 +5,30 @@ namespace Gitic.Tests;
 
 public class ConsoleUtilsTests
 {
-    [Fact]
-    public void GetBoundedConsoleWidth_WithOverride_ReturnsOverrideValue()
+    [Theory]
+    [InlineData(120, 120)]
+    [InlineData(30, 30)]
+    [InlineData(250, 250)]
+    public void GetBoundedConsoleWidth_WithOverride_ShouldReturnOverrideValue(int? widthOverride, int expected)
     {
-        // Act & Assert
-        Assert.Equal(120, ConsoleUtils.GetBoundedConsoleWidth(120));
-        Assert.Equal(30, ConsoleUtils.GetBoundedConsoleWidth(30));
-        Assert.Equal(250, ConsoleUtils.GetBoundedConsoleWidth(250));
+        // Arrange
+        int? consoleWidthOverride = widthOverride;
+
+        // Act
+        int result = ConsoleUtils.GetBoundedConsoleWidth(consoleWidthOverride);
+
+        // Assert
+        Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void GetBoundedConsoleWidth_WithoutOverride_ReturnsBoundedValue()
+    public void GetBoundedConsoleWidth_WithoutOverride_ShouldReturnBoundedValue()
     {
+        // Arrange
+        int? consoleWidthOverride = null;
+
         // Act
-        int width = ConsoleUtils.GetBoundedConsoleWidth(null);
+        int width = ConsoleUtils.GetBoundedConsoleWidth(consoleWidthOverride);
 
         // Assert
         Assert.True(width >= 40);
@@ -26,69 +36,121 @@ public class ConsoleUtilsTests
     }
 
     [Fact]
-    public void PadRightAnsi_NormalText_PadsToGreaterWidth()
+    public void PadRightAnsi_WithNormalText_ShouldPadToGreaterWidth()
     {
+        // Arrange
+        string input = "hello";
+        int width = 10;
+
         // Act
-        string result = ConsoleUtils.PadRightAnsi("hello", 10);
+        string result = ConsoleUtils.PadRightAnsi(input, width);
 
         // Assert
         Assert.Equal("hello     ", result);
     }
 
-    [Fact]
-    public void PadRightAnsi_NormalText_NoOpWhenWidthIsLessThanOrEqual()
+    [Theory]
+    [InlineData("hello", 5, "hello")]
+    [InlineData("hello", 3, "hello")]
+    public void PadRightAnsi_WithNormalText_ShouldBeNoOpWhenWidthIsLessThanOrEqual(string input, int width, string expected)
     {
-        // Act & Assert
-        Assert.Equal("hello", ConsoleUtils.PadRightAnsi("hello", 5));
-        Assert.Equal("hello", ConsoleUtils.PadRightAnsi("hello", 3));
+        // Arrange
+        string text = input;
+        int targetWidth = width;
+
+        // Act
+        string result = ConsoleUtils.PadRightAnsi(text, targetWidth);
+
+        // Assert
+        Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void PadRightAnsi_WithAnsiEscapes_CalculatesVisibleLengthCorrectly()
+    public void PadRightAnsi_WithAnsiEscapes_ShouldCalculateVisibleLengthCorrectly()
     {
+        // Arrange
+        string input = "\x1b[31mhello\x1b[0m";
+        int width = 10;
+
         // Act
-        // "\x1b[31mhello\x1b[0m" has visible length 5 ("hello")
-        string result = ConsoleUtils.PadRightAnsi("\x1b[31mhello\x1b[0m", 10);
+        string result = ConsoleUtils.PadRightAnsi(input, width);
 
         // Assert
         Assert.Equal("\x1b[31mhello\x1b[0m     ", result);
     }
 
     [Fact]
-    public void PadRightAnsi_EndsWithReset_WithBgAnsi_StripsResetAndPads()
+    public void PadRightAnsi_WithTextEndingInResetAndBgAnsi_ShouldStripResetAndPad()
     {
+        // Arrange
+        string input = "hello\x1b[0m";
+        int width = 10;
+        string bgAnsi = "\x1b[44m";
+
         // Act
-        // For text ending in "\x1b[0m" and having bgAnsi set:
-        // it strips "\x1b[0m", appends padding, then appends "\x1b[0m"
-        string result = ConsoleUtils.PadRightAnsi("hello\x1b[0m", 10, "\x1b[44m");
+        string result = ConsoleUtils.PadRightAnsi(input, width, bgAnsi);
 
         // Assert
-        // Length visible of "hello" (reset doesn't count).
-        // It should strip reset: "hello" + "     " + "\x1b[0m"
         Assert.Equal("hello     \x1b[0m", result);
     }
 
     [Fact]
-    public void PadRightAnsi_WithBgAnsi_NoReset_PrependsBgAnsiAndAppendsReset()
+    public void PadRightAnsi_WithBgAnsiAndNoReset_ShouldPrependBgAnsiAndAppendReset()
     {
+        // Arrange
+        string input = "hello";
+        int width = 10;
+        string bgAnsi = "\x1b[44m";
+
         // Act
-        string result = ConsoleUtils.PadRightAnsi("hello", 10, "\x1b[44m");
+        string result = ConsoleUtils.PadRightAnsi(input, width, bgAnsi);
 
         // Assert
         Assert.Equal("\x1b[44mhello     \x1b[0m", result);
     }
 
     [Fact]
-    public void PadRightAnsi_ShortOrEmptyWithReset_DoesNotThrow()
+    public void PadRightAnsi_WithEmptyStringAndBgAnsi_ShouldNotThrow()
     {
-        // Act & Assert
-        var exEmpty = Record.Exception(() => ConsoleUtils.PadRightAnsi("", 5, "\x1b[44m"));
-        Assert.Null(exEmpty);
+        // Arrange
+        string input = "";
+        int width = 5;
+        string bgAnsi = "\x1b[44m";
 
-        var exShort = Record.Exception(() => ConsoleUtils.PadRightAnsi("a", 5, "\x1b[44m"));
-        Assert.Null(exShort);
-        
-        var exResetShort = Record.Exception(() => ConsoleUtils.PadRightAnsi("\x1b[0m", 5, "\x1b[44m"));
-        Assert.Null(exResetShort);
+        // Act
+        var exception = Record.Exception(() => ConsoleUtils.PadRightAnsi(input, width, bgAnsi));
+
+        // Assert
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void PadRightAnsi_WithShortStringAndBgAnsi_ShouldNotThrow()
+    {
+        // Arrange
+        string input = "a";
+        int width = 5;
+        string bgAnsi = "\x1b[44m";
+
+        // Act
+        var exception = Record.Exception(() => ConsoleUtils.PadRightAnsi(input, width, bgAnsi));
+
+        // Assert
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void PadRightAnsi_WithResetStringAndBgAnsi_ShouldNotThrow()
+    {
+        // Arrange
+        string input = "\x1b[0m";
+        int width = 5;
+        string bgAnsi = "\x1b[44m";
+
+        // Act
+        var exception = Record.Exception(() => ConsoleUtils.PadRightAnsi(input, width, bgAnsi));
+
+        // Assert
+        Assert.Null(exception);
     }
 }

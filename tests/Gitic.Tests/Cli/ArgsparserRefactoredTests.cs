@@ -9,10 +9,11 @@ namespace Gitic.Tests
     public class ArgsparserRefactoredTests
     {
         [Fact]
-        public void TestCommandLineParser_HelpText_IsPopulated()
+        public void CommandLineParser_HelpText_ShouldBePopulated()
         {
             var helpArgs = new[] { "--help" };
             var parser = new CommandLineParser(helpArgs);
+
             var parsed = parser.Parse();
 
             Assert.Equal("help", parsed.Command);
@@ -22,10 +23,11 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestCommandLineParser_HelpShort_IsPopulated()
+        public void CommandLineParser_HelpShort_ShouldBePopulated()
         {
             var helpArgs = new[] { "-h" };
             var parser = new CommandLineParser(helpArgs);
+
             var parsed = parser.Parse();
 
             Assert.Equal("help", parsed.Command);
@@ -35,18 +37,17 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public async Task TestCliCommandFactory_CreatesHelpCommandWithHelpText()
+        public async Task CliCommandFactory_CreatesHelpCommandWithHelpText_ShouldExecuteSuccessfully()
         {
             var helpArgs = new[] { "--help" };
             var parser = new CommandLineParser(helpArgs);
             var parsed = parser.Parse();
-
             var command = new CliCommandFactoryImpl().CreateCommand(parsed);
-            Assert.IsType<HelpCommand>(command);
-
             var reporter = new MockConsoleReporter();
+
             var result = await command.ExecuteAsync(reporter);
 
+            Assert.IsType<HelpCommand>(command);
             Assert.Equal(0, result.ExitCode);
             Assert.Contains("Gitic Strategic Codebase Analysis", reporter.Stdout);
         }
@@ -64,7 +65,7 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public async Task TestBaseAnalysisCommand_InjectsDependencies()
+        public async Task BaseAnalysisCommand_ShouldInjectDependencies()
         {
             var parsed = new ParsedArgs
             {
@@ -75,7 +76,6 @@ namespace Gitic.Tests
 
             var fakeGit = new FakeGitClientForTesting();
             var fakeAnalyzer = new FakeRepositoryAnalyzerForTesting();
-
             var command = new HotspotsCommand(parsed, fakeGit, fakeAnalyzer);
             var reporter = new MockConsoleReporter();
 

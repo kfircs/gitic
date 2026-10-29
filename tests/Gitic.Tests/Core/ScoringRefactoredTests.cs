@@ -10,12 +10,15 @@ namespace Gitic.Tests
         [Fact]
         public void TestScoreFiles_WithEmptyItems_ReturnsEmptyList()
         {
+            // Arrange
             var config = new GiticConfig();
             var engine = new FamiliarityScoringEngine(config);
             var items = new List<ItemAccumulator>();
 
+            // Act
             var files = engine.ScoreFiles(items, 2);
 
+            // Assert
             Assert.NotNull(files);
             Assert.Empty(files);
         }
@@ -23,12 +26,15 @@ namespace Gitic.Tests
         [Fact]
         public void TestScoreAreas_WithEmptyItems_ReturnsEmptyList()
         {
+            // Arrange
             var config = new GiticConfig();
             var engine = new FamiliarityScoringEngine(config);
             var items = new List<ItemAccumulator>();
 
+            // Act
             var areas = engine.ScoreAreas(items);
 
+            // Assert
             Assert.NotNull(areas);
             Assert.Empty(areas);
         }
@@ -36,9 +42,9 @@ namespace Gitic.Tests
         [Fact]
         public void TestScoreFiles_AndScoreAreas_HaveConsistentCalculation()
         {
+            // Arrange
             var config = new GiticConfig();
             var engine = new FamiliarityScoringEngine(config);
-
             var items = new List<ItemAccumulator>
             {
                 new ItemAccumulator
@@ -57,9 +63,11 @@ namespace Gitic.Tests
                 }
             };
 
+            // Act
             var files = engine.ScoreFiles(items, 2);
             var areas = engine.ScoreAreas(items);
 
+            // Assert
             Assert.Single(files);
             Assert.Single(areas);
 
@@ -112,7 +120,6 @@ namespace Gitic.Tests
             var config = new GiticConfig();
             var mockSilo = new MockSiloCalculator();
             var mockUtil = new MockScoringUtility();
-
             var engine = new FamiliarityScoringEngine(
                 config,
                 activeContributorKeys: new HashSet<string> { "alice" },
@@ -120,7 +127,6 @@ namespace Gitic.Tests
                 siloCalculator: mockSilo,
                 scoringUtilityService: mockUtil
             );
-
             var items = new List<ItemAccumulator>
             {
                 new ItemAccumulator

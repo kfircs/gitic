@@ -7,7 +7,7 @@ namespace Gitic.Tests
     public class WarningsRefactoredTests
     {
         [Fact]
-        public void TestWarningCollector_ParseOrWrapWarning_WithValidAreaWarning()
+        public void WarningCollector_ParseOrWrapWarning_WithValidAreaWarning_ShouldCollectCorrectDiagnostics()
         {
             var collector = new WarningCollector();
             var context = new WarningContext();
@@ -26,7 +26,7 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestWarningCollector_ParseOrWrapWarning_NoUsingPart()
+        public void WarningCollector_ParseOrWrapWarning_NoUsingPart_ShouldCollectCorrectDiagnostics()
         {
             var collector = new WarningCollector();
             var context = new WarningContext();
@@ -36,6 +36,7 @@ namespace Gitic.Tests
             };
 
             var diags = collector.CollectDiagnostics(context, existing);
+
             var target = diags.Find(d => d.Code == "GITIC007");
             Assert.NotNull(target);
             Assert.Equal("Warning", target!.Severity);
@@ -44,14 +45,11 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestWarningCollector_ParseOrWrapWarning_NullAndEmptyWarnings()
+        public void WarningCollector_ParseOrWrapWarning_NullAndEmptyWarnings_ShouldCollectCorrectDiagnostics()
         {
             var collector = new WarningCollector();
             var context = new WarningContext();
-
-            var existingWarnings = new List<string>();
-            existingWarnings.Add(null!);
-            existingWarnings.Add("");
+            var existingWarnings = new List<string> { null!, "" };
 
             var diags = collector.CollectDiagnostics(context, existingWarnings);
 
@@ -60,17 +58,17 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestWarningCollector_ParseOrWrapWarning_MalformedAreaWarningAtEnd()
+        public void WarningCollector_ParseOrWrapWarning_MalformedAreaWarningAtEnd_ShouldCollectCorrectDiagnostics()
         {
             var collector = new WarningCollector();
             var context = new WarningContext();
-
             var existing = new List<string>
             {
                 "matched multiple configured areas; using "
             };
 
             var diags = collector.CollectDiagnostics(context, existing);
+
             var target = diags.Find(d => d.Code == "GITIC007");
             Assert.NotNull(target);
             Assert.Equal("matched multiple configured areas", target!.Message);
@@ -78,17 +76,17 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestWarningCollector_ParseOrWrapWarning_SemicolonUsingNoSpace()
+        public void WarningCollector_ParseOrWrapWarning_SemicolonUsingNoSpace_ShouldCollectCorrectDiagnostics()
         {
             var collector = new WarningCollector();
             var context = new WarningContext();
-
             var existing = new List<string>
             {
                 "matched multiple configured areas;using"
             };
 
             var diags = collector.CollectDiagnostics(context, existing);
+
             var target = diags.Find(d => d.Code == "GITIC007");
             Assert.NotNull(target);
             Assert.Equal("matched multiple configured areas;using", target!.Message);
@@ -96,7 +94,7 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestWarningCollector_ParseOrWrapWarning_StandardUnmatchedWarning()
+        public void WarningCollector_ParseOrWrapWarning_StandardUnmatchedWarning_ShouldCollectCorrectDiagnostics()
         {
             var collector = new WarningCollector();
             var context = new WarningContext();
@@ -106,6 +104,7 @@ namespace Gitic.Tests
             };
 
             var diags = collector.CollectDiagnostics(context, existing);
+
             var target = diags.Find(d => d.Code == "GITIC999");
             Assert.NotNull(target);
             Assert.Equal("Some other warning message.", target!.Message);
@@ -113,7 +112,7 @@ namespace Gitic.Tests
         }
 
         [Fact]
-        public void TestGetSeverityOrder()
+        public void GetSeverityOrder_ShouldReturnCorrectPrecedence()
         {
             Assert.Equal(3, Warnings.GetSeverityOrder(null!));
             Assert.Equal(1, Warnings.GetSeverityOrder("critical"));
