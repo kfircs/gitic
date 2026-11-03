@@ -185,6 +185,8 @@ public static class ScoringUtils
 
     public static double RoundActivity(double value) => RoundRatio(value);
 
+    public static double ShareOf(double part, double total) => total > 0 ? RoundRatio(part / total) : 0.0;
+
     public static double CalculateRecencyScore(long timestamp, DateTimeOffset? referenceDate = null)
     {
         return _defaultService.CalculateRecencyScore(timestamp, referenceDate);
@@ -371,12 +373,22 @@ public class FamiliarityScoringEngine : IFamiliarityScoringEngine
             return [];
         }
 
+        double totalCommits = item.ContributorCredits.Values.Sum(c => c.Commits);
+        double totalAdded = item.ContributorCredits.Values.Sum(c => c.Added);
+        double totalDeleted = item.ContributorCredits.Values.Sum(c => c.Deleted);
+
         Func<ContributorCredit, ContributorShare> contributorShareSelector = credit => new()
         {
             Name = credit.Identity.Name,
             Email = credit.Identity.Email,
             Activity = ScoringUtils.RoundActivity(credit.Activity),
-            ActivityShare = ScoringUtils.RoundRatio(credit.Activity / total)
+            ActivityShare = ScoringUtils.RoundRatio(credit.Activity / total),
+            Commits = credit.Commits,
+            CommitShare = ScoringUtils.ShareOf(credit.Commits, totalCommits),
+            Added = (int)Math.Round(credit.Added),
+            AddedShare = ScoringUtils.ShareOf(credit.Added, totalAdded),
+            Deleted = (int)Math.Round(credit.Deleted),
+            DeletedShare = ScoringUtils.ShareOf(credit.Deleted, totalDeleted)
         };
 
         return item.ContributorCredits.Values

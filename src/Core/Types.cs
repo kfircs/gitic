@@ -203,6 +203,24 @@ public class ContributorShare : IContributorIdentity
 
     [JsonPropertyName("activity_share")]
     public double ActivityShare { get; set; }
+
+    [JsonPropertyName("commits")]
+    public int Commits { get; set; }
+
+    [JsonPropertyName("commit_share")]
+    public double CommitShare { get; set; }
+
+    [JsonPropertyName("added")]
+    public int Added { get; set; }
+
+    [JsonPropertyName("added_share")]
+    public double AddedShare { get; set; }
+
+    [JsonPropertyName("deleted")]
+    public int Deleted { get; set; }
+
+    [JsonPropertyName("deleted_share")]
+    public double DeletedShare { get; set; }
 }
 
 public class InnerSymbolMetric
@@ -369,6 +387,27 @@ public class ContributorMetric : IContributorIdentity
 
     [JsonPropertyName("total_activity")]
     public double TotalActivity { get; set; }
+
+    [JsonPropertyName("activity_share")]
+    public double ActivityShare { get; set; }
+
+    [JsonPropertyName("commits")]
+    public int Commits { get; set; }
+
+    [JsonPropertyName("commit_share")]
+    public double CommitShare { get; set; }
+
+    [JsonPropertyName("added")]
+    public int Added { get; set; }
+
+    [JsonPropertyName("added_share")]
+    public double AddedShare { get; set; }
+
+    [JsonPropertyName("deleted")]
+    public int Deleted { get; set; }
+
+    [JsonPropertyName("deleted_share")]
+    public double DeletedShare { get; set; }
 
     [JsonPropertyName("areas")]
     public List<ContributorAreaMetric> Areas { get; set; } = new();
@@ -660,6 +699,9 @@ public class ContributorCredit
 {
     public GitIdentity Identity { get; set; } = new();
     public double Activity { get; set; }
+    public int Commits { get; set; }
+    public double Added { get; set; }
+    public double Deleted { get; set; }
 }
 
 public class ItemAccumulator
@@ -681,6 +723,9 @@ public class ContributorAccumulator
 {
     public GitIdentity Identity { get; set; } = new();
     public double TotalActivity { get; set; }
+    public int Commits { get; set; }
+    public double Added { get; set; }
+    public double Deleted { get; set; }
     public Dictionary<string, double> Areas { get; set; } = new();
 }
 

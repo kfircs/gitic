@@ -171,6 +171,7 @@ public static class TemplateAssets
       <a href="#sec-scatter" class="px-2 py-1 rounded hover:bg-white/10">Scatter</a>
       <a href="#sec-files" class="px-2 py-1 rounded hover:bg-white/10">Files</a>
       <a href="#sec-contributors" class="px-2 py-1 rounded hover:bg-white/10">Contributors</a>
+      <a href="#sec-owners" class="px-2 py-1 rounded hover:bg-white/10">Code Owners</a>
       <a href="#sec-footer" class="px-2 py-1 rounded hover:bg-white/10">Exclusions</a>
     </nav>
 
@@ -454,6 +455,43 @@ public static class TemplateAssets
       </div>
     </section>
 
+    <!-- Code Owners by Percentage -->
+    <section class="space-y-4" id="sec-owners">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-xl font-bold tracking-tight flex items-center gap-2">
+            <span class="w-1.5 h-4 accent-bg rounded-sm inline-block"></span>
+            <span>Code Owners</span>
+          </h2>
+          <div class="text-[10px] text-gray-400 mt-1">Each contributor's percentage share of the chosen measure, repository-wide and per area. Automation identities are excluded.</div>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs" id="owner-metric-tabs" role="group" aria-label="Ownership measure">
+          <button type="button" data-owner-metric="commits" class="px-2 py-1 rounded bg-white/5 border border-white/10">Commits</button>
+          <button type="button" data-owner-metric="added" class="px-2 py-1 rounded bg-white/5 border border-white/10">Lines inserted</button>
+          <button type="button" data-owner-metric="deleted" class="px-2 py-1 rounded bg-white/5 border border-white/10">Lines deleted</button>
+          <button type="button" data-owner-metric="activity" class="px-2 py-1 rounded bg-white/5 border border-white/10">Activity</button>
+        </div>
+      </div>
+      <details class="text-[11px] text-gray-400 bg-black/20 border border-white/10 rounded-lg p-3 cursor-pointer">
+        <summary class="font-semibold text-gray-300 select-none">How are shares calculated? &mdash; Rationale</summary>
+        <div class="mt-2 space-y-1.5 text-gray-300 leading-relaxed font-normal">
+          <p><strong>Commits:</strong> commits the contributor authored or co-authored, counted once per scope.</p>
+          <p><strong>Lines inserted / deleted:</strong> lines from git numstat. Co-authored commits split their lines equally between the authors.</p>
+          <p><strong>Activity:</strong> the activity points used throughout this report (one point per file change, split between co-authors).</p>
+        </div>
+      </details>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="space-y-2">
+          <h3 class="text-sm font-bold text-gray-300">Repository-wide</h3>
+          <div class="theme-card rounded-xl p-4 space-y-3" id="owners-repo"></div>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-sm font-bold text-gray-300">By area</h3>
+          <div class="theme-card rounded-xl p-4 space-y-4 max-h-[32rem] overflow-y-auto" id="owners-areas"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- Exclusions & Warnings Footer -->
     <footer class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-gray-400" id="sec-footer">
       <div class="theme-card p-4 rounded-xl">
@@ -528,7 +566,19 @@ public static class TemplateAssets
         .replaceAll("'", '&#39;');
     }
     
+    // Ownership measures: share and count field names differ between repo-wide and per-area records.
+    const OWNER_METRICS = {
+      commits: { label: 'Commits', share: 'commit_share', count: c => c.commits },
+      added: { label: 'Lines inserted', share: 'added_share', count: c => c.added },
+      deleted: { label: 'Lines deleted', share: 'deleted_share', count: c => c.deleted },
+      activity: { label: 'Activity', share: 'activity_share', count: c => c.total_activity ?? c.activity },
+    };
+    const OWNER_SEGMENT_OPACITY = [1, 0.6, 0.35];
+    const OWNER_AREA_TOP_COUNT = 3;
+    const OWNER_REPO_TOP_COUNT = 10;
+
     // States
+    let ownerMetric = 'commits';
     let currentTheme = 'deloitte';
     let glassEnabled = true;
     let sortState = { column: 'attention_score', dir: 'desc' };
@@ -1031,6 +1081,8 @@ public static class TemplateAssets
         contributorsList.appendChild(item);
       });
 
+      renderCodeOwners(filterText);
+
       // Exclusions
       const exclusionsBox = document.getElementById('exclusions-box');
       exclusionsBox.innerHTML = '';
@@ -1049,6 +1101,93 @@ public static class TemplateAssets
         warningsBox.innerHTML = 'None';
       }
     }
+
+    function formatPercent(share) {
+      return Math.round(share * 100) + '%';
+    }
+
+    function ownerBar(segments) {
+      const cells = segments.map(seg =>
+        `<div class="h-full accent-bg" style="width:${(seg.share * 100).toFixed(2)}%;opacity:${seg.opacity}" title="${escapeCell(seg.title)}"></div>`
+      ).join('');
+      return `<div class="flex h-2 w-full rounded overflow-hidden bg-white/5">${cells}</div>`;
+    }
+
+    function ownerRow(rank, c, metric) {
+      const share = c[metric.share] || 0;
+      const opacity = OWNER_SEGMENT_OPACITY[rank] ?? 0.2;
+      return `
+        <div class="space-y-1">
+          <div class="flex justify-between gap-2 text-xs">
+            <span class="font-bold truncate">${escapeCell(c.name)}</span>
+            <span class="font-mono text-gray-300 whitespace-nowrap">${formatPercent(share)} <span class="text-gray-500">(${Number(metric.count(c) ?? 0).toLocaleString()})</span></span>
+          </div>
+          ${ownerBar([{ share, opacity, title: c.name }])}
+        </div>`;
+    }
+
+    function ownersByShare(contributors, metric) {
+      return (contributors || []).slice().sort((a, b) => (b[metric.share] || 0) - (a[metric.share] || 0));
+    }
+
+    function renderCodeOwners(filterText) {
+      const repoEl = document.getElementById('owners-repo');
+      const areasEl = document.getElementById('owners-areas');
+      if (!repoEl || !areasEl) return;
+
+      const metric = OWNER_METRICS[ownerMetric];
+      document.querySelectorAll('[data-owner-metric]').forEach(btn => {
+        const active = btn.dataset.ownerMetric === ownerMetric;
+        btn.classList.toggle('accent-bg', active);
+        btn.classList.toggle('bg-white/5', !active);
+        btn.classList.toggle('text-black', active);
+        btn.classList.toggle('font-bold', active);
+        btn.setAttribute('aria-pressed', String(active));
+      });
+
+      const owners = ownersByShare(report.contributors, metric).filter(c =>
+        c.name.toLowerCase().includes(filterText) || c.email.toLowerCase().includes(filterText)
+      );
+      if (owners.length === 0) {
+        repoEl.innerHTML = '<div class="text-xs text-gray-500">No contributors match.</div>';
+      } else {
+        const top = owners.slice(0, OWNER_REPO_TOP_COUNT);
+        const othersShare = owners.slice(OWNER_REPO_TOP_COUNT).reduce((sum, c) => sum + (c[metric.share] || 0), 0);
+        repoEl.innerHTML = top.map((c, idx) => ownerRow(idx, c, metric)).join('') +
+          (othersShare > 0
+            ? `<div class="text-xs text-gray-400 flex justify-between"><span>${owners.length - top.length} more contributors</span><span class="font-mono">${formatPercent(othersShare)}</span></div>`
+            : '');
+      }
+
+      const areas = report.areas.filter(a => a.area.toLowerCase().includes(filterText));
+      if (areas.length === 0) {
+        areasEl.innerHTML = '<div class="text-xs text-gray-500">No areas match.</div>';
+        return;
+      }
+      areasEl.innerHTML = areas.map(area => {
+        const sorted = ownersByShare(area.contributors, metric);
+        const top = sorted.slice(0, OWNER_AREA_TOP_COUNT);
+        const othersShare = sorted.slice(OWNER_AREA_TOP_COUNT).reduce((sum, c) => sum + (c[metric.share] || 0), 0);
+        const segments = top.map((c, idx) => ({ share: c[metric.share] || 0, opacity: OWNER_SEGMENT_OPACITY[idx], title: c.name }));
+        if (othersShare > 0) segments.push({ share: othersShare, opacity: 0.15, title: 'Others' });
+        const legend = top.map((c, idx) =>
+          `<span class="whitespace-nowrap"><span class="inline-block w-2 h-2 rounded-sm accent-bg align-middle" style="opacity:${OWNER_SEGMENT_OPACITY[idx]}"></span> ${escapeCell(c.name)} <span class="font-mono">${formatPercent(c[metric.share] || 0)}</span></span>`
+        ).join('');
+        return `
+          <div class="space-y-1.5">
+            <div class="text-xs font-mono font-bold truncate">${escapeCell(area.area)}</div>
+            ${top.length ? ownerBar(segments) : ''}
+            <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-gray-300">${legend || '<span class="text-gray-500">No contributors</span>'}${othersShare > 0 ? `<span class="text-gray-500">Others <span class="font-mono">${formatPercent(othersShare)}</span></span>` : ''}</div>
+          </div>`;
+      }).join('');
+    }
+
+    document.querySelectorAll('[data-owner-metric]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ownerMetric = btn.dataset.ownerMetric;
+        processData();
+      });
+    });
 
     function renderExecutiveSummary() {
       const narrativeEl = document.getElementById('exec-summary-narrative');

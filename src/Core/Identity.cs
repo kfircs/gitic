@@ -39,6 +39,25 @@ internal static class IdentityUtils
 
     public static bool SameIdentity(GitIdentity left, GitIdentity right) => left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase) && left.Email.Equals(right.Email, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Rewrites a "Last, First" display name as "First Last" so both spellings share an identity key.</summary>
+    public static GitIdentity NormalizeName(GitIdentity identity)
+    {
+        var parts = identity.Name.Split(',');
+        if (parts.Length != 2)
+        {
+            return identity;
+        }
+
+        string last = parts[0].Trim();
+        string first = parts[1].Trim();
+        if (last.Length == 0 || first.Length == 0)
+        {
+            return identity;
+        }
+
+        return new GitIdentity { Name = $"{first} {last}", Email = identity.Email };
+    }
+
     public static GitIdentity ResolveAlias(GitIdentity identity, List<AliasRule> aliases)
     {
         foreach (var alias in aliases)
@@ -82,6 +101,7 @@ internal static class IdentityUtils
         string nameLower = name.Trim().ToLowerInvariant();
         return emailLower.Contains("@ampcode.com") ||
                emailLower.StartsWith("gemini-cli@") ||
+               emailLower.EndsWith("@anthropic.com") ||
                nameLower == "amp" ||
                nameLower == "gemini cli";
     }
@@ -195,6 +215,9 @@ public class IdentityRegistry : IIdentityRegistry
             return aliased;
         }
 
+        // Aliases match the name exactly as git recorded it, so normalize only after they miss.
+        identity = IdentityUtils.NormalizeName(identity);
+
         if (_mergeOnEmail)
         {
             string mergeKey;
@@ -224,7 +247,7 @@ public class IdentityRegistry : IIdentityRegistry
             return identity;
         }
 
-        return aliased;
+        return identity;
     }
 
     public List<EmailCollision> GetEmailCollisions()
