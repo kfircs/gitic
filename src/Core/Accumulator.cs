@@ -86,10 +86,11 @@ public class ChangeAccumulator : IChangeAccumulator
     {
         string commitCategory = _classifier.Classify(commit.Message);
         var participants = ParticipantsForCommit(commit);
+        var countedCommits = new HashSet<string>();
 
         foreach (var change in commit.Files)
         {
-            ProcessFileChange(change, commit, commitCategory, participants, filesInCommit);
+            ProcessFileChange(change, commit, commitCategory, participants, filesInCommit, countedCommits);
         }
     }
 
@@ -98,7 +99,8 @@ public class ChangeAccumulator : IChangeAccumulator
         GitCommitRecord commit,
         string commitCategory,
         List<ParticipantInfo> participants,
-        List<string> filesInCommit)
+        List<string> filesInCommit,
+        HashSet<string> countedCommits)
     {
         string path = PathUtils.NormalizeGitPath(change.Path);
         if (!_filter.Check(path))
@@ -116,31 +118,39 @@ public class ChangeAccumulator : IChangeAccumulator
 
         filesInCommit.Add(path);
 
-        RecordParticipantActivity(fileAccumulator, areaAccumulator, areaName, participants);
+        RecordParticipantActivity(fileAccumulator, areaAccumulator, path, areaName, change, participants, countedCommits);
     }
 
     private void RecordParticipantActivity(
         ItemAccumulator fileAccumulator,
         ItemAccumulator areaAccumulator,
+        string path,
         string areaName,
-        List<ParticipantInfo> participants)
+        GitFileChange change,
+        List<ParticipantInfo> participants,
+        HashSet<string> countedCommits)
     {
         foreach (var participant in participants)
         {
+            string identityKey = IdentityUtils.IdentityKey(participant.Identity);
+
+            // A commit counts once per contributor in each scope (repository, area, file),
+            // however many of its file changes land in that scope.
+            Contribution ContributionIn(string scope) => new(
+                participant.Credit,
+                countedCommits.Add($"{scope}|{identityKey}") ? 1 : 0,
+                change.Added * participant.Credit,
+                change.Deleted * participant.Credit);
+
             if (_identityRegistry.IsBot(participant.Identity))
             {
-                AddContributorActivity(_automation, participant.Identity, areaName, participant.Credit);
+                AddContributorActivity(_automation, participant.Identity, areaName, ContributionIn("repo"));
                 continue;
             }
 
-            AddContributorActivity(
-                _contributors,
-                participant.Identity,
-                areaName,
-                participant.Credit
-            );
-            AddContributorCredit(fileAccumulator, participant.Identity, participant.Credit);
-            AddContributorCredit(areaAccumulator, participant.Identity, participant.Credit);
+            AddContributorActivity(_contributors, participant.Identity, areaName, ContributionIn("repo"));
+            AddContributorCredit(fileAccumulator, participant.Identity, ContributionIn($"file|{path}"));
+            AddContributorCredit(areaAccumulator, participant.Identity, ContributionIn($"area|{areaName}"));
         }
     }
 
@@ -238,7 +248,7 @@ public class ChangeAccumulator : IChangeAccumulator
     private void AddContributorCredit(
         ItemAccumulator item,
         GitIdentity identity,
-        double activity)
+        Contribution contribution)
     {
         string key = IdentityUtils.IdentityKey(identity);
         if (!item.ContributorCredits.TryGetValue(key, out var current))
@@ -246,8 +256,13 @@ public class ChangeAccumulator : IChangeAccumulator
             current = new ContributorCredit { Identity = identity, Activity = 0.0 };
             item.ContributorCredits[key] = current;
         }
-        current.Activity = ScoringUtils.RoundActivity(current.Activity + activity);
+        current.Activity = ScoringUtils.RoundActivity(current.Activity + contribution.Activity);
+        current.Commits += contribution.Commits;
+        current.Added += contribution.Added;
+        current.Deleted += contribution.Deleted;
     }
+
+    private readonly record struct Contribution(double Activity, int Commits, double Added, double Deleted);
 
     private class ParticipantInfo
     {
@@ -273,7 +288,7 @@ public class ChangeAccumulator : IChangeAccumulator
         Dictionary<string, ContributorAccumulator> items,
         GitIdentity identity,
         string areaName,
-        double activity)
+        Contribution contribution)
     {
         string key = IdentityUtils.IdentityKey(identity);
         if (!items.TryGetValue(key, out var accumulator))
@@ -286,9 +301,12 @@ public class ChangeAccumulator : IChangeAccumulator
             };
             items[key] = accumulator;
         }
-        accumulator.TotalActivity = ScoringUtils.RoundActivity(accumulator.TotalActivity + activity);
+        accumulator.TotalActivity = ScoringUtils.RoundActivity(accumulator.TotalActivity + contribution.Activity);
+        accumulator.Commits += contribution.Commits;
+        accumulator.Added += contribution.Added;
+        accumulator.Deleted += contribution.Deleted;
 
         accumulator.Areas.TryGetValue(areaName, out double currentAreaActivity);
-        accumulator.Areas[areaName] = ScoringUtils.RoundActivity(currentAreaActivity + activity);
+        accumulator.Areas[areaName] = ScoringUtils.RoundActivity(currentAreaActivity + contribution.Activity);
     }
 }

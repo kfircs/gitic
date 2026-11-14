@@ -31,7 +31,8 @@ public class TuiExplorer
             new WorkClassificationPerspective(),
             new CodeRotPerspective(),
             new ReviewCollaborationPerspective(),
-            new AiCodeStrainPerspective()
+            new AiCodeStrainPerspective(),
+            new CodeOwnersPerspective()
         };
     }
 

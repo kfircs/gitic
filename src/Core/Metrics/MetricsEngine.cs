@@ -267,12 +267,24 @@ public class MetricsEngine : IMetricsEngine
 
     private List<ContributorMetric> RenderContributorAccumulatorList(List<ContributorAccumulator> items)
     {
+        double totalActivity = items.Sum(i => i.TotalActivity);
+        double totalCommits = items.Sum(i => i.Commits);
+        double totalAdded = items.Sum(i => i.Added);
+        double totalDeleted = items.Sum(i => i.Deleted);
+
         return items
             .Select(item => new ContributorMetric
             {
                 Name = item.Identity.Name,
                 Email = item.Identity.Email,
                 TotalActivity = ScoringUtils.RoundRatio(item.TotalActivity),
+                ActivityShare = ScoringUtils.ShareOf(item.TotalActivity, totalActivity),
+                Commits = item.Commits,
+                CommitShare = ScoringUtils.ShareOf(item.Commits, totalCommits),
+                Added = (int)Math.Round(item.Added),
+                AddedShare = ScoringUtils.ShareOf(item.Added, totalAdded),
+                Deleted = (int)Math.Round(item.Deleted),
+                DeletedShare = ScoringUtils.ShareOf(item.Deleted, totalDeleted),
                 Areas = ContributorAreas(item)
             })
             .OrderByDescending(c => c.TotalActivity)

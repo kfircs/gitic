@@ -50,7 +50,7 @@ You will boot directly into the interactive dashboard. Use the following keyboar
 * **`j` / `k` (or `↑` / `↓`):** Move selection up and down the navigation tree.
 * **`l` / `Enter` (or `→`):** Drill down into directories, logical subsystems, or contributor details.
 * **`h` / `Backspace` (or `←`):** Go back up one level.
-* **`Tab` (or `1` - `5`):** Hot-swap between active perspectives (**Lines & Structure**, **Work Classification**, **Code Rot / Zombies**, **Review Collaboration**, and **AI Code Strain**).
+* **`Tab` (or `1` - `6`):** Hot-swap between active perspectives (**Lines & Structure**, **Work Classification**, **Code Rot / Zombies**, **Review Collaboration**, **AI Code Strain**, and **Code Owners**, which shows each contributor's percentage share of commits, inserted lines, deleted lines, and activity for the selected file, directory, or the whole repository).
 * **`?`:** Display an interactive metric overlay modal explaining P90, Hotspot Densities, and Stall Rates.
 * **`/`:** Open the real-time search/filter panel to narrow down the active workspace tree.
 * **`q`:** Quit the TUI cleanly.
